@@ -125,3 +125,65 @@ class Base:
             (resp_id, mensaje_id, ts, texto),
         )
         return bool(filas)
+
+    # -- consumo y retención (V6) --------------------------------------------------------------------
+
+    def registrar_consumo(self, c: dict) -> None:
+        self.ejecutar(
+            "INSERT INTO consumo (nota_id, carril, pasos, tokens_in, tokens_out, ms, corte) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (c["nota_id"], c["carril"], c["pasos"], c["tokens_in"], c["tokens_out"], c["ms"], c["corte"]),
+        )
+
+    def purgar(
+        self,
+        horas_dialogo_cerrado: int = 24,
+        horas_dialogo_abandonado: int = 72,
+        dias_dedup: int = 7,
+        dias_consumo: int = 30,
+    ) -> dict[str, int]:
+        """Política de memoria (docs/memoria.md). Devuelve cuántas filas se borraron por tabla.
+
+        - dialogo: un parte cerrado (confirmado, pendiente de validación, sin filas) se olvida a las 24 h;
+          uno que nunca se cerró (borrador o pregunta sin respuesta), a las 72 h.
+        - nota, mensaje_nota y respuesta: 7 días, que cubre las reentregas del broker (deduplicación).
+        - salida: lo publicado, 7 días; lo pendiente de publicar NO se borra nunca.
+        - consumo: 30 días.
+        """
+
+        def borrar(sql: str, params: tuple = ()) -> int:
+            return len(self.ejecutar(sql + " RETURNING 1", params))
+
+        cerrados = ("confirmado", "pendiente_validacion", "sin_filas")
+        return {
+            "dialogo_cerrado": borrar(
+                "DELETE FROM dialogo WHERE estado->>'estado' = ANY(%s) "
+                "AND actualizado < now() - make_interval(hours => %s)",
+                (list(cerrados), horas_dialogo_cerrado),
+            ),
+            "dialogo_abandonado": borrar(
+                "DELETE FROM dialogo WHERE actualizado < now() - make_interval(hours => %s)",
+                (horas_dialogo_abandonado,),
+            ),
+            "mensaje_nota": borrar(
+                "DELETE FROM mensaje_nota WHERE creado < now() - make_interval(days => %s) "
+                "AND nota_id NOT IN (SELECT nota_id FROM dialogo)",
+                (dias_dedup,),
+            ),
+            "respuesta": borrar(
+                "DELETE FROM respuesta WHERE recibida_en < now() - make_interval(days => %s)", (dias_dedup,)
+            ),
+            "nota": borrar(
+                "DELETE FROM nota WHERE recibida_en < now() - make_interval(days => %s) "
+                "AND nota_id NOT IN (SELECT nota_id FROM dialogo)",
+                (dias_dedup,),
+            ),
+            "salida": borrar(
+                "DELETE FROM salida WHERE estado = 'publicada' "
+                "AND publicado < now() - make_interval(days => %s)",
+                (dias_dedup,),
+            ),
+            "consumo": borrar(
+                "DELETE FROM consumo WHERE ts < now() - make_interval(days => %s)", (dias_consumo,)
+            ),
+        }

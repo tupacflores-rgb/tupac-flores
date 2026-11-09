@@ -16,6 +16,7 @@ import logging
 import queue
 import signal
 import threading
+import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
@@ -23,6 +24,7 @@ from planta_contrato import NotaRecorrida, RespuestaOperador, Topicos
 from pydantic import ValidationError
 
 from .config import Config
+from .control import Presupuesto, RegistroConsumo
 from .deteccion.eventos import construir as construir_eventos
 from .dominio.catalogo import Catalogo
 from .estado import EstadoCompartido, RelojPlanta
@@ -56,8 +58,17 @@ class Agente:
         self.asr = ClienteAsr(config.asr_url)
         self.definicion: dict | None = None
         self._catalogo: Catalogo | None = None
+        self.consumo = RegistroConsumo(self.base)
         self.pipeline = Pipeline(
-            self.api, self.asr, self.base.guardar_transcripcion, self.salida, lambda: self.catalogo
+            self.api,
+            self.asr,
+            self.base.guardar_transcripcion,
+            self.salida,
+            lambda: self.catalogo,
+            presupuesto=Presupuesto(
+                config.presupuesto_pasos, config.presupuesto_tokens, config.timeout_nota_s
+            ),
+            registro=self.consumo,
         )
 
         self.dialogo = Dialogo(config, self.salida, self.base, lambda: self.catalogo, self.reloj)
@@ -150,7 +161,16 @@ class Agente:
             self.mqtt.acusar(e)
 
     def _worker_recuperacion(self, parar: threading.Event) -> None:
+        ultima_purga = 0.0
         while not parar.is_set():
+            if self.base.lista.is_set() and time.monotonic() - ultima_purga > 3600:
+                ultima_purga = time.monotonic()
+                try:
+                    borradas = self.base.purgar()
+                    if any(borradas.values()):
+                        log.info("retención: filas borradas %s", borradas)
+                except Exception:
+                    log.exception("falló la purga de retención")
             if self.base.lista.is_set():
                 for recuperar in self.recuperadores:
                     try:

@@ -32,6 +32,21 @@ CREATE TABLE IF NOT EXISTS mensaje_nota (
     mensaje_id text PRIMARY KEY,
     nota_id    text NOT NULL
 );
+ALTER TABLE mensaje_nota ADD COLUMN IF NOT EXISTS creado timestamptz NOT NULL DEFAULT now();
+
+-- Consumo por nota y carril (pasos, tokens, milisegundos, motivo de corte). Ver control/presupuesto.py.
+CREATE TABLE IF NOT EXISTS consumo (
+    id         bigserial PRIMARY KEY,
+    nota_id    text NOT NULL,
+    carril     text NOT NULL,
+    pasos      integer NOT NULL,
+    tokens_in  integer NOT NULL DEFAULT 0,
+    tokens_out integer NOT NULL DEFAULT 0,
+    ms         integer NOT NULL,
+    corte      text,
+    ts         timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS consumo_nota ON consumo (nota_id);
 
 -- Cola de salida (intención -> publicación -> marca). Ver persistencia/salida.py.
 CREATE TABLE IF NOT EXISTS salida (

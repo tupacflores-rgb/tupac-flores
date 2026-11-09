@@ -282,3 +282,58 @@ def test_s3_con_equipo_tambien_deja_la_fila(e):
 def test_s2_y_s4_no_muestran_filas_ni_inventan_equipo_d14(e, texto):
     assert e.nota(texto, seguridad=True) is None
     assert e.dialogo._estados["NOTA-00001"].estado is EstadoParte.sin_filas
+
+
+def _reiniciar(e1):
+    """Proceso nuevo con la misma base: no queda nada en memoria del anterior."""
+    e2 = Entorno(base=e1.base)
+    e2.salida = e1.salida  # la tablet es la misma
+    e2.dialogo._salida = e1.salida
+    e2.dialogo._mensaje_nota.clear()
+    e2.dialogo._estados.clear()
+    return e2
+
+
+def test_reinicio_con_la_pregunta_de_equipo_sin_responder():
+    e1 = Entorno()
+    q = e1.nota("La bomba está en ciento quince de descarga.")
+    assert q.pantalla.opciones == ["la uno", "la dos", "la tres"]
+    e2 = _reiniciar(e1)
+    borrador = e2.responde("Era la uno.")
+    assert vistas(borrador) == [("B-101", "presion_descarga_local", 115.0, "kg/cm2")]
+    e2.responde("Sí, confirmo.")
+    assert len(e2.confirmados) == 1
+
+
+def test_reinicio_con_el_valor_ambiguo_sin_responder():
+    e1 = Entorno()
+    e1.nota("El filtro B me dio dieciocho de diferencial, le saqué foto al manómetro.")
+    e2 = _reiniciar(e1)
+    e2.responde("Sí, confirmo.")
+    (fila,) = e2.confirmados[0].filas
+    assert fila.provisional is False
+
+
+def test_reinicio_en_el_medio_de_las_correcciones_conserva_el_conteo_de_borradores():
+    e1 = Entorno()
+    e1.nota("La dos está en mil seiscientos cuarenta y cinco psi de descarga.")
+    e1.responde(
+        "No. La dos estaba en mil seiscientos cuarenta psi, no en mil seiscientos cuarenta y cinco. Corregilo y te confirmo."
+    )
+    e2 = _reiniciar(e1)
+    est = e2.dialogo._cargar("NOTA-00001")
+    assert est.borradores == 2  # el segundo borrador sobrevivió al reinicio
+    e2.responde("Perfecto, confirmo.")
+    assert e2.confirmados[0].filas[0].valor == 1640.0
+    # y no se puede volver a confirmar: el estado ya es confirmado
+    assert e2.dialogo._cargar("NOTA-00001").estado is EstadoParte.confirmado
+
+
+def test_reinicio_despues_de_confirmar_ignora_una_confirmacion_repetida():
+    e1 = Entorno()
+    e1.nota(NOTA_CLARA)
+    ultimo = e1.salida.tablet[-1]
+    e1.responde("Sí, confirmo.")
+    e2 = _reiniciar(e1)
+    e2.responde("Sí, confirmo.", a=ultimo)
+    assert len(e1.confirmados) == 1 and e2.confirmados == []  # los eventos no se duplican
