@@ -26,6 +26,23 @@ class PlantaApi:
         r.raise_for_status()
         return r.json()
 
+    def historian(
+        self, tag: str, variable: str, desde: str | None = None, hasta: str | None = None
+    ) -> list[dict]:
+        """Historial de un sensor (una muestra por minuto)."""
+        params = {k: v for k, v in (("desde", desde), ("hasta", hasta)) if v}
+        r = self._http.get(f"/api/historian/{tag}/{variable}", params=params)
+        r.raise_for_status()
+        return r.json()
+
+    def historial_ordenes(
+        self, equipo: str | None = None, desde: str | None = None, hasta: str | None = None
+    ) -> list[dict]:
+        params = {k: v for k, v in (("equipo", equipo), ("desde", desde), ("hasta", hasta)) if v}
+        r = self._http.get("/api/historial-ordenes", params=params)
+        r.raise_for_status()
+        return r.json()
+
     def descargar(self, ruta: str, timeout_s: float = 2.0, reintentos: int = 1) -> bytes:
         """Baja el audio o una foto. Timeout corto y un reintento: el camino de seguridad no puede esperar."""
         ultimo: Exception | None = None

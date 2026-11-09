@@ -1,0 +1,40 @@
+# Repuestos y materiales. Costos unitarios en USD. Stock por almacén:
+# "yacimiento" es el almacén de la planta, "central" está en Comodoro Rivadavia (3 a 5 días).
+
+repuestos:
+  - {codigo: TX-EMP-KIT, nombre: kit de empaquetadura TX-350 (3 émbolos), unidad: kit, costo_usd: 420, stock: {yacimiento: 3, central: 12}}
+  - {codigo: TX-VAL-KIT, nombre: kit de válvulas de succión y descarga TX-350, unidad: kit, costo_usd: 1900, stock: {yacimiento: 1, central: 4}}
+  - {codigo: TX-ROD-CIG, nombre: juego de rodamientos de cigüeñal TX-350, unidad: juego, costo_usd: 2650, stock: {yacimiento: 0, central: 2}}
+  - {codigo: TX-SELLO-CAR, nombre: juego de sellos de cárter TX-350, unidad: juego, costo_usd: 310, stock: {yacimiento: 2, central: 6}}
+  - {codigo: ACE-ISO220, nombre: aceite ISO VG 220 para cárter, unidad: litro, costo_usd: 9, stock: {yacimiento: 120, central: 800}}
+  - {codigo: COR-5V-1800, nombre: correa 5V-1800, unidad: unidad, costo_usd: 65, stock: {yacimiento: 8, central: 40}}
+  - {codigo: ACO-ELAST-90, nombre: elastómero de acople tamaño 90, unidad: unidad, costo_usd: 150, stock: {yacimiento: 1, central: 5}}
+  - {codigo: FC-CART-25, nombre: cartucho filtrante 25 µm, unidad: unidad, costo_usd: 14, stock: {yacimiento: 96, central: 600}}
+  - {codigo: FC-CART-10, nombre: cartucho filtrante 10 µm, unidad: unidad, costo_usd: 17, stock: {yacimiento: 40, central: 600}}
+  - {codigo: FC-JUNTA-TAPA, nombre: junta de tapa de filtro FC-48, unidad: unidad, costo_usd: 85, stock: {yacimiento: 2, central: 10}}
+  - {codigo: INS-TRANS-P, nombre: transmisor de presión 0-250 kg/cm2, unidad: unidad, costo_usd: 980, stock: {yacimiento: 1, central: 3}}
+
+# Lista de materiales por equipo (qué repuestos le corresponden a cada uno).
+lista_materiales:
+  B-101: [TX-EMP-KIT, TX-VAL-KIT, TX-ROD-CIG, TX-SELLO-CAR, ACE-ISO220, COR-5V-1800, ACO-ELAST-90, INS-TRANS-P]
+  B-102: [TX-EMP-KIT, TX-VAL-KIT, TX-ROD-CIG, TX-SELLO-CAR, ACE-ISO220, COR-5V-1800, ACO-ELAST-90, INS-TRANS-P]
+  B-103: [TX-EMP-KIT, TX-VAL-KIT, TX-ROD-CIG, TX-SELLO-CAR, ACE-ISO220, COR-5V-1800, ACO-ELAST-90, INS-TRANS-P]
+  F-201A: [FC-CART-25, FC-JUNTA-TAPA, INS-TRANS-P]
+  F-201B: [FC-CART-10, FC-JUNTA-TAPA, INS-TRANS-P]
+
+# Catálogo de tareas estándar del plan de mantenimiento.
+tareas_estandar:
+  - {codigo: T-B-EMP, nombre: Cambio de empaquetadura, equipos: [B-101, B-102, B-103], detiene: true, horas: 4, ejecutor: propio, repuestos: [{codigo: TX-EMP-KIT, cantidad: 1}]}
+  - {codigo: T-B-VAL, nombre: Cambio de válvulas de succión y descarga, equipos: [B-101, B-102, B-103], detiene: true, horas: 6, ejecutor: propio, repuestos: [{codigo: TX-VAL-KIT, cantidad: 1}]}
+  - {codigo: T-B-ACE, nombre: Reposición de aceite del cárter, equipos: [B-101, B-102, B-103], detiene: false, horas: 0.5, ejecutor: propio, repuestos: [{codigo: ACE-ISO220, cantidad: 8}]}
+  - {codigo: T-B-COR, nombre: Cambio de correas, equipos: [B-101, B-102, B-103], detiene: true, horas: 2, ejecutor: propio, repuestos: [{codigo: COR-5V-1800, cantidad: 4}]}
+  - {codigo: T-F-CAR, nombre: Cambio de cartuchos, equipos: [F-201A], detiene: false, horas: 3, ejecutor: propio, repuestos: [{codigo: FC-CART-25, cantidad: 48}]}
+  - {codigo: T-F-CAR, nombre: Cambio de cartuchos, equipos: [F-201B], detiene: false, horas: 3, ejecutor: propio, repuestos: [{codigo: FC-CART-10, cantidad: 48}]}
+  - {codigo: T-I-CAL, nombre: Calibración de instrumento, equipos: [B-101, B-102, B-103, F-201A, F-201B, FT-401], detiene: false, horas: 1, ejecutor: propio, repuestos: []}
+
+# Tareas que no son estándar: siempre requieren aprobación del planificador.
+tareas_no_estandar:
+  - {codigo: T-B-ROD, nombre: Cambio de rodamientos del cigüeñal, detiene: true, horas: 16, ejecutor: contratista}
+  - {codigo: T-B-ALI, nombre: Alineación láser de acople, detiene: true, horas: 5, ejecutor: contratista}
+  - {codigo: I-VIB, nombre: Análisis de vibraciones con colector, detiene: false, horas: 1, ejecutor: contratista}
+  - {codigo: I-VAL, nombre: Revisión de válvulas, detiene: true, horas: 2, ejecutor: propio}
