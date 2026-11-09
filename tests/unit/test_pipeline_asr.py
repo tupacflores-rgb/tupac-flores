@@ -184,3 +184,42 @@ def test_se_rinde_tras_el_maximo_de_intentos_sin_colgar():
 @pytest.mark.parametrize("texto", [S1])
 def test_el_detector_coincide_con_lo_que_publica_el_pipeline(texto):
     assert detectar(texto, CAT).codigo == "S1"
+
+
+def _wav(segundos: float) -> bytes:
+    import io
+    import wave
+
+    b = io.BytesIO()
+    with wave.open(b, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(8000)
+        w.writeframes(b"\x00\x00" * int(8000 * segundos))
+    return b.getvalue()
+
+
+def test_la_cola_atiende_primero_la_nota_mas_corta_y_no_deja_sin_atender_a_la_larga(monkeypatch):
+    from sistema import pipeline as mod
+
+    audios = {"/larga.wav": _wav(20), "/corta.wav": _wav(5), "/media.wav": _wav(10)}
+
+    class Api:
+        def descargar(self, ruta, **_):
+            return audios[ruta]
+
+    pipe = mod.Pipeline(Api(), None, lambda *_: None, None, lambda: None)  # type: ignore[arg-type]
+    for nid, ruta in (("L", "/larga.wav"), ("C", "/corta.wav"), ("M", "/media.wav")):
+        pipe.encolar(
+            NotaRecorrida(id=nid, ts=NOTA.ts, operador="x", audio_url=ruta, fotos=[], recorrida_id="R")
+        )
+    orden = [pipe._siguiente().nota.id for _ in range(3)]
+    assert orden == ["C", "M", "L"]
+
+    # Una nota que esperó más que el tope pasa primero aunque sea larga.
+    for nid, ruta in (("L2", "/larga.wav"), ("C2", "/corta.wav")):
+        pipe.encolar(
+            NotaRecorrida(id=nid, ts=NOTA.ts, operador="x", audio_url=ruta, fotos=[], recorrida_id="R")
+        )
+    pipe._cola[0].t_recibida -= mod.ESPERA_MAX_S + 1
+    assert pipe._siguiente().nota.id == "L2"

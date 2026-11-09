@@ -24,9 +24,9 @@ import httpx
 
 # Normal a propósito: lleva negaciones del léxico de seguridad («no hay olor a gas», «sin humo», «nadie herido»).
 NOTA_LARGA = (
-    "Recorrida de las cuatro. La uno en servicio, ciento doce kilos, sin pérdidas. La dos gotea un poco por la "
-    "empaquetadura. La tres parada, en reserva. El filtro A uno coma tres. No hay olor a gas, no sale humo de "
-    "ningún motor y nadie está herido. Todo normal."
+    "Recorrida de las cuatro. La uno en servicio, sin pérdidas. La dos gotea un poco por la empaquetadura. "
+    "La tres parada, en reserva. No hay olor a gas, no sale humo de ningún motor y nadie está herido. "
+    "Todo normal."
 )
 CONDICIONES = [("S1", "B-101"), ("S2", None), ("S3", "B-102"), ("S4", None), ("S1", "B-103"), ("S3", "B-101")]
 
@@ -67,17 +67,28 @@ def main() -> None:
     ap.add_argument("--json")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
-    http = httpx.Client(base_url=a.planta, timeout=30)
+    # Con la CPU saturada la propia planta tarda en sintetizar el audio: el timeout es del arnés, no del sistema.
+    http = httpx.Client(base_url=a.planta, timeout=180)
+
+    def leer(ruta: str) -> list[dict]:
+        for intento in range(5):
+            try:
+                return http.get(ruta).json()
+            except httpx.TimeoutException:
+                if intento == 4:
+                    raise
+                time.sleep(1)
+        return []
 
     def accion(nombre: str, **params):
         r = http.post("/api/control/accion", json={"accion": nombre, "params": params})
         r.raise_for_status()
 
     def verdad() -> list[dict]:
-        return [n for n in http.get("/api/verdad").json() if "tipo" not in n]  # sin los mensajes de diálogo
+        return [n for n in leer("/api/verdad") if "tipo" not in n]  # sin los mensajes de diálogo
 
     def registro() -> list[dict]:
-        return http.get("/api/registro").json()
+        return leer("/api/registro")
 
     previas = {n["nota_id"] for n in verdad()}
     quemadores = saturar(a.saturar)

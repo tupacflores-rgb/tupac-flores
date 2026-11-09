@@ -6,10 +6,11 @@ una condición insegura es descarga + transcripción + léxico + publicación (P
 
 from __future__ import annotations
 
+import io
 import logging
-import queue
 import threading
 import time
+import wave
 from collections.abc import Callable
 
 from planta_contrato import NotaRecorrida
@@ -22,6 +23,29 @@ from .integraciones.planta_api import PlantaApi
 from .persistencia.salida import Salida
 
 log = logging.getLogger("sistema.pipeline")
+
+# Una nota que espera más que esto pasa primero aunque sea larga: la prioridad por duración no puede dejar sin
+# atender a una nota normal.
+ESPERA_MAX_S = 90.0
+
+
+def duracion_wav(audio: bytes) -> float:
+    """Segundos de un WAV a partir de su cabecera; infinito si no se puede leer (va al final de la cola)."""
+    try:
+        with wave.open(io.BytesIO(audio)) as w:
+            return w.getnframes() / float(w.getframerate())
+    except (wave.Error, EOFError, ZeroDivisionError):
+        return float("inf")
+
+
+class _Pendiente:
+    __slots__ = ("nota", "intento", "t_recibida", "audio", "duracion")
+
+    def __init__(self, nota: NotaRecorrida, intento: int, t_recibida: float):
+        self.nota, self.intento, self.t_recibida = nota, intento, t_recibida
+        self.audio: bytes | None = None
+        self.duracion: float | None = None
+
 
 Posterior = Callable[[NotaRecorrida, str, Deteccion | None], None]
 
@@ -44,40 +68,78 @@ class Pipeline:
         self._catalogo = catalogo
         self.posterior = posterior
         self._max_intentos = max_intentos
-        self._cola: queue.Queue[tuple[NotaRecorrida, int, float]] = queue.Queue()
+        self._cola: list[_Pendiente] = []
+        self._cv = threading.Condition()
 
     def encolar(self, nota: NotaRecorrida) -> None:
-        self._cola.put((nota, 1, time.monotonic()))
+        with self._cv:
+            self._cola.append(_Pendiente(nota, 1, time.monotonic()))
+            self._cv.notify()
 
     def pendientes(self) -> int:
-        return self._cola.qsize()
+        with self._cv:
+            return len(self._cola)
+
+    def _siguiente(self, espera_s: float = 0.5) -> _Pendiente | None:
+        """La nota más corta de la cola (las inseguras se dictan cortas), salvo que una lleve más de
+        ESPERA_MAX_S esperando. Bajar el audio es barato (LAN, <0,1 s) y da la duración sin transcribir."""
+        with self._cv:
+            if not self._cola and not self._cv.wait(timeout=espera_s):
+                return None
+            if not self._cola:
+                return None
+            copia = list(self._cola)
+        for p in copia:
+            if p.duracion is None:
+                try:
+                    p.audio = self._api.descargar(p.nota.audio_url) if p.nota.audio_url else b""
+                    p.duracion = duracion_wav(p.audio) if p.audio else 0.0
+                except Exception as e:  # sin audio bajado se atiende en orden de llegada
+                    log.warning("no se pudo bajar el audio de %s para ordenar la cola: %s", p.nota.id, e)
+                    p.duracion = float("inf")
+        ahora = time.monotonic()
+        viejas = [p for p in copia if ahora - p.t_recibida > ESPERA_MAX_S]
+        elegida = viejas[0] if viejas else min(copia, key=lambda p: (p.duracion, p.t_recibida))
+        with self._cv:
+            try:
+                self._cola.remove(elegida)
+            except ValueError:
+                return None
+        return elegida
 
     def correr(self, parar: threading.Event) -> None:
         while not parar.is_set():
-            try:
-                nota, intento, t_recibida = self._cola.get(timeout=0.5)
-            except queue.Empty:
+            p = self._siguiente()
+            if p is None:
                 continue
+            nota, intento, t_recibida = p.nota, p.intento, p.t_recibida
             try:
-                self.atender(nota, t_recibida)
+                self.atender(nota, t_recibida, p.audio)
             except Exception as e:
                 if intento >= self._max_intentos:
                     log.error("nota %s sin procesar tras %d intentos: %s", nota.id, intento, e)
                     continue
                 log.warning("nota %s: intento %d fallido (%s); se reintenta", nota.id, intento, e)
                 parar.wait(min(2.0 * intento, 10.0))
-                self._cola.put((nota, intento + 1, t_recibida))
+                with self._cv:
+                    reintento = _Pendiente(nota, intento + 1, t_recibida)
+                    reintento.audio, reintento.duracion = p.audio, p.duracion
+                    self._cola.append(reintento)
+                    self._cv.notify()
 
-    def atender(self, nota: NotaRecorrida, t_recibida: float | None = None) -> None:
+    def atender(
+        self, nota: NotaRecorrida, t_recibida: float | None = None, audio: bytes | None = None
+    ) -> None:
         t0 = t_recibida if t_recibida is not None else time.monotonic()
-        texto = self.transcribir(nota)
+        texto = self.transcribir(nota, audio)
         self.procesar_texto(nota, texto, t0)
 
-    def transcribir(self, nota: NotaRecorrida) -> str:
+    def transcribir(self, nota: NotaRecorrida, audio: bytes | None = None) -> str:
         if not nota.audio_url:
             return ""
         t = time.monotonic()
-        audio = self._api.descargar(nota.audio_url)
+        if not audio:
+            audio = self._api.descargar(nota.audio_url)
         t_descarga = time.monotonic() - t
         r = self._asr.transcribir(audio)
         log.info(

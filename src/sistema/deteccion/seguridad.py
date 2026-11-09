@@ -45,7 +45,8 @@ PATRONES: dict[str, list[re.Pattern[str]]] = {
     "S3": [
         re.compile(r"\b(sale|salen|hay|sale mucho|sube) humo\b"),
         re.compile(r"\bhumo (del|de la|en el|en la|negro|blanco)\b"),
-        re.compile(r"\bolor a quemado\b"),
+        re.compile(r"\bolor(?:es)? (?:a )?quemad[oa]s?\b"),
+        re.compile(r"\bsale (?:uno|como|un modo) del motor\b"),  # «sale humo» mal oído por el ASR
         re.compile(r"\b(incendio|llamas|se prendio fuego|principio de fuego|fuego en)\b"),
     ],
     "S4": [
@@ -91,7 +92,7 @@ _COLGANTES = {"sin", "ni", "ningun", "ninguna", "nada", "nadie"}
 
 # Error medido del ASR sobre «olor a gas»: «Hay hólogas fuertes» (todo pegado) y variantes sin la «a».
 # Se repara antes de buscar frases; «gas» tiene que ser palabra completa, así que «hologramas» no entra.
-_OLOR_A_GAS = re.compile(r"\b(?:h?olor ?(?:a |al )?|h?olora ?|h?olo ?)gas(?:es)?\b")
+_OLOR_A_GAS = re.compile(r"\b(?:h?olor ?(?:a |al )?|h?olora ?|h?olo ?)h?[ao]?gas(?:es)?\b")
 
 
 def _negacion_colgante(oracion: str) -> bool:

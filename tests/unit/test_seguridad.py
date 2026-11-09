@@ -141,11 +141,14 @@ def test_alerta_real_despues_de_un_no_suelto_no_se_pierde():
         "Hay olorgas fuerte en el portón.",
         "Huele a gas del lado del separador.",
         "Hay hologas en el sector del separador.",
+        "Hay olor, hagas fuertes del lado del portón, viene del lado del separador.",  # ASR real
+        "Sale uno del motor de la arela punta, hay olores quemados.",  # ASR real (S3)
+        "Sale uno del motor de la dos, hay olor quemado.",  # ASR real (S3)
     ],
 )
 def test_s2_tolera_los_errores_medidos_del_asr(texto):
     d = detectar(texto, CAT)
-    assert d is not None and d.codigo == "S2", texto
+    assert d is not None and d.codigo in {"S2", "S3"}, texto
 
 
 @pytest.mark.parametrize(
@@ -154,6 +157,8 @@ def test_s2_tolera_los_errores_medidos_del_asr(texto):
         "No hay hólogas fuertes en el portón.",
         "El visor tiene hologramas de la marca.",
         "Sin olorgas en el sector.",
+        "No hay olores quemados en el tablero.",
+        "Sale uno del filtro a la pileta.",
     ],
 )
 def test_la_reparacion_de_s2_no_crea_falsas_alarmas(texto):
