@@ -188,7 +188,7 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
   arreglos salieron 88,8, 88,0 y 86,8, y las cuatro corridas finales dieron 88,8.
 - **Puerta interna de 15 s no cumplida** (p99 19,3 s en el peor caso con carga al tope); causa: un trabajo del ASR en curso no
   se interrumpe.
-- **Lista cerrada de modelos:** modelos locales de libre elección según aclaración verbal de Novit; confirmación por escrito pendiente (BL-5).
+- **Lista cerrada de modelos:** Modelos locales de libre elección según aclaración de Novit, confirmada por el usuario el 09/11/2026.
 - **Fotos:** se descargan a un volumen con sha256 y quedan asociadas a su fila; si la descarga falla queda la URL pendiente y se reintenta. No se analizan (Entrega 2).
 - **Códigos de falla del fabricante → F01–F10:** la tabla `MBP-4 §6.1` se **extrae del corpus indexado** (no está escrita a mano) y la tool `traducir_codigo` (solo lectura, Pydantic estricto, también por MCP) traduce `TX-T07`↔`F09` con sus citas (MBP-4 §6.1/§6.x y el manual vigente). Un código del manual sin correspondencia en la tabla (p. ej. `TX-T09`) se informa sin inventar una.
 - **Context builder:** solo mencionado; falta el documento de diseño.
