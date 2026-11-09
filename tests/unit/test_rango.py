@@ -214,3 +214,13 @@ def test_a_uno_al_comienzo_ya_no_pierde_el_tramo_de_la_bomba():
 def test_decena_con_la_p_de_psi_pegada_se_lee_bien():
     ext = extraer("Este, la del medio está en mil seiscientos diezp psi de descarga.", CAT)
     assert [(f.tag, f.valor, f.unidad) for f in ext.filas] == [("B-102", 1610.0, "psi")]
+
+
+def test_el_frito_a_es_el_filtro_a_pero_foto_y_falta_siguen_siendo_otra_cosa():
+    ext = extraer(
+        "Ambienta bomba, está en mil seiscientos psi de descarga, el frito a medio uno coma tres de diferencial.",
+        CAT,
+    )
+    assert ("F-201A", "presion_diferencial", 1.3) in [(f.tag, f.variable, f.valor) for f in ext.filas]
+    sin = extraer("Le saqué una foto a la uno que está en ciento doce kilos de descarga.", CAT)
+    assert [f.tag for f in sin.filas] == ["B-101"]

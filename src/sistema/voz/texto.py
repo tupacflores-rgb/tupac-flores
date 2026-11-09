@@ -25,6 +25,9 @@ def normalizar(t: str) -> str:
 
 _FILTRO_MAL_DICHO = re.compile(r"\b(f[a-z]{2,6}) ([ab])\b")
 _NO_ES_FILTRO = {"foto", "fotos", "fuga", "fuera", "falta", "fue", "fino", "fina"}
+# Confusiones medidas a más de 2 letras de «filtro» («el frito a medio…»): se aceptan por nombre, no con
+# una tolerancia mayor, que dejaría pasar «foto» o «falta».
+_CONFUNDIDOS_CON_FILTRO = {"frito", "fritro"}
 _LETRA_NUMERO = re.compile(r"\b(?:el|en el|en) a([123])\b")
 
 
@@ -58,7 +61,9 @@ def reparar_asr(t: str) -> str:
 
     def filtro(m: re.Match[str]) -> str:
         palabra = m.group(1)
-        if palabra not in _NO_ES_FILTRO and distancia_de_edicion(palabra, "filtro") <= 2:
+        if palabra not in _NO_ES_FILTRO and (
+            palabra in _CONFUNDIDOS_CON_FILTRO or distancia_de_edicion(palabra, "filtro") <= 2
+        ):
             return f"filtro {m.group(2)}"
         return m.group(0)
 
