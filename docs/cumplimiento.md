@@ -39,7 +39,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 | Tablet: borrador en `pantalla.filas`, con opciones cuando hay que elegir | ✅ | `tests/unit/test_dialogo.py`; corrector A2/A3 |
 | Entiende respuestas «como se habla en campo» y reenvía el borrador corregido | ✅ | `src/sistema/voz/respuestas.py`; `tests/unit/test_parser_respuestas.py` |
 | El parte pasa de Borrador a Confirmado | ✅ | `EstadoParte`; `test_confirmacion_manda_aviso_guardado…` |
-| Notas `VIVO-…`: sin parte esperado, pueden no traer nada | 🟡 | Sin tratamiento ni test específico: una nota sin equipos ni valores termina en `sin_filas` sin romper nada (`test_nota_sin_equipos_avisa_sin_inventar_filas`). No se probó con un audio `VIVO-` real |
+| Notas `VIVO-…`: sin parte esperado, pueden no traer nada | ✅ | `voz/dialogo.py::es_nota_vivo`: una nota `VIVO-` no tiene parte esperado; si no saca filas, aviso con `espera_respuesta=false` (no pide repetir, no gasta el LLM) y queda `sin_filas`; con contenido se trata como una nota normal. `tests/unit/test_vivo.py`. No se probó con un audio `VIVO-` real (el simulador no los emite) |
 
 ## B · Detección en planta (en código, sin LLM)
 

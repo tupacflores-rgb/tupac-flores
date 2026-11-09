@@ -79,6 +79,15 @@ class Estado:
         return any(f.valor is not None for f in self.filas)
 
 
+PREFIJO_VIVO = "VIVO-"
+
+
+def es_nota_vivo(nota_id: str) -> bool:
+    """Las notas `VIVO-…` las dicta un operador real en la prueba en vivo: no tienen parte esperado y pueden
+    no traer nada que reportar."""
+    return str(nota_id).upper().startswith(PREFIJO_VIVO)
+
+
 class Dialogo:
     def __init__(
         self,
@@ -169,9 +178,17 @@ class Dialogo:
         if deteccion is not None:
             self._nota_insegura(est, texto, deteccion, cat, nota.fotos)
             return
+        vivo = es_nota_vivo(nota.id)
         ext = extraer(texto, cat, nota.fotos)
         est.filas, est.ambiguedades_valor = ext.filas, ext.ambiguedades_valor
-        self._completar_con_respaldo(est, ext, texto, cat)
+        if not vivo:  # una nota VIVO- no tiene parte esperado: no se gasta el LLM en ella
+            self._completar_con_respaldo(est, ext, texto, cat)
+        if vivo and not est.filas:
+            # Nada que reportar: se avisa y se cierra. Nunca se le pide al operador que repita una nota
+            # que no tenía parte esperado, y nunca se espera una respuesta.
+            est.estado = EstadoParte.sin_filas
+            self._enviar(est, "Recibí tu nota. No hay nada que reportar en el parte.", espera=False)
+            return
         if not est.filas and menciona_algo(texto, cat):
             # Nunca una nota que habla de equipos o variables sin respuesta por una falla del parser.
             log.warning("nota %s: habla de equipos o variables y no se sacaron filas", nota.id)
