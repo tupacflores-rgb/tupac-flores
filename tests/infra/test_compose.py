@@ -28,7 +28,7 @@ def _limites(servicio: dict) -> dict:
 
 
 def test_hay_servicios_de_planta():
-    assert {"agente", "db", "asr"} <= set(SERVICIOS)
+    assert {"agente", "db", "asr", "emb"} <= set(SERVICIOS)
 
 
 def test_red_planta_lan_externa():
@@ -106,3 +106,11 @@ def test_el_modelo_viene_en_la_imagen_con_revision_y_hash_fijos():
     assert re.search(r"ARG MODELO_REV=[0-9a-f]{40}", dockerfile)
     assert re.search(r"ARG MODELO_SHA256=[0-9a-f]{64}", dockerfile)
     assert "HF_HUB_OFFLINE=1" in dockerfile
+
+
+def test_emb_con_cuota_propia_y_la_suma_de_cpu_cabe_en_la_planta():
+    """El servicio de embeddings tiene 0,5 CPU y, con el ASR a 2,0, la suma sigue dentro de los 4 de la planta."""
+    assert float(_limites(SERVICIOS["emb"])["cpus"]) == 0.5
+    assert _memoria_gb(_limites(SERVICIOS["emb"])["memory"]) == 1.0
+    assert sum(float(_limites(s)["cpus"]) for s in SERVICIOS.values()) <= LIMITE_CPU
+    assert sum(_memoria_gb(_limites(s)["memory"]) for s in SERVICIOS.values()) <= LIMITE_MEM_GB

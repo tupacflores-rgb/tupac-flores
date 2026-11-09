@@ -23,8 +23,8 @@ x-proxy: &proxy
   HTTPS_PROXY: http://enlace:3128
   http_proxy: http://enlace:3128
   https_proxy: http://enlace:3128
-  NO_PROXY: broker,sim,db,asr,localhost,127.0.0.1
-  no_proxy: broker,sim,db,asr,localhost,127.0.0.1
+  NO_PROXY: broker,sim,db,asr,emb,localhost,127.0.0.1
+  no_proxy: broker,sim,db,asr,emb,localhost,127.0.0.1
 
 services:
   agente:
@@ -41,6 +41,7 @@ services:
       PLANTA_URL: http://sim:8100
       DATABASE_URL: postgresql://sistema:${POSTGRES_PASSWORD:-sistema}@db:5432/sistema
       ASR_URL: http://asr:8000
+      EMB_URL: http://emb:8000
       CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-true}
     volumes:
       - agente-journal:/var/lib/sistema/journal
@@ -76,6 +77,32 @@ services:
       resources:
         # 2 carriles (seguridad y completa) de 1 hilo cada uno corriendo a la vez con el mismo modelo.
         limits: {cpus: "2.0", memory: 2g}
+
+  # Embeddings (multilingual-e5-small, ONNX) y búsqueda densa en pgvector. Los pasajes se calculan en el build.
+  emb:
+    <<: *planta
+    build:
+      context: .
+      dockerfile: docker/emb.Dockerfile
+    environment:
+      <<: *proxy
+      DATABASE_URL: postgresql://sistema:${POSTGRES_PASSWORD:-sistema}@db:5432/sistema
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request as u,sys; sys.exit(0 if u.build_opener(u.ProxyHandler({})).open('http://localhost:8000/salud', timeout=3).status == 200 else 1)"
+      interval: 3s
+      timeout: 4s
+      retries: 60
+      start_period: 15s
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 1g}
 
   db:
     <<: *planta
