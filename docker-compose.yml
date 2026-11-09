@@ -38,15 +38,41 @@ services:
       MQTT_HOST: broker
       PLANTA_URL: http://sim:8100
       DATABASE_URL: postgresql://sistema:${POSTGRES_PASSWORD:-sistema}@db:5432/sistema
+      ASR_URL: http://asr:8000
       CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-true}
     volumes:
       - agente-journal:/var/lib/sistema/journal
     depends_on:
       db:
         condition: service_healthy
+      asr:
+        condition: service_healthy
     deploy:
       resources:
         limits: {cpus: "0.5", memory: 1g}
+
+  # Transcripción local en su propio contenedor, con cuota propia: no le quita CPU al agente ni al latido
+  # y protege los 30 s de la alerta de seguridad. El modelo viene dentro de la imagen (sin descargas en runtime).
+  asr:
+    <<: *planta
+    build:
+      context: .
+      dockerfile: docker/asr.Dockerfile
+    environment:
+      <<: *proxy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request as u,sys; sys.exit(0 if u.build_opener(u.ProxyHandler({})).open('http://localhost:8000/salud', timeout=3).status == 200 else 1)"
+      interval: 3s
+      timeout: 4s
+      retries: 60
+      start_period: 20s
+    deploy:
+      resources:
+        limits: {cpus: "1.5", memory: 1536m}
 
   db:
     <<: *planta

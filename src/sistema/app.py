@@ -23,7 +23,9 @@ from planta_contrato import NotaRecorrida, RespuestaOperador, Topicos
 from pydantic import ValidationError
 
 from .config import Config
+from .dominio.catalogo import Catalogo
 from .estado import EstadoCompartido, RelojPlanta
+from .integraciones.asr import ClienteAsr
 from .integraciones.enlace import enlace_arriba
 from .integraciones.mqtt import ClienteMqtt, Entrante
 from .integraciones.planta_api import PlantaApi
@@ -31,6 +33,7 @@ from .latido import Latido
 from .persistencia.base import Base
 from .persistencia.journal import Journal
 from .persistencia.salida import Salida
+from .pipeline import Pipeline
 from .supervisor import Supervisor
 
 log = logging.getLogger("sistema.app")
@@ -47,14 +50,19 @@ class Agente:
         self.base = Base(config.database_url)
         self.journal = Journal(config.journal_dir)
         self.salida = Salida(self.base, self.journal, lambda t, m: self.mqtt.publicar(t, m, qos=1))
+        self.asr = ClienteAsr(config.asr_url)
         self.definicion: dict | None = None
+        self._catalogo: Catalogo | None = None
+        self.pipeline = Pipeline(
+            self.api, self.asr, self.base.guardar_transcripcion, self.salida, lambda: self.catalogo
+        )
 
         # Ganchos que completan las etapas siguientes (seguridad, voz, diálogo).
-        self.al_recibir_nota: Callable[[NotaRecorrida], None] = lambda n: log.info("nota %s recibida", n.id)
+        self.al_recibir_nota: Callable[[NotaRecorrida], None] = self.pipeline.encolar
         self.al_recibir_respuesta: Callable[[RespuestaOperador], None] = lambda r: log.info(
             "respuesta %s", r.id
         )
-        self.componentes_listos: list[Callable[[], bool]] = []
+        self.componentes_listos: list[Callable[[], bool]] = [self.asr.listo]
         self.recuperadores: list[Callable[[], None]] = []
 
         self.latido = Latido(
@@ -64,6 +72,12 @@ class Agente:
             reloj=self.reloj,
             listo=self.listo,
         )
+
+    @property
+    def catalogo(self) -> Catalogo | None:
+        if self._catalogo is None and self.definicion is not None:
+            self._catalogo = Catalogo(self.definicion)
+        return self._catalogo
 
     # -- estado de arranque -------------------------------------------------------------------------
 
@@ -224,6 +238,7 @@ class Agente:
         self.sup.lanzar("reloj", self._worker_reloj)
         self.sup.lanzar("enlace", self._worker_enlace)
         self.sup.lanzar("entrada", self._worker_entrada)
+        self.sup.lanzar("pipeline", self.pipeline.correr)
         self.sup.lanzar("recuperacion", self._worker_recuperacion)
         self.sup.parar.wait()
         self.sup.detener()

@@ -28,7 +28,7 @@ def _limites(servicio: dict) -> dict:
 
 
 def test_hay_servicios_de_planta():
-    assert {"agente", "db"} <= set(SERVICIOS)
+    assert {"agente", "db", "asr"} <= set(SERVICIOS)
 
 
 def test_red_planta_lan_externa():
@@ -56,7 +56,7 @@ def test_servicio_no_publica_puertos(nombre):
     assert "ports" not in SERVICIOS[nombre]
 
 
-@pytest.mark.parametrize("nombre", ["agente"])
+@pytest.mark.parametrize("nombre", ["agente", "asr"])
 def test_proxy_de_salida_por_el_enlace(nombre):
     env = SERVICIOS[nombre]["environment"]
     for clave in ("HTTP_PROXY", "HTTPS_PROXY"):
@@ -89,3 +89,20 @@ def test_base_de_datos_es_postgres16_con_pgvector():
 def test_db_tiene_healthcheck_y_el_agente_la_espera():
     assert "healthcheck" in SERVICIOS["db"]
     assert SERVICIOS["agente"]["depends_on"]["db"]["condition"] == "service_healthy"
+
+
+def test_asr_en_su_propio_servicio_con_cuota_propia():
+    """El ASR no comparte los 0,5 CPU del agente: protege los 30 s de la alerta de seguridad (B2)."""
+    limites = _limites(SERVICIOS["asr"])
+    assert float(limites["cpus"]) == 1.5
+    assert _memoria_gb(limites["memory"]) == 1.5
+    assert float(_limites(SERVICIOS["agente"])["cpus"]) == 0.5
+    assert SERVICIOS["agente"]["depends_on"]["asr"]["condition"] == "service_healthy"
+    assert "healthcheck" in SERVICIOS["asr"]
+
+
+def test_el_modelo_viene_en_la_imagen_con_revision_y_hash_fijos():
+    dockerfile = (RAIZ / "docker" / "asr.Dockerfile").read_text(encoding="utf-8")
+    assert re.search(r"ARG MODELO_REV=[0-9a-f]{40}", dockerfile)
+    assert re.search(r"ARG MODELO_SHA256=[0-9a-f]{64}", dockerfile)
+    assert "HF_HUB_OFFLINE=1" in dockerfile

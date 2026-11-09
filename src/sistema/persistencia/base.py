@@ -90,6 +90,11 @@ class Base:
         )
         return [(i, t, p) for i, t, p in filas]
 
+    def guardar_transcripcion(self, nota_id: str, texto: str) -> None:
+        self.ejecutar(
+            "UPDATE nota SET transcripcion = %s, estado = 'transcripta' WHERE nota_id = %s", (texto, nota_id)
+        )
+
     def registrar_respuesta(self, resp_id: str, mensaje_id: str, ts: datetime, texto: str) -> bool:
         filas = self.ejecutar(
             "INSERT INTO respuesta (id, mensaje_id, ts, texto) VALUES (%s, %s, %s, %s) "
