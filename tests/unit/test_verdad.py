@@ -149,3 +149,44 @@ def test_lee_una_corrida_y_guarda_el_informe(tmp_path, capsys):
 def test_sin_origen_es_un_error():
     with pytest.raises(SystemExit):
         v.main([])
+
+
+def _con_tiempos():
+    verdad = [{**nota("N1", [fila()]), "ts_real": "2026-01-01T00:00:00+00:00"}]
+    verdad.append({**nota("N2", [], seg="S1"), "ts_real": "2026-01-01T00:01:00+00:00"})
+    reg = [
+        {**tablet("1", "N1", [fila()]), "ts_real": "2026-01-01T00:00:09+00:00"},
+        {
+            "topico": "sistema/eventos",
+            "valido": True,
+            "ts_real": "2026-01-01T00:00:15+00:00",
+            "payload": {"tipo": "SinNovedad", "nota_ids": ["N1"]},
+        },
+        {**alerta("N2"), "ts_real": "2026-01-01T00:01:04.5+00:00"},
+    ]
+    return verdad, reg
+
+
+def test_latencia_hasta_borrador_confirmacion_y_alerta():
+    verdad, reg = _con_tiempos()
+    n1, n2 = v.evaluar("e", verdad, reg)["notas"]
+    assert n1["latencia"] == {"borrador_s": 9.0, "confirmacion_s": 15.0, "alerta_s": None}
+    assert n2["latencia"]["alerta_s"] == 4.5 and n2["latencia"]["borrador_s"] is None
+
+
+def test_el_informe_trae_latencia_y_costo_cero_en_la_nube():
+    verdad, reg = _con_tiempos()
+    texto = v.informe([v.evaluar("e", verdad, reg)], "x")
+    assert "hasta el primer borrador | 1 | 9.0" in texto and "USD 0.00" in texto
+
+
+def test_tokens_por_tarea_desde_el_export_de_consumo():
+    filas = [
+        {"carril": "llm", "tokens_in": 690, "tokens_out": 60, "ms": 28000},
+        {"carril": "llm", "tokens_in": 700, "tokens_out": 80, "ms": 30000},
+        {"carril": "seguridad", "tokens_in": 0, "tokens_out": 0, "ms": 4000},
+    ]
+    c = v.consumo_por_tarea(filas)
+    assert c["llm"] == {"llamadas": 2, "tokens_in": 1390, "tokens_out": 140, "ms": 58000}
+    assert "`llm`: 2 llamadas · 1390 tokens de entrada" in v.informe([], "x", c)
+    assert v.consumo_por_tarea([]) == {}

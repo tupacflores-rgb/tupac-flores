@@ -110,6 +110,27 @@
    "confirmados": 10,
    "con_problemas": 0
   },
+  "latencia": {
+   "borrador_s": {
+    "n": 13,
+    "p50": 8.97,
+    "max": 18.6,
+    "media": 9.81
+   },
+   "confirmacion_s": {
+    "n": 10,
+    "p50": 13.6,
+    "max": 26.07,
+    "media": 14.98
+   },
+   "alerta_s": {
+    "n": 1,
+    "p50": 4.52,
+    "max": 4.52,
+    "media": 4.52
+   }
+  },
+  "costo_usd_nube": 0.0,
   "seguridad": {
    "inseguras": 1,
    "alertas_emitidas": 1,
@@ -117,6 +138,7 @@
    "falsos_positivos": []
   }
  },
+ "consumo": {},
  "escenarios": [
   {
    "escenario": "fuga-sin-enlace",
@@ -175,7 +197,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 10.61,
+      "confirmacion_s": null,
+      "alerta_s": 4.52
+     }
     },
     {
      "nota": "NOTA-00006",
@@ -231,7 +258,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 8.84,
+      "confirmacion_s": null,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00004",
@@ -287,7 +319,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 4.52,
+      "confirmacion_s": 11.32,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00005",
@@ -343,7 +380,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 8.06,
+      "confirmacion_s": 10.57,
+      "alerta_s": null
+     }
     }
    ],
    "dialogos": {
@@ -409,7 +451,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 9.24,
+      "confirmacion_s": 19.62,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00003",
@@ -465,7 +512,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 13.9,
+      "confirmacion_s": 17.1,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00005",
@@ -521,7 +573,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 7.29,
+      "confirmacion_s": 13.19,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00008",
@@ -577,7 +634,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 17.13,
+      "confirmacion_s": null,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00007",
@@ -633,7 +695,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 5.74,
+      "confirmacion_s": 14.01,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00006",
@@ -689,7 +756,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 9.08,
+      "confirmacion_s": 12.07,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00010",
@@ -745,7 +817,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 8.97,
+      "confirmacion_s": 15.64,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00011",
@@ -801,7 +878,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 18.6,
+      "confirmacion_s": 26.07,
+      "alerta_s": null
+     }
     },
     {
      "nota": "NOTA-00013",
@@ -857,7 +939,12 @@
       "faltan": [],
       "sobran": []
      },
-     "vacia": false
+     "vacia": false,
+     "latencia": {
+      "borrador_s": 5.52,
+      "confirmacion_s": 10.2,
+      "alerta_s": null
+     }
     }
    ],
    "dialogos": {

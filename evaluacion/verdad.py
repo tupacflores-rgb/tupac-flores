@@ -18,6 +18,10 @@ Qué reporta (solo stdlib):
     las notas **ambiguas** (la verdad marca una ambigüedad) de las **claras**.
   - Seguridad: alertas emitidas contra notas inseguras (falsos negativos) y alertas sobre notas sin condición
     insegura (falsos positivos).
+  - Costo (USD en la nube, siempre 0: todo es local) y tokens por tarea, si se pasa `--consumo` con un export de
+    la tabla `consumo` (`psql -c "\\copy (select …) to …"` o `select json_agg(c) from consumo c`).
+  - Latencia por nota, en segundos reales desde que sale: hasta el primer borrador, hasta la confirmación y, en
+    las notas inseguras, hasta la alerta.
   - Las notas `VIVO-` no tienen parte esperado y no entran en las cuentas.
 """
 
@@ -27,9 +31,11 @@ import argparse
 import json
 import math
 import os
+import statistics
 import sys
 import urllib.request
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 CAMPOS = ("fila", "valor", "unidad", "observacion")
@@ -92,6 +98,45 @@ def _tablet(registro: list[dict], nota_id: str) -> list[dict]:
 
 def _filas(msg: dict) -> list[dict]:
     return (msg.get("pantalla") or {}).get("filas") or []
+
+
+def _s(desde: str | None, hasta: str | None) -> float | None:
+    if not desde or not hasta:
+        return None
+    return round((datetime.fromisoformat(hasta) - datetime.fromisoformat(desde)).total_seconds(), 2)
+
+
+def latencias(v: dict, registro: list[dict], msgs: list[dict]) -> dict:
+    """Segundos reales desde que sale la nota (`ts_real` de la verdad) hasta cada hito del sistema.
+
+    - `borrador`: primer mensaje de tablet con filas.
+    - `confirmacion`: primer evento del parte (SinNovedad/Escalado), que sale cuando el operador confirma;
+      incluye lo que tarda el operador virtual en contestar.
+    - `alerta`: AlertaSeguridad de esa nota (solo notas inseguras).
+    """
+    sale = v.get("ts_real")
+    ts_reg = {
+        id(m): r["ts_real"] for r in registro if r.get("ts_real") and (m := r.get("payload")) is not None
+    }
+    borradores = [ts_reg[id(m)] for m in msgs if _filas(m) and id(m) in ts_reg]
+    eventos = [
+        r
+        for r in registro
+        if r.get("topico") == "sistema/eventos"
+        and r.get("valido")
+        and v["nota_id"] in r["payload"].get("nota_ids", [])
+    ]
+    parte = [
+        r["ts_real"] for r in eventos if r.get("ts_real") and r["payload"].get("tipo") != "AlertaSeguridad"
+    ]
+    alertas = [
+        r["ts_real"] for r in eventos if r.get("ts_real") and r["payload"].get("tipo") == "AlertaSeguridad"
+    ]
+    return {
+        "borrador_s": _s(sale, min(borradores)) if borradores else None,
+        "confirmacion_s": _s(sale, min(parte)) if parte else None,
+        "alerta_s": _s(sale, min(alertas)) if alertas else None,
+    }
 
 
 def comparar_filas(esperadas: list[dict], mostradas: list[dict]) -> dict:
@@ -161,6 +206,7 @@ def evaluar(escenario: str, verdad: list[dict], registro: list[dict]) -> dict:
                 "primero": comparar_filas(esperadas, _filas(borradores[0])) if borradores else None,
                 "ultimo": comparar_filas(esperadas, _filas(borradores[-1])) if borradores else None,
                 "vacia": not esperadas,
+                "latencia": latencias(v, registro, msgs),
             }
         )
     return {
@@ -197,6 +243,32 @@ def _pct(par) -> str:
     return f"{a}/{t} ({a / t:.1%})" if t else "—"
 
 
+def _estadisticas(xs: list[float]) -> dict:
+    if not xs:
+        return {"n": 0}
+    xs = sorted(xs)
+    return {
+        "n": len(xs),
+        "p50": round(statistics.median(xs), 2),
+        "max": xs[-1],
+        "media": round(statistics.mean(xs), 2),
+    }
+
+
+def consumo_por_tarea(filas: list[dict]) -> dict:
+    """Tokens locales por tarea (carril de `consumo`: seguridad, completa, llm…). Sin filas: None."""
+    if not filas:
+        return {}
+    por: dict[str, dict] = {}
+    for f in filas:
+        c = por.setdefault(f["carril"], {"llamadas": 0, "tokens_in": 0, "tokens_out": 0, "ms": 0})
+        c["llamadas"] += 1
+        c["tokens_in"] += int(f.get("tokens_in", 0))
+        c["tokens_out"] += int(f.get("tokens_out", 0))
+        c["ms"] += int(f.get("ms", 0))
+    return por
+
+
 def resumir(evaluaciones: list[dict]) -> dict:
     notas = [n for e in evaluaciones for n in e["notas"]]
     con_parte = [n for n in notas if n["esperadas"]]
@@ -226,6 +298,11 @@ def resumir(evaluaciones: list[dict]) -> dict:
         "dialogos": {
             k: sum(e["dialogos"][k] for e in evaluaciones) for k in ("total", "confirmados", "con_problemas")
         },
+        "latencia": {
+            k: _estadisticas([n["latencia"][k] for n in notas if n["latencia"][k] is not None])
+            for k in ("borrador_s", "confirmacion_s", "alerta_s")
+        },
+        "costo_usd_nube": 0.0,
         "seguridad": {
             "inseguras": len(inseguras),
             "alertas_emitidas": sum(1 for n in inseguras if n["alerta"]),
@@ -235,7 +312,7 @@ def resumir(evaluaciones: list[dict]) -> dict:
     }
 
 
-def informe(evaluaciones: list[dict], origen: str) -> str:
+def informe(evaluaciones: list[dict], origen: str, consumo: dict | None = None) -> str:
     r = resumir(evaluaciones)
     L = [
         "# Parte del sistema contra la verdad de campo\n",
@@ -269,6 +346,42 @@ def informe(evaluaciones: list[dict], origen: str) -> str:
             f"| {k} | {g['notas']} | {g['con_pregunta']} | {g['preguntas']} | {g['borradores_extra']} | "
             f"{_pct(g['ultimo']['campos']['valor'])} |"
         )
+    L += [
+        "",
+        "## Latencia por nota (segundos reales desde que sale la nota)\n",
+        "| Hito | Notas | Mediana | Media | Máx |",
+        "|---|---|---|---|---|",
+    ]
+    nombres_l = {
+        "borrador_s": "hasta el primer borrador",
+        "confirmacion_s": "hasta la confirmación (evento del parte)",
+        "alerta_s": "hasta la alerta de seguridad (S1–S4)",
+    }
+    for k, nom in nombres_l.items():
+        s_ = r["latencia"][k]
+        L.append(
+            f"| {nom} | {s_['n']} | "
+            + (f"{s_['p50']} | {s_['media']} | {s_['max']} |" if s_["n"] else "— | — | — |")
+        )
+    L += [
+        "",
+        "La confirmación incluye el tiempo que tarda el operador virtual en contestar.",
+        "",
+        "## Costo\n",
+        f"- Nube: **USD {r['costo_usd_nube']:.2f}**. Todos los modelos son locales (sin llamadas a servicios pagos).",
+        "- Tokens por tarea:",
+    ]
+    if consumo:
+        for carril, c in sorted(consumo.items()):
+            L.append(
+                f"  - `{carril}`: {c['llamadas']} llamadas · {c['tokens_in']} tokens de entrada · "
+                f"{c['tokens_out']} de salida · {c['ms'] / 1000:.1f} s"
+            )
+    else:
+        L.append(
+            "  - sin export de la tabla `consumo` para esta corrida (ver `--consumo`). El ASR y los embeddings "
+            "no usan tokens de LLM; solo el respaldo LLM los consume."
+        )
     d = r["dialogos"]
     L += [
         "",
@@ -291,20 +404,28 @@ def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("corrida", nargs="?", type=Path, help="carpeta de una corrida o JSON de un escenario")
     ap.add_argument("--url", help="planta en vivo, p. ej. http://localhost:8100")
+    ap.add_argument(
+        "--consumo",
+        type=Path,
+        help="JSON con filas de la tabla `consumo` (nota_id, carril, tokens_in, tokens_out, ms) de esa corrida",
+    )
     ap.add_argument("--salida", type=Path, help="guarda el informe (.md) y el resumen (.json) acá")
     a = ap.parse_args(argv)
     if bool(a.corrida) == bool(a.url):
         ap.error("indicá una corrida o --url")
     fuentes = cargar_url(a.url) if a.url else cargar_archivos(a.corrida)
     evaluaciones = [evaluar(*f) for f in fuentes]
-    texto = informe(evaluaciones, a.url or str(a.corrida))
+    consumo = consumo_por_tarea(json.loads(a.consumo.read_text(encoding="utf-8"))) if a.consumo else {}
+    texto = informe(evaluaciones, a.url or str(a.corrida), consumo)
     print(texto)
     if a.salida:
         a.salida.parent.mkdir(parents=True, exist_ok=True)
         a.salida.write_text(texto, encoding="utf-8")
         a.salida.with_suffix(".json").write_text(
             json.dumps(
-                {"resumen": resumir(evaluaciones), "escenarios": evaluaciones}, ensure_ascii=False, indent=1
+                {"resumen": resumir(evaluaciones), "consumo": consumo, "escenarios": evaluaciones},
+                ensure_ascii=False,
+                indent=1,
             ),
             encoding="utf-8",
         )
