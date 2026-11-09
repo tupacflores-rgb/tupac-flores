@@ -164,3 +164,23 @@ Whisper los escribe como se dictan. Residuo nuevo: «mil seiscientos diezp psi»
   `SinNovedad` de B-101, B-102 y F-201A (B1 de `martes-tranquilo` 94 % → 78 %; A3 89 % → 78 %).
 - **Arreglos:** «A uno/dos/tres» al comienzo de una oración se repara a «La…» (`reparar_inicio_de_oracion`); rango
   histórico de 45 días (A-9) para recuperar el «mil» perdido, y el prompt del ASR de arriba.
+
+## V7 final · corridas con el código completo de la entrega (09/11/2026)
+
+Corrector local, `martes-tranquilo` + `fuga-sin-enlace`, stack propio bajado y `docker ps` limpio antes de cada corrida.
+
+| Commit | Nota | A1 | A2 | A3 | A4a | B1 | Qué falló |
+|---|---:|---:|---:|---:|---:|---:|---|
+| `96bae90` · 1 | **88,8** | 100 | 69,4 | 69,4 | 100 | 84,7 | — |
+| `96bae90` · 2 | 88,0 | 100 | 63,9 | 69,4 | 100 | 84,7 | `NOTA-00011`: el ASR oyó «el **frito** a medio…» y el operador tuvo que agregar la fila (A2) |
+| `2cf8013` · 1 | 86,8 | 94,4 | 69,4 | 69,4 | 75 | 84,7 | `NOTA-00008`: el ASR escribió «la bomba **estaparada** en reserva»; sin filas no hubo pregunta ni borrador (A1, A4a) |
+| `2cf8013` · 2 | **88,8** | 100 | 69,4 | 69,4 | 100 | 84,7 | — |
+
+Sin eliminatorias en ninguna; B2, F1 y F2 en 100 % y la alerta S1 entre 4,0 y 4,5 s en todas. **Criterio «ninguna corrida
+por debajo de 88,8»: no se cumple** (2 de 4 corridas, a 0,8 y 2,0 puntos). 88,8 es el techo con D8 estricta; las otras
+caídas son errores del ASR sobre audios de Piper que cambian entre corridas. Cada una se reparó por separado
+(`2cf8013` «frito», `2f9bac5` «estaparada», más «A uno» y «diezp» antes), pero cada corrida nueva puede traer otra
+variante: es un juego sin fin si el parser depende de acertar la forma exacta que escribe el ASR.
+
+50 disparos finales de seguridad (`latencia_alerta_final.json`): 50/50 alertas, 0 falsas alarmas, p50 8,0 s, p95 15,8 s,
+p99 16,4 s. Validación con las 102 voces y el prompt nuevo: 0 falsas alarmas, S1 detectada.
