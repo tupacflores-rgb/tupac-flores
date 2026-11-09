@@ -24,14 +24,28 @@ class Config:
     # Planta (red planta-lan).
     mqtt_host: str = "broker"
     mqtt_puerto: int = 1883
+    mqtt_client_id: str = "tupac-flores-agente"
+    mqtt_sesion_s: int = 600
     planta_url: str = "http://sim:8100"
 
     # Servicios propios.
-    database_url: str = "postgresql://sistema:sistema@db:5432/sistema"
+    # Valor por defecto de desarrollo para la base interna de planta-lan (sin puertos publicados).
+    database_url: str = "postgresql://sistema:sistema@db:5432/sistema"  # pragma: allowlist secret
     asr_url: str = "http://asr:8000"
+    journal_dir: str = "/var/lib/sistema/journal"
 
-    # Latido (F2): cada 30 s, en un hilo propio.
+    # Enlace: se sondea con un CONNECT a través del proxy. Caído = el proxy corta sin responder.
+    enlace_proxy: str = "enlace:3128"
+    enlace_destino: str = "integrate.api.nvidia.com:443"
+
+    # Latido (F2): cada 30 s, en un hilo propio. Si los servicios no están listos, el primero sale igual
+    # pasados `latido_arranque_max_s` (el corrector espera 180 s).
     latido_s: float = 30.0
+    latido_arranque_max_s: float = 150.0
+
+    # Las notas con más de esta diferencia (en horas simuladas) respecto del reloj de la planta son restos
+    # de un escenario anterior: se descartan y se registran.
+    nota_vieja_horas: float = 6.0
 
     # D8 estricta (decisión del usuario): sin confirmación del operador el parte queda en Borrador y no
     # genera eventos. Si Novit permite validar de otra forma (BL-3 / D16), se cambia con esta bandera.
@@ -45,9 +59,16 @@ class Config:
             sistema=e.get("SISTEMA_NOMBRE", d.sistema),
             mqtt_host=e.get("MQTT_HOST", d.mqtt_host),
             mqtt_puerto=int(e.get("MQTT_PUERTO", d.mqtt_puerto)),
+            mqtt_client_id=e.get("MQTT_CLIENT_ID", d.mqtt_client_id),
+            mqtt_sesion_s=int(e.get("MQTT_SESION_S", d.mqtt_sesion_s)),
             planta_url=e.get("PLANTA_URL", d.planta_url).rstrip("/"),
             database_url=e.get("DATABASE_URL", d.database_url),
             asr_url=e.get("ASR_URL", d.asr_url).rstrip("/"),
+            journal_dir=e.get("JOURNAL_DIR", d.journal_dir),
+            enlace_proxy=e.get("ENLACE_PROXY", d.enlace_proxy),
+            enlace_destino=e.get("ENLACE_DESTINO", d.enlace_destino),
             latido_s=float(e.get("LATIDO_S", d.latido_s)),
+            latido_arranque_max_s=float(e.get("LATIDO_ARRANQUE_MAX_S", d.latido_arranque_max_s)),
+            nota_vieja_horas=float(e.get("NOTA_VIEJA_HORAS", d.nota_vieja_horas)),
             confirmacion_estricta=_bool(e.get("CONFIRMACION_ESTRICTA"), d.confirmacion_estricta),
         )

@@ -19,7 +19,9 @@ ENV PATH=/opt/venv/bin:$PATH \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-RUN useradd --system --uid 10001 sistema
+RUN useradd --system --uid 10001 sistema \
+    && mkdir -p /var/lib/sistema/journal \
+    && chown -R sistema /var/lib/sistema
 USER sistema
 
 CMD ["python", "-m", "sistema"]
