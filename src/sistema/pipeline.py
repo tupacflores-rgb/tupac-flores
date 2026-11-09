@@ -25,6 +25,7 @@ from .control import CorteDePresupuesto, Presupuesto, SesionNota
 from .deteccion import alertas
 from .deteccion.seguridad import Deteccion, detectar
 from .dominio.catalogo import Catalogo
+from .flujo import CallbackConsumo, paso
 from .integraciones.asr import ClienteAsr
 from .integraciones.planta_api import PlantaApi
 from .persistencia.salida import Salida
@@ -134,6 +135,7 @@ class Pipeline:
         self._lock = threading.Lock()
         self._alertadas: set[str] = set()  # notas con alerta ya emitida (la salida tampoco duplica por id)
         self._deteccion_rapida: dict[str, Deteccion] = {}
+        self._armar_cadenas()
 
     def encolar(self, nota: NotaRecorrida) -> None:
         t = time.monotonic()
@@ -180,38 +182,58 @@ class Pipeline:
     def atender_seguridad(
         self, nota: NotaRecorrida, t_recibida: float | None = None, audio: bytes | None = None
     ) -> None:
-        t0 = t_recibida if t_recibida is not None else time.monotonic()
-        # La ruta de seguridad se mide pero no se corta: una alerta no se pierde por un presupuesto.
-        with self._sesion(nota, "seguridad", exenta=True) as s:
-            s.paso("descarga+asr")
-            texto = self._transcribir(nota, audio, "seguridad")
-            s.paso("lexico")
-        d = detectar(texto, self._catalogo())
-        if d is not None:
-            with self._lock:
-                self._deteccion_rapida[nota.id] = d
-            self._alertar(nota, d, t0, "pasada rápida")
+        """Pasada rápida. La ruta de seguridad se mide pero no se corta: una alerta no se pierde por un
+        presupuesto (sesión exenta)."""
+        entrada = {"nota": nota, "audio": audio, "t0": self._t0(t_recibida)}
+        self._cadena_seguridad.invoke(entrada, config=self._config_cadena(nota, "seguridad", exenta=True))
 
     # --- pasada completa -----------------------------------------------------------------------------------
 
     def atender(
         self, nota: NotaRecorrida, t_recibida: float | None = None, audio: bytes | None = None
     ) -> None:
-        t0 = t_recibida if t_recibida is not None else time.monotonic()
-        with self._sesion(nota, "completa") as s:
-            s.paso("descarga+asr")
-            texto = self._transcribir(nota, audio, "completa")
-            if texto:
-                s.paso("guardar")
-                try:
-                    self._guardar(nota.id, texto)
-                except Exception as e:
-                    log.warning("no se pudo guardar la transcripción de %s: %s", nota.id, e)
-            s.paso("lexico+parte")
-            self.procesar_texto(nota, texto, t0)
+        entrada = {"nota": nota, "audio": audio, "t0": self._t0(t_recibida)}
+        self._cadena_completa.invoke(entrada, config=self._config_cadena(nota, "completa"))
 
-    def _sesion(self, nota: NotaRecorrida, carril: str, exenta: bool = False) -> SesionNota:
-        return SesionNota(nota.id, carril, self._presupuesto, self._registro, exenta=exenta)
+    # --- cadenas LCEL (flujo.py) ---------------------------------------------------------------------------
+
+    @staticmethod
+    def _t0(t_recibida: float | None) -> float:
+        return t_recibida if t_recibida is not None else time.monotonic()
+
+    def _config_cadena(self, nota: NotaRecorrida, carril: str, exenta: bool = False) -> dict:
+        """El callback de consumo cuenta los pasos, corta por presupuesto y registra al terminar."""
+        sesion = SesionNota(nota.id, carril, self._presupuesto, self._registro, exenta=exenta)
+        return {"callbacks": [CallbackConsumo(sesion)], "run_name": f"nota-{carril}"}
+
+    def _armar_cadenas(self) -> None:
+        self._cadena_seguridad = paso(
+            "transcribir_rapido",
+            lambda e: {**e, "texto": self._transcribir(e["nota"], e["audio"], "seguridad")},
+        ) | paso("seguridad", self._paso_seguridad)
+        self._cadena_completa = (
+            paso(
+                "transcribir", lambda e: {**e, "texto": self._transcribir(e["nota"], e["audio"], "completa")}
+            )
+            | paso("guardar", self._paso_guardar)
+            | paso("parte", lambda e: self.procesar_texto(e["nota"], e["texto"], e["t0"]) or e)
+        )
+
+    def _paso_seguridad(self, e: dict) -> dict:
+        d = detectar(e["texto"], self._catalogo())
+        if d is not None:
+            with self._lock:
+                self._deteccion_rapida[e["nota"].id] = d
+            self._alertar(e["nota"], d, e["t0"], "pasada rápida")
+        return e
+
+    def _paso_guardar(self, e: dict) -> dict:
+        if e["texto"]:
+            try:
+                self._guardar(e["nota"].id, e["texto"])
+            except Exception as ex:
+                log.warning("no se pudo guardar la transcripción de %s: %s", e["nota"].id, ex)
+        return e
 
     def procesar_texto(self, nota: NotaRecorrida, texto: str, t_recibida: float | None = None) -> None:
         deteccion = detectar(texto, self._catalogo())

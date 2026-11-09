@@ -106,6 +106,19 @@ class SesionNota:
                 raise corte
             log.warning("nota %s: %s, pero la ruta de seguridad no se corta", c.nota_id, corte)
 
+    def tokens(self, tokens_in: int = 0, tokens_out: int = 0) -> None:
+        """Suma tokens de una llamada a un modelo (el paso ya se contó al empezar). Corta si pasa el tope."""
+        c = self.consumo
+        c.tokens_in += tokens_in
+        c.tokens_out += tokens_out
+        if c.tokens_in + c.tokens_out > self.presupuesto.max_tokens:
+            corte = CorteDePresupuesto(
+                Corte.tokens, f"{c.tokens_in + c.tokens_out} tokens > {self.presupuesto.max_tokens}"
+            )
+            c.corte = corte.motivo.value
+            if not self._exenta:
+                raise corte
+
     def _condicion(self, nombre: str) -> CorteDePresupuesto | None:
         c, p = self.consumo, self.presupuesto
         if c.pasos > p.max_pasos:
