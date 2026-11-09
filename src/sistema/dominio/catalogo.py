@@ -72,6 +72,8 @@ class Catalogo:
     @staticmethod
     def _variantes(nombre: str) -> set[str]:
         variantes = {nombre}
+        if nombre.endswith(" uno"):
+            variantes.add(nombre[:-3] + "una")  # el transcriptor "corrige" la uno -> la una
         for digito, palabra in _NUMEROS.items():
             variantes |= {v.replace(f" {digito}", f" {palabra}") for v in list(variantes)}
             variantes |= {v.replace(f" {palabra}", f" {digito}") for v in list(variantes)}

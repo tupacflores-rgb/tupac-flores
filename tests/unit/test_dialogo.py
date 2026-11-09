@@ -187,7 +187,11 @@ def test_valor_ambiguo_borrador_con_candidato_provisional_y_dos_opciones(e):
     assert fila.valor == pytest.approx(1.8)
     assert fila.observacion.startswith("provisional")
     e.responde("Sí, confirmo.")
-    assert e.confirmados[0].filas[0].provisional is False
+    fila = e.confirmados[0].filas[0]
+    assert fila.provisional is False
+    # «provisional» es solo lo que se mostró: no puede quedar como observación (sería una falsa anomalía en B1).
+    # Lo que queda es la observación real de 1,8 kg/cm² (>= 1,5 es diferencial alto).
+    assert fila.observacion == "diferencial alto"
 
 
 def test_nota_solo_de_observaciones_queda_borrador_y_no_genera_eventos_d8(e):

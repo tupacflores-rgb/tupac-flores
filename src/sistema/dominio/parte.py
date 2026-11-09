@@ -52,14 +52,16 @@ class Fila:
     observacion: str | None = None
     provisional: bool = False  # candidato ambiguo (p. ej. 1,8 o 18): no es definitivo hasta la respuesta
 
-    def a_contrato(self) -> FilaParte:
+    def a_contrato(self, observacion_visible: str | None = None) -> FilaParte:
+        """La fila como se muestra en la tablet. `observacion_visible` reemplaza a la observación real solo en
+        pantalla (p. ej. «provisional: ¿1,8 o 18?»): la observación guardada no cambia."""
         assert self.tag is not None, "una fila sin equipo no se muestra"
         return FilaParte(
             tag=self.tag,
             variable=self.variable,
             valor=self.valor,
             unidad=self.unidad,
-            observacion=self.observacion,
+            observacion=self.observacion if observacion_visible is None else observacion_visible,
         )
 
     def descripcion(self, nombre: str) -> str:

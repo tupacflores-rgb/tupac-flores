@@ -347,3 +347,34 @@ def test_filtro_sin_el_articulo_correcto():
         "presion_diferencial",
         1.5,
     )
+
+
+def test_el_transcriptor_escribe_fito_por_filtro():
+    assert filas("La uno está en 112 de descarga, el fito a medio 1,3 de diferencial.") == [
+        ("B-101", "presion_descarga_local", 112.0, "kg/cm2", None),
+        ("F-201A", "presion_diferencial", pytest.approx(1.3), "kg/cm2", None),
+    ]
+    assert filas("El filto b me dio uno coma dos de diferencial.")[0][0] == "F-201B"
+
+
+def test_no_se_confunde_foto_con_filtro():
+    f = filas("La dos pierde bastante por la empaquetadura, le saqué foto a la bomba.")
+    assert [x[0] for x in f] == ["B-102"]
+
+
+def test_el_a1_es_la_uno():
+    f = filas("La dos está en 1600 psi de descarga. El A1, el rodamiento me dio 63 grados con la pistola.")
+    assert [(x[0], x[1]) for x in f] == [
+        ("B-102", "presion_descarga_local"),
+        ("B-101", "temperatura_rodamiento_ir"),
+    ]
+
+
+def test_la_una_es_la_uno():
+    assert filas("La una está en ciento doce de descarga.")[0][0] == "B-101"
+
+
+def test_un_valor_ambiguo_de_diferencial_normal_no_queda_como_anomalia():
+    """«provisional» es solo lo que se mostró: la observación real de 1,4 es ninguna (no es una anomalía)."""
+    ext = extraer("El de la derecha me dio catorce de diferencial.", CAT)
+    assert (ext.filas[0].valor, ext.filas[0].observacion) == (pytest.approx(1.4), None)

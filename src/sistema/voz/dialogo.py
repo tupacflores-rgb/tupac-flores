@@ -218,9 +218,6 @@ class Dialogo:
         est.borradores += 1
         provisional = [f for f in est.filas if f.provisional]
         opciones: list[str] = []
-        for f in est.filas:
-            if f.provisional:
-                f.observacion = f"provisional: ¿{' o '.join(formatear(c) for c in self._candidatos(est, f))}?"
         resumen = "; ".join(f.descripcion(self._nombre(cat, f.tag)) for f in est.filas if f.tag)
         if provisional:
             cands = self._candidatos(est, provisional[0])
@@ -245,6 +242,10 @@ class Dialogo:
             return
         est.estado = EstadoParte.borrador
         self._enviar(est, texto, filas=est.filas, opciones=opciones, espera=True)
+
+    def _observacion_provisional(self, est: Estado, fila: Fila) -> str:
+        """Solo se muestra; la observación real de la fila no se toca (no es una anomalía)."""
+        return f"provisional: ¿{' o '.join(formatear(c) for c in self._candidatos(est, fila))}?"
 
     @staticmethod
     def _candidatos(est: Estado, fila: Fila) -> list[float]:
@@ -334,7 +335,11 @@ class Dialogo:
             self._base.registrar_mensaje(mensaje_id, est.nota_id)
         except Exception as e:
             log.warning("no se pudo registrar %s (%s)", mensaje_id, e)
-        contrato_filas = [f.a_contrato() for f in (filas or []) if f.tag]
+        contrato_filas = [
+            f.a_contrato(self._observacion_provisional(est, f) if f.provisional else None)
+            for f in (filas or [])
+            if f.tag
+        ]
         pantalla = (
             Pantalla(titulo="Parte de recorrida", filas=contrato_filas, opciones=opciones or [])
             if contrato_filas or opciones
