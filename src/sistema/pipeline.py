@@ -21,6 +21,7 @@ from collections.abc import Callable
 
 from planta_contrato import NotaRecorrida
 
+from .control import CorteDePresupuesto, Presupuesto, SesionNota
 from .deteccion import alertas
 from .deteccion.seguridad import Deteccion, detectar
 from .dominio.catalogo import Catalogo
@@ -117,7 +118,11 @@ class Pipeline:
         catalogo: Callable[[], Catalogo | None],
         posterior: Posterior | None = None,
         max_intentos: int = 6,
+        presupuesto: Presupuesto | None = None,
+        registro=None,
     ):
+        self._presupuesto = presupuesto or Presupuesto()
+        self._registro = registro
         self._api = api
         self._asr = asr
         self._guardar = guardar_transcripcion
@@ -154,6 +159,8 @@ class Pipeline:
                 continue
             try:
                 atender(p.nota, p.t_recibida, p.audio)
+            except CorteDePresupuesto as e:
+                log.error("nota %s (%s) cortada, no se reintenta: %s", p.nota.id, carril, e)
             except Exception as e:
                 if p.intento >= self._max_intentos:
                     log.error(
@@ -174,7 +181,11 @@ class Pipeline:
         self, nota: NotaRecorrida, t_recibida: float | None = None, audio: bytes | None = None
     ) -> None:
         t0 = t_recibida if t_recibida is not None else time.monotonic()
-        texto = self._transcribir(nota, audio, "seguridad")
+        # La ruta de seguridad se mide pero no se corta: una alerta no se pierde por un presupuesto.
+        with self._sesion(nota, "seguridad", exenta=True) as s:
+            s.paso("descarga+asr")
+            texto = self._transcribir(nota, audio, "seguridad")
+            s.paso("lexico")
         d = detectar(texto, self._catalogo())
         if d is not None:
             with self._lock:
@@ -187,13 +198,20 @@ class Pipeline:
         self, nota: NotaRecorrida, t_recibida: float | None = None, audio: bytes | None = None
     ) -> None:
         t0 = t_recibida if t_recibida is not None else time.monotonic()
-        texto = self._transcribir(nota, audio, "completa")
-        if texto:
-            try:
-                self._guardar(nota.id, texto)
-            except Exception as e:
-                log.warning("no se pudo guardar la transcripción de %s: %s", nota.id, e)
-        self.procesar_texto(nota, texto, t0)
+        with self._sesion(nota, "completa") as s:
+            s.paso("descarga+asr")
+            texto = self._transcribir(nota, audio, "completa")
+            if texto:
+                s.paso("guardar")
+                try:
+                    self._guardar(nota.id, texto)
+                except Exception as e:
+                    log.warning("no se pudo guardar la transcripción de %s: %s", nota.id, e)
+            s.paso("lexico+parte")
+            self.procesar_texto(nota, texto, t0)
+
+    def _sesion(self, nota: NotaRecorrida, carril: str, exenta: bool = False) -> SesionNota:
+        return SesionNota(nota.id, carril, self._presupuesto, self._registro, exenta=exenta)
 
     def procesar_texto(self, nota: NotaRecorrida, texto: str, t_recibida: float | None = None) -> None:
         deteccion = detectar(texto, self._catalogo())

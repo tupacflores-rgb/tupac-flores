@@ -247,3 +247,23 @@ def test_dos_pasadas_alertan_una_sola_vez_y_la_rapida_alcanza_sola():
     pipe3.atender_seguridad(NOTA)
     pipe3.atender(NOTA)
     assert len(salida3.lotes) == 1  # la completa también puede dar la alerta
+
+
+def test_la_pasada_completa_se_corta_por_presupuesto_y_no_se_reintenta():
+    from sistema.control import CorteDePresupuesto, Presupuesto, RegistroConsumo
+
+    reg = RegistroConsumo()
+    pipe, salida, *_ = armar("La uno hace un ruido.", presupuesto=Presupuesto(max_pasos=1), registro=reg)
+    with pytest.raises(CorteDePresupuesto):
+        pipe.atender(NOTA)
+    assert reg.totales()["cortes"] == 1
+
+
+def test_la_pasada_de_seguridad_no_se_corta_aunque_el_presupuesto_sea_minimo():
+    from sistema.control import Presupuesto, RegistroConsumo
+
+    reg = RegistroConsumo()
+    pipe, salida, *_ = armar(S1, presupuesto=Presupuesto(max_pasos=1, timeout_s=0.0), registro=reg)
+    pipe.atender_seguridad(NOTA)
+    assert len(salida.lotes) == 1  # la alerta salió igual
+    assert reg.filas[0].carril == "seguridad" and reg.filas[0].corte is not None

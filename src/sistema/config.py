@@ -60,6 +60,11 @@ class Config:
     # genera eventos. Si Novit permite validar de otra forma (BL-3 / D16), se cambia con esta bandera.
     confirmacion_estricta: bool = True
 
+    # Control por nota (V6): pasos, tokens y timeout global. La ruta de seguridad está exenta de los cortes.
+    presupuesto_pasos: int = 12
+    presupuesto_tokens: int = 4000
+    timeout_nota_s: float = 120.0
+
     @classmethod
     def desde_entorno(cls, env: dict[str, str] | None = None) -> Config:
         e = os.environ if env is None else env
@@ -80,4 +85,7 @@ class Config:
             latido_arranque_max_s=float(e.get("LATIDO_ARRANQUE_MAX_S", d.latido_arranque_max_s)),
             nota_vieja_horas=float(e.get("NOTA_VIEJA_HORAS", d.nota_vieja_horas)),
             confirmacion_estricta=_bool(e.get("CONFIRMACION_ESTRICTA"), d.confirmacion_estricta),
+            presupuesto_pasos=int(e.get("PRESUPUESTO_PASOS", d.presupuesto_pasos)),
+            presupuesto_tokens=int(e.get("PRESUPUESTO_TOKENS", d.presupuesto_tokens)),
+            timeout_nota_s=float(e.get("TIMEOUT_NOTA_S", d.timeout_nota_s)),
         )
