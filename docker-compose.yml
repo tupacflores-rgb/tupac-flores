@@ -1,0 +1,73 @@
+# Sistema de Rolando Flores · Academia Novit 2026 · TP Planta de inyección
+#
+# Requiere la planta levantada (crea la red externa planta-lan):
+#   docker compose -p planta -f <repo de la planta>/docker-compose.yml up -d --build
+# Después:
+#   docker compose up -d --build
+#
+# Todos los servicios de la PC de planta:
+#   - van solo en planta-lan (red external) y llevan el label academia.planta: pc;
+#   - suman entre todos un límite de 4 CPU y 8 GB;
+#   - salen a internet por HTTP(S)_PROXY=http://enlace:3128.
+#
+# Sin política `restart`: el simulador apaga (kill) y enciende (start) los contenedores con el label pc para
+# simular el corte de luz, y una política de reinicio de Docker lo desvirtuaría.
+
+x-planta: &planta
+  networks: [planta-lan]
+  labels:
+    academia.planta: pc
+
+x-proxy: &proxy
+  HTTP_PROXY: http://enlace:3128
+  HTTPS_PROXY: http://enlace:3128
+  http_proxy: http://enlace:3128
+  https_proxy: http://enlace:3128
+  NO_PROXY: broker,sim,db,asr,localhost,127.0.0.1
+  no_proxy: broker,sim,db,asr,localhost,127.0.0.1
+
+services:
+  agente:
+    <<: *planta
+    build:
+      context: .
+      dockerfile: docker/agente.Dockerfile
+    environment:
+      <<: *proxy
+      SISTEMA_NOMBRE: ${SISTEMA_NOMBRE:-Rolando Flores}
+      MQTT_HOST: broker
+      PLANTA_URL: http://sim:8100
+      DATABASE_URL: postgresql://sistema:${POSTGRES_PASSWORD:-sistema}@db:5432/sistema
+      CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 1g}
+
+  db:
+    <<: *planta
+    build:
+      context: docker/db
+    environment:
+      POSTGRES_USER: sistema
+      POSTGRES_DB: sistema
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sistema}
+    volumes:
+      - db-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sistema -d sistema"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    deploy:
+      resources:
+        limits: {cpus: "0.5", memory: 1g}
+
+networks:
+  planta-lan:
+    external: true
+
+volumes:
+  db-datos:
