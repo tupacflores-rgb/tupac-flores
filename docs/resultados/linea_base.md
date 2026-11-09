@@ -184,3 +184,33 @@ variante: es un juego sin fin si el parser depende de acertar la forma exacta qu
 
 50 disparos finales de seguridad (`latencia_alerta_final.json`): 50/50 alertas, 0 falsas alarmas, p50 8,0 s, p95 15,8 s,
 p99 16,4 s. Validación con las 102 voces y el prompt nuevo: 0 falsas alarmas, S1 detectada.
+
+## V7 · criterio nuevo, resultados finales (commit `dc80586`, 09/11/2026)
+
+Criterio aprobado: 0 eliminatorias, promedio ≥ 88,0 en 4 corridas, ninguna < 87,0, 50/50 alertas y 0 falsas alarmas.
+Stack propio bajado y `docker ps` limpio antes de empezar; las cuatro corridas del corrector local, en cadena, con los
+cinco servicios (agente, asr, emb, llm, db).
+
+| Corrida | Nota | A1 | A2 | A3 | A4a | A4b | B1 | B2 | F1 | F2 | Alerta S1 | Eliminatorias |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| 1 | 88,8 | 100 | 69,4 | 69,4 | 100 | 100 | 84,7 | 100 | 100 | 100 | 4,5 s | ninguna |
+| 2 | 88,8 | 100 | 69,4 | 69,4 | 100 | 100 | 84,7 | 100 | 100 | 100 | 4,5 s | ninguna |
+| 3 | 88,8 | 100 | 69,4 | 69,4 | 100 | 100 | 84,7 | 100 | 100 | 100 | 4,0 s | ninguna |
+| 4 | 88,8 | 100 | 69,4 | 69,4 | 100 | 100 | 84,7 | 100 | 100 | 100 | 5,0 s | ninguna |
+
+**Promedio 88,8; mínimo 88,8; criterio cumplido.** 88,8 es el techo con D8 estricta (A2, A3 y B1 por las notas de solo
+observación): sin D16 no se puede subir.
+
+50 disparos de seguridad (`latencia_alerta_final_llm.json`), con carga al tope en agente, db, emb y llm: **50/50 alertas,
+0 falsas alarmas**, p50 8,6 s, p95 17,1 s, p99 19,3 s (el máximo es el primer disparo, en frío). La puerta interna
+p99 ≤ 15 s sigue sin cumplirse (aceptado por el usuario el 09/11); el requisito de la rúbrica (30 s) se cumple.
+
+**Qué produjo la mejora y qué no (honesto):**
+
+- En las cuatro corridas **el respaldo con LLM no se usó ni una vez** (0 llamadas): el parser, con la normalización
+  sistemática (frases conocidas sin espacios, alias aproximados contra `/api/planta`, «A uno», «frito», «estaparada»,
+  «diezp», el nombre pegado «launo»), resolvió todas las notas por sí solo. El LLM quedó como red de seguridad para lo
+  que el parser no entienda; su valor real está medido solo en el benchmark (`docs/resultados/llm.md`) y en una prueba
+  de punta a punta, no en las corridas del corrector.
+- Con cuatro corridas idénticas no se puede descartar que el corrector tenga variación de audio: antes del arreglo
+  salieron 88,8, 88,0 y 86,8 con el mismo diseño. Que las cuatro finales den 88,8 es un buen indicio, no una garantía.

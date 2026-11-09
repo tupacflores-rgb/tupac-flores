@@ -13,7 +13,7 @@ MCP, RAG medido. Todo lo de esta página está medido o verificable en el repo; 
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 100 % | 69,4 % | 69,4 % | 100 % | 100 % | 84,7 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % |
 
-Alerta de seguridad S1 a los 4,0 s reales (límite de la rúbrica: 30 s). A2, A3 y B1 tienen techo por D8 estricta: una
+Alerta de seguridad S1 a los 4,0–5,0 s reales (límite de la rúbrica: 30 s). Cuatro corridas finales con los cinco servicios: **88,8 / 88,8 / 88,8 / 88,8**, sin eliminatorias (`docs/resultados/linea_base.md`, sección V7). A2, A3 y B1 tienen techo por D8 estricta: una
 nota de solo observaciones («la bomba está parada, en reserva») no se puede confirmar con valores y queda en Borrador.
 Con D16 (`CONFIRMACION_ESTRICTA=false`, ya implementada) subirían a 100 %; la decisión es de Novit. Detalle y
 repetición: `docs/resultados/linea_base.md`.
