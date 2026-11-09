@@ -131,7 +131,13 @@ class Salida:
             try:
                 modelo = MODELOS[topico].model_validate(payload)
             except Exception:
-                log.exception("la salida %s no valida contra el contrato; se omite", id_)
+                # Se marca para no reintentarla: una fila inválida ocupaba un lugar de la consulta de
+                # pendientes (límite de 50) y, acumuladas, frenaba la republicación de las demás.
+                log.exception("la salida %s no valida contra el contrato; se descarta", id_)
+                try:
+                    self._base.marcar_invalida(id_)
+                except Exception:
+                    log.warning("no se pudo marcar la salida %s como inválida", id_)
                 continue
             if self._publicar_y_marcar(id_, topico, modelo):
                 republicados += 1

@@ -51,6 +51,9 @@ class BaseEnMemoria:
             raise TimeoutError("sin marca")
         self.filas[id_]["estado"] = "publicada"
 
+    def marcar_invalida(self, id_, timeout_ms=None):
+        self.filas[id_]["estado"] = "invalida"
+
     def salidas_pendientes(self, limite=50):
         self._chequear()
         return [(i, f["topico"], f["payload"]) for i, f in self.filas.items() if f["estado"] == "a_publicar"]
@@ -188,3 +191,21 @@ def test_el_journal_no_pierde_registros_de_otros_tipos(entorno):
     journal.agregar("nota", {"id": "NOTA-1"})
     nuevo().recuperar()
     assert [r["datos"]["id"] for r in journal.leer("nota")] == ["NOTA-1"]
+
+
+def test_una_salida_invalida_se_descarta_y_no_frena_a_las_demas(entorno):
+    base, broker, _, nuevo = entorno
+    base.encolar_salida("S-roto", "sistema/eventos", {"x": 1})  # no valida contra el contrato
+    base.encolar_salida("S-bueno", "sistema/eventos", json.loads(_evento_valido().model_dump_json()))
+    assert nuevo().recuperar() == 1  # la buena sale
+    assert base.filas["S-roto"]["estado"] == "invalida"  # y la rota no se reintenta
+    assert nuevo().recuperar() == 0
+
+
+def _evento_valido():
+    from planta_contrato import EventoSistema, TipoEvento
+
+    return EventoSistema(
+        id="S-bueno", ts=NOTA.ts, tipo=TipoEvento.sin_novedad, equipo="B-101", origen="parte", nota_ids=[NOTA.id],
+        resumen="todo normal",
+    )  # fmt: skip

@@ -83,6 +83,9 @@ class Base:
             "UPDATE salida SET estado = 'publicada', publicado = now() WHERE id = %s", (id_,), timeout_ms
         )
 
+    def marcar_invalida(self, id_: str, timeout_ms: int | None = None) -> None:
+        self.ejecutar("UPDATE salida SET estado = 'invalida' WHERE id = %s", (id_,), timeout_ms)
+
     def salidas_pendientes(self, limite: int = 50) -> list[tuple[str, str, dict]]:
         filas = self.ejecutar(
             "SELECT id, topico, payload FROM salida WHERE estado = 'a_publicar' ORDER BY creado LIMIT %s",
@@ -179,9 +182,10 @@ class Base:
                 (dias_dedup,),
             ),
             "salida": borrar(
-                "DELETE FROM salida WHERE estado = 'publicada' "
-                "AND publicado < now() - make_interval(days => %s)",
-                (dias_dedup,),
+                "DELETE FROM salida WHERE "
+                "(estado = 'publicada' AND publicado < now() - make_interval(days => %s)) "
+                "OR (estado = 'invalida' AND creado < now() - make_interval(days => %s))",
+                (dias_dedup, dias_dedup),
             ),
             "consumo": borrar(
                 "DELETE FROM consumo WHERE ts < now() - make_interval(days => %s)", (dias_consumo,)
