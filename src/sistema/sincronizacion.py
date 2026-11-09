@@ -1,8 +1,8 @@
-"""Partes confirmados que esperan sincronizarse con la nube.
+"""Notas y partes que esperan sincronizarse con la nube.
 
-La planta trabaja sin enlace (el ASR, el parte y las alertas son locales). Lo que se confirma mientras el
-enlace está caído queda pendiente de sincronizar y se informa en el latido (`pendientes_sincronizar`); al
-volver el enlace se vacía. Sin enlace caído nada queda pendiente.
+La planta trabaja sin enlace (el ASR, el parte y las alertas son locales). Una nota que se procesa mientras el
+enlace está caído (con su alerta, su borrador o su parte) queda pendiente de sincronizar y se informa en el
+latido (`pendientes_sincronizar`); al volver el enlace se vacía. Con el enlace arriba nada queda pendiente.
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ class Sincronizacion:
         self._lock = threading.Lock()
 
     def registrar(self, nota_id: str) -> None:
-        """Un parte quedó confirmado. Si no hay enlace, queda pendiente."""
+        """Una nota se procesó o un parte se confirmó. Si no hay enlace, queda pendiente (por id de nota)."""
         with self._lock:
             if not self._estado.enlace_ok:
                 self._pendientes.add(nota_id)

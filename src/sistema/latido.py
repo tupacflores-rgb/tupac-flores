@@ -18,6 +18,8 @@ from .estado import EstadoCompartido, RelojPlanta
 
 log = logging.getLogger("sistema.latido")
 
+MINIMO_ENTRE_LATIDOS_S = 1.0
+
 
 class Latido:
     def __init__(
@@ -69,4 +71,17 @@ class Latido:
             parar.wait(0.25)
         while not parar.is_set():
             self.emitir()
-            parar.wait(self.config.latido_s)
+            self._esperar_proximo(parar)
+
+    def _esperar_proximo(self, parar: threading.Event) -> None:
+        """Espera hasta el próximo latido (30 s) o hasta que cambie el enlace o los pendientes, con al menos
+        1 s entre latidos. Así un corte de enlace o un pendiente nuevo se informan enseguida."""
+        emitido = self._mono()
+        self._estado.cambio.clear()
+        while not parar.is_set():
+            restante = self.config.latido_s - (self._mono() - emitido)
+            if restante <= 0:
+                return
+            if self._estado.cambio.wait(min(restante, 0.25)):
+                parar.wait(max(0.0, MINIMO_ENTRE_LATIDOS_S - (self._mono() - emitido)))
+                return

@@ -122,3 +122,12 @@ def test_sin_enlace_los_partes_quedan_pendientes_y_al_volver_se_vacian():
     estado.enlace_ok = True
     assert sync.sincronizar() == 2
     assert estado.pendientes == 0
+
+
+def test_una_nota_insegura_procesada_sin_enlace_tambien_queda_pendiente():
+    """En fuga-sin-enlace la única nota del corte es la S1, que nunca se confirma: igual hay trabajo sin sincronizar."""
+    estado = EstadoCompartido()
+    sync = Sincronizacion(estado)
+    estado.enlace_ok = False
+    sync.registrar("NOTA-S1")
+    assert estado.pendientes == 1

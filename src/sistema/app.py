@@ -61,7 +61,7 @@ class Agente:
         )
 
         self.dialogo = Dialogo(config, self.salida, self.base, lambda: self.catalogo, self.reloj)
-        self.pipeline.posterior = self.dialogo.encolar_nota
+        self.pipeline.posterior = self._nota_procesada
         self.sync = Sincronizacion(self.estado)
         self.dialogo.al_confirmar = self.al_confirmar_parte
 
@@ -84,6 +84,11 @@ class Agente:
         if self._catalogo is None and self.definicion is not None:
             self._catalogo = Catalogo(self.definicion)
         return self._catalogo
+
+    def _nota_procesada(self, nota: NotaRecorrida, texto: str, deteccion) -> None:
+        """Una nota procesada con el enlace caído (alerta, borrador o parte) queda sin sincronizar."""
+        self.sync.registrar(nota.id)
+        self.dialogo.encolar_nota(nota, texto, deteccion)
 
     def al_confirmar_parte(self, est: Estado) -> None:
         """El operador confirmó el parte: recién ahora hay eventos (uno por equipo)."""

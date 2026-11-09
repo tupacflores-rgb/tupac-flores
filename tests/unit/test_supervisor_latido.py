@@ -132,3 +132,37 @@ def test_el_latido_no_se_detiene_cuando_otros_workers_caen():
     assert sup.vivos()["latido"]
     assert sup.reinicios["latido"] == 0
     sup.detener()
+
+
+def test_un_cambio_de_enlace_o_de_pendientes_se_informa_enseguida_sin_esperar_los_30_s():
+    publicados: list[EstadoSistema] = []
+    config = Config(latido_s=30.0)  # el ciclo normal tardaría 30 s
+    estado, reloj = EstadoCompartido(), RelojPlanta()
+    latido = Latido(config, publicados.append, estado, reloj, lambda: True)
+    parar = threading.Event()
+    threading.Thread(target=latido.correr, args=(parar,), daemon=True).start()
+    assert esperar(lambda: len(publicados) == 1)
+    estado.enlace_ok = False
+    assert esperar(lambda: len(publicados) == 2, timeout=3)
+    estado.pendientes = 2
+    assert esperar(lambda: len(publicados) == 3, timeout=3)
+    assert [(m.enlace_ok, m.pendientes_sincronizar) for m in publicados] == [
+        (True, 0),
+        (False, 0),
+        (False, 2),
+    ]
+    parar.set()
+
+
+def test_sin_cambios_el_latido_respeta_el_intervalo():
+    publicados: list[EstadoSistema] = []
+    estado, reloj = EstadoCompartido(), RelojPlanta()
+    latido = Latido(Config(latido_s=30.0), publicados.append, estado, reloj, lambda: True)
+    parar = threading.Event()
+    threading.Thread(target=latido.correr, args=(parar,), daemon=True).start()
+    assert esperar(lambda: len(publicados) == 1)
+    estado.enlace_ok = True  # mismo valor: no es un cambio
+    estado.pendientes = 0
+    time.sleep(0.6)
+    assert len(publicados) == 1
+    parar.set()

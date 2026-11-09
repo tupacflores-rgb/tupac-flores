@@ -46,6 +46,8 @@ class EstadoCompartido:
         self._lock = threading.Lock()
         self._enlace_ok = True
         self._pendientes = 0
+        # Se activa cuando cambia el enlace o los pendientes: el latido sale enseguida, sin esperar los 30 s.
+        self.cambio = threading.Event()
 
     @property
     def enlace_ok(self) -> bool:
@@ -55,7 +57,10 @@ class EstadoCompartido:
     @enlace_ok.setter
     def enlace_ok(self, valor: bool) -> None:
         with self._lock:
+            cambio = valor != self._enlace_ok
             self._enlace_ok = valor
+        if cambio:
+            self.cambio.set()
 
     @property
     def pendientes(self) -> int:
@@ -65,4 +70,8 @@ class EstadoCompartido:
     @pendientes.setter
     def pendientes(self, valor: int) -> None:
         with self._lock:
-            self._pendientes = max(0, valor)
+            valor = max(0, valor)
+            cambio = valor != self._pendientes
+            self._pendientes = valor
+        if cambio:
+            self.cambio.set()
