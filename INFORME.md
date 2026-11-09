@@ -38,13 +38,19 @@ Una prueba informativa con 12 procesos sin límite en el host dio 45/50 y p99 19
 
 | Tarea | Modelo | Proveedor | Parámetros | Versión, revisión y digest | Dónde corre |
 |---|---|---|---:|---|---|
-| Transcripción (ASR) | faster-whisper `small`, int8 (CTranslate2) | OpenAI (modelo original) · conversión de SYSTRAN | 244 M | `Systran/faster-whisper-small` @ `536b0662…`; sha256 de `model.bin` `3e30592150…` verificado en el build; faster-whisper 1.1.0 | Local, contenedor `asr` |
-| Embeddings (RAG) | `intfloat/multilingual-e5-small`, ONNX | Microsoft (autor: intfloat) | 118 M | @ `614241f6…`; sha256 de `model.onnx` `ca456c06b3…` verificado; onnxruntime 1.20.1 | Local, contenedor `emb` |
-| Respaldo del parser y del intérprete de respuestas | **`qwen3.5:2b-q4_K_M`**, Q4_K_M | Alibaba (Qwen) | 1,9 B | Ollama `0.40.15`; manifest `sha256:2fcba4e039b23928…`, pesos `sha256:20cb277f0967…`; `think=false`, `temperature=0`, `num_ctx=2048`, `num_thread=1`, salida JSON schema → `FilaParte`; `langchain-ollama==1.1.0` | Local, contenedor `llm` |
+| Transcripción (ASR) | faster-whisper `small`, int8 (CTranslate2) | OpenAI (modelo original) · conversión de SYSTRAN | 244 M (241,8 M en `model.bin`) ¹ | `Systran/faster-whisper-small` @ `536b0662…`; sha256 de `model.bin` `3e30592150…` verificado en el build; faster-whisper 1.1.0 | Local, contenedor `asr` |
+| Embeddings (RAG) | `intfloat/multilingual-e5-small`, ONNX | Microsoft (autor: intfloat) | 117,5 M ² | @ `614241f6…`; sha256 de `model.onnx` `ca456c06b3…` verificado; onnxruntime 1.20.1 | Local, contenedor `emb` |
+| Respaldo del parser y del intérprete de respuestas | **`qwen3.5:2b-q4_K_M`**, Q4_K_M | Alibaba (Qwen) | 1,88 B (1.881.825.088) ³ | Ollama `0.40.15`; manifest `sha256:2fcba4e039b23928…`, pesos `sha256:20cb277f0967…`; `think=false`, `temperature=0`, `num_ctx=2048`, `num_thread=1`, salida JSON schema → `FilaParte`; `langchain-ollama==1.1.0` | Local, contenedor `llm` |
 | Extracción del parte | Parser determinista (sin modelo), orquestado como cadena LCEL de LangChain | — | — | `src/sistema/voz/`, `src/sistema/flujo.py` | Local |
 | Interpretación de respuestas del operador | Reglas (sin modelo) | — | — | `src/sistema/voz/respuestas.py` | Local |
 | Detección de seguridad y eventos | Reglas (sin modelo) | — | — | `src/sistema/deteccion/` | Local |
 | Análisis, visión, órdenes | No hay en la Entrega 1 | — | — | — | — |
+
+**Fuente de la cantidad de parámetros** (leída de la model card o de los metadatos del modelo, no de memoria):
+
+1. **faster-whisper `small`:** la model card de `openai/whisper-small` (Hugging Face, tabla «Model details») dice `small | 244 M`; el recuadro «Model size» de la misma página dice «0.2B params». Contado sobre el `model.bin` de CTranslate2 que está en la imagen `asr` (suma de los elementos de las 404 variables, sin las escalas de cuantización; el decodificador comparte la matriz de embeddings): **241.762.569**. La diferencia de unos 2 M con la model card es esperable: la conversión no guarda algunos tensores constantes.
+2. **`multilingual-e5-small`:** el texto de la model card no pudo leerse en la consulta de esta revisión (la página devolvió solo el menú), así que **no se cita su cifra**. Contado sobre `onnx/model.onnx` de la imagen `emb` (198 tensores de pesos): **117.506.432**. Coincide con `onnx/config.json` (BERT, 12 capas, 384 de dimensión, vocabulario de 250.037).
+3. **`qwen3.5:2b-q4_K_M`:** metadato del GGUF que muestra `ollama show -v` sobre la imagen `llm` (`general.parameter_count = 1.881825088e+09`, `general.size_label = 1.9B`); la model card `Qwen/Qwen3.5-2B` dice «Number of Parameters: 2B». La imagen incluye además un proyector de visión de 331,42 M que este sistema no usa.
 
 Nada se descarga en runtime: los pesos se bajan en el build con revisión fija, su digest se verifica y viven dentro de la
 imagen. Los modelos no usan GPU (los contenedores de planta no tienen).
