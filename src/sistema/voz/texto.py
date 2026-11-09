@@ -28,6 +28,9 @@ _NO_ES_FILTRO = {"foto", "fotos", "fuga", "fuera", "falta", "fue", "fino", "fina
 # Confusiones medidas a más de 2 letras de «filtro» («el frito a medio…»): se aceptan por nombre, no con
 # una tolerancia mayor, que dejaría pasar «foto» o «falta».
 _CONFUNDIDOS_CON_FILTRO = {"frito", "fritro"}
+# «La bomba estaparada en reserva» (medido): el ASR pega «está» con la palabra siguiente. Solo las que
+# dicen el estado de un equipo, para no tocar otras palabras.
+_ESTA_PEGADO = re.compile(r"\b(esta|estan)(parad[ao]s?|en|bajo|baja|alto|alta|rebalsando|disparad[ao]s?)\b")
 _LETRA_NUMERO = re.compile(r"\b(?:el|en el|en) a([123])\b")
 
 
@@ -67,6 +70,7 @@ def reparar_asr(t: str) -> str:
             return f"filtro {m.group(2)}"
         return m.group(0)
 
+    t = _ESTA_PEGADO.sub(r"\1 \2", t)
     t = _DECENA_CON_P.sub(r"\1", t)
     t = _FILTRO_MAL_DICHO.sub(filtro, t)
     return _LETRA_NUMERO.sub(lambda m: f"en la {m.group(1)}", t)

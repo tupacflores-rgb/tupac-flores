@@ -224,3 +224,13 @@ def test_el_frito_a_es_el_filtro_a_pero_foto_y_falta_siguen_siendo_otra_cosa():
     assert ("F-201A", "presion_diferencial", 1.3) in [(f.tag, f.variable, f.valor) for f in ext.filas]
     sin = extraer("Le saqué una foto a la uno que está en ciento doce kilos de descarga.", CAT)
     assert [f.tag for f in sin.filas] == ["B-101"]
+
+
+def test_estaparada_pegado_se_lee_como_esta_parada_y_la_nota_sigue_su_camino():
+    from sistema.voz.texto import normalizar, reparar_asr
+
+    assert reparar_asr(normalizar("La bomba estaparada en reserva.")) == "la bomba esta parada en reserva"
+    assert reparar_asr(normalizar("La dos estaen servicio")) == "la dos esta en servicio"
+    assert (
+        reparar_asr(normalizar("La estacion de bombeo")) == "la estacion de bombeo"
+    )  # no toca otras palabras
