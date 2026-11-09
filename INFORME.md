@@ -1,0 +1,110 @@
+# INFORME · Entrega 1 · Rolando Flores
+
+Sistema conectado a la planta simulada de Novit: parte por voz, detección de condiciones inseguras, eventos, tools y
+MCP, RAG medido. Todo lo de esta página está medido o verificable en el repo; lo que no está hecho figura en
+«Pendiente».
+
+## Resultado del corrector local
+
+`martes-tranquilo` + `fuga-sin-enlace`, commit `849eb73`: **88,8 / 100**, aprueba, sin eliminatorias
+(`sistema_mudo` y `sin_alerta_de_seguridad` no ocurren).
+
+| A1 | A2 | A3 | A4a | A4b | B1 | B2 | E1 | E2 | E3 | F1 | F2 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 % | 69,4 % | 69,4 % | 100 % | 100 % | 84,7 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % |
+
+Alerta de seguridad S1 a los 4,0 s reales (límite de la rúbrica: 30 s). A2, A3 y B1 tienen techo por D8 estricta: una
+nota de solo observaciones («la bomba está parada, en reserva») no se puede confirmar con valores y queda en Borrador.
+Con D16 (`CONFIRMACION_ESTRICTA=false`, ya implementada) subirían a 100 %; la decisión es de Novit. Detalle y
+repetición: `docs/resultados/linea_base.md`.
+
+## Seguridad (S1–S4)
+
+Detector determinista sobre la transcripción completa, sin LLM y sin nube. Dos pasadas del mismo modelo: una rápida
+(beam 1, prompt de emergencia, cola por duración) y una completa; alerta con el primer acierto, id `EV-SEG-{nota}`.
+Léxico con frases, negación, coincidencia aproximada y reparaciones de errores medidos del ASR.
+
+| Prueba (50 disparos S1–S4, nota de ~20 s en cola, carga al tope en agente y db) | Resultado |
+|---|---|
+| Alertas | **50 / 50** |
+| Falsas alarmas | **0** (también 0 en las 102 voces de referencia) |
+| Latencia p50 / p95 / p99 | 10,4 s / 15,7 s / 18,8 s |
+| Requisito de la rúbrica (30 s) | Cumplido |
+| Puerta interna D18 (p99 ≤ 15 s) | **No cumplida** (p99 = 18,8 s) |
+
+Una prueba informativa con 12 procesos sin límite en el host dio 45/50 y p99 19,0 s antes de las dos pasadas.
+
+## Modelos por tarea
+
+| Tarea | Modelo | Versión / revisión | Dónde corre |
+|---|---|---|---|
+| Transcripción (ASR) | faster-whisper `small`, int8 (CTranslate2) | `Systran/faster-whisper-small` @ `536b0662…`, sha256 de `model.bin` verificado en el build; faster-whisper 1.1.0 | Local, contenedor `asr` |
+| Embeddings (RAG) | `intfloat/multilingual-e5-small`, ONNX | @ `614241f6…`, sha256 de `model.onnx` verificado; onnxruntime 1.20.1 | Local, contenedor `emb` |
+| Extracción del parte | Parser determinista (sin modelo) | `src/sistema/voz/` | Local |
+| Interpretación de respuestas del operador | Reglas (sin modelo) | `src/sistema/voz/respuestas.py` | Local |
+| Detección de seguridad y eventos | Reglas (sin modelo) | `src/sistema/deteccion/` | Local |
+| Análisis, visión, órdenes | No hay en la Entrega 1 | — | — |
+
+Nada se descarga en runtime: los pesos se bajan en el build con revisión fija y viven dentro de la imagen.
+
+## Hardware (límites de `docker-compose.yml`)
+
+| Servicio | CPU | Memoria | Notas |
+|---|---:|---:|---|
+| `agente` | 0,5 | 1 GB | MQTT, pipeline, diálogo, latido, detección |
+| `asr` | 2,0 | 2 GB | dos carriles (seguridad: 2 plazas, completa: 1) de un hilo cada uno |
+| `emb` | 0,5 | 1 GB | 774 MiB en uso medido |
+| `db` | 0,5 | 1 GB | PostgreSQL 16 + pgvector |
+| **Total** | **3,5 de 4** | **5 de 8 GB** | verificado por `tests/infra/test_compose.py` |
+
+Costo del ASR medido con la CPU saturada: **4,39 s fijos + 0,132 s por segundo de audio** (p95 de 7,4 s por nota).
+La puerta original (RTF p99 ≤ 0,7) no se cumple con este modelo: el costo fijo domina en audios cortos.
+
+## Tokens y costo de nube
+
+- **Tokens de LLM por nota: 0.** No hay modelos de lenguaje en el camino de la nota. El presupuesto de tokens
+  (4.000) existe y está probado (`control/presupuesto.py`) para el análisis de la Entrega 2.
+- **Costo de nube: USD 0.** Ninguna llamada sale del entorno de planta.
+- Consumo por nota (pasos, milisegundos, cortes) en la tabla `consumo`.
+
+## RAG (medido)
+
+Corpus de la planta (701 secciones, 710 pasajes) en pgvector con metadatos de equipo, fabricante, documento, sección,
+cita y vigente. Suite oficial de 71 preguntas (`docs/resultados/retrieval.json`, `docs/rag.md`):
+
+| Variante | MRR | hit@5 | recall@5 | Rev. C antes que D |
+|---|---:|---:|---:|---:|
+| BM25 oficial (línea base) | 0,573 | 0,845 | 0,664 | 39 de 71 |
+| Léxico propio (filtros de vigencia y aplicabilidad) | 0,679 | 0,859 | 0,707 | **0** |
+| Denso (e5-small, con prefijos) | 0,660 | 0,789 | 0,631 | 0 |
+| **Híbrido** (RRF, léxico ×2) | **0,683** | 0,859 | 0,702 | 0 |
+| Denso sin prefijos (ablación) | 0,610 | 0,775 | 0,615 | 0 |
+
+El híbrido mejora a la línea base BM25, pero **no supera con holgura al léxico filtrado**; la mejora real viene de los
+filtros de vigencia. Qué va por RAG y qué por API o SQL: `docs/rag.md` (límites y stock nunca salen del RAG).
+
+## Tools, MCP, control y memoria
+
+- Seis tools de solo lectura con Pydantic estricto (`extra="forbid"`), timeout y reintentos solo ante fallas
+  transitorias; servidor MCP por stdio. Tests: `tests/unit/test_herramientas.py` (incluye cliente MCP real).
+- Control por nota: 12 pasos, 4.000 tokens, 120 s y 3 repeticiones; la pasada completa se corta, la de seguridad se mide
+  pero no se corta.
+- Memoria: `docs/memoria.md`, verificada contra las tablas reales de Postgres (`tests/integracion/`), con reinicio a
+  mitad de diálogo probado.
+
+## Decisiones vigentes
+
+- **D8** (estricta): sin confirmación del operador el parte queda en Borrador. **D16** (flexibilizarla): pendiente de Novit.
+- **D14**: S2 y S4 no llevan equipo ni filas (provisional).
+- **D17**: cola de salida con protocolo intención → publicación → marca.
+- **D18** enmendada: puerta de latencia de alerta p99 ≤ 15 s en el peor caso; **no cumplida** (18,8 s), aceptado el 09/11.
+- `planta_contrato` se instala desde un commit fijo de `academia2026-tp` (provisional; ver README).
+
+## Pendiente (no hecho en esta entrega)
+
+- **Rango histórico** (`/api/historian`, 45 días): un valor fuera de rango no pide confirmación todavía.
+- **Fotos** asociadas a la fila del parte y **contexto del escalado** (parte, fotos y tendencia de las últimas horas): el
+  `Escalado` hoy lleva un resumen mínimo.
+- **LangChain**: el sistema no usa un framework de agentes; el parser y el diálogo son código propio.
+- Latencia de alerta p99 ≤ 15 s (ver arriba).
+- WER de `small` contra `turbo` sobre las voces (solo se midió `small`, 102 audios).
