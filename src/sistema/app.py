@@ -23,6 +23,7 @@ from planta_contrato import NotaRecorrida, RespuestaOperador, Topicos
 from pydantic import ValidationError
 
 from .config import Config
+from .deteccion.eventos import construir as construir_eventos
 from .dominio.catalogo import Catalogo
 from .estado import EstadoCompartido, RelojPlanta
 from .integraciones.asr import ClienteAsr
@@ -34,8 +35,9 @@ from .persistencia.base import Base
 from .persistencia.journal import Journal
 from .persistencia.salida import Salida
 from .pipeline import Pipeline
+from .sincronizacion import Sincronizacion
 from .supervisor import Supervisor
-from .voz.dialogo import Dialogo
+from .voz.dialogo import Dialogo, Estado, ts_de
 
 log = logging.getLogger("sistema.app")
 
@@ -60,6 +62,8 @@ class Agente:
 
         self.dialogo = Dialogo(config, self.salida, self.base, lambda: self.catalogo, self.reloj)
         self.pipeline.posterior = self.dialogo.encolar_nota
+        self.sync = Sincronizacion(self.estado)
+        self.dialogo.al_confirmar = self.al_confirmar_parte
 
         # Ganchos de entrada (se reemplazan en los tests).
         self.al_recibir_nota: Callable[[NotaRecorrida], None] = self.pipeline.encolar
@@ -80,6 +84,16 @@ class Agente:
         if self._catalogo is None and self.definicion is not None:
             self._catalogo = Catalogo(self.definicion)
         return self._catalogo
+
+    def al_confirmar_parte(self, est: Estado) -> None:
+        """El operador confirmó el parte: recién ahora hay eventos (uno por equipo)."""
+        cat = self.catalogo
+        eventos = construir_eventos(
+            est.nota_id, ts_de(est), est.filas, cat, nombre_equipo=lambda t: cat.equipos[t].nombres[0]
+        )
+        if eventos:
+            self.salida.emitir_lote([(e.id, Topicos.EVENTOS, e) for e in eventos])
+        self.sync.registrar(est.nota_id)
 
     # -- estado de arranque -------------------------------------------------------------------------
 
@@ -242,6 +256,7 @@ class Agente:
         self.sup.lanzar("entrada", self._worker_entrada)
         self.sup.lanzar("pipeline", self.pipeline.correr)
         self.sup.lanzar("dialogo", self.dialogo.correr)
+        self.sup.lanzar("sincronizacion", self.sync.correr)
         self.sup.lanzar("recuperacion", self._worker_recuperacion)
         self.sup.parar.wait()
         self.sup.detener()

@@ -14,7 +14,13 @@ DEFINICION = {
         {"tag": "TK-301", "tipo": "tanque", "nombres": ["el pulmón", "el tanque", "el tanque pulmón"]},
         {"tag": "FT-401", "tipo": "caudalimetro", "nombres": ["el caudalímetro", "el colector"]},
     ],
-    "sensores": [],
+    "sensores": [
+        {"tag": "B-101", "variable": "presion_descarga", "unidad": "kg/cm2", "alarma_alta": 125, "alarma_baja": 95},
+        {"tag": "B-102", "variable": "presion_descarga", "unidad": "kg/cm2", "alarma_alta": 125, "alarma_baja": 95},
+        {"tag": "B-103", "variable": "presion_descarga", "unidad": "kg/cm2", "alarma_alta": 125, "alarma_baja": 95},
+        {"tag": "F-201A", "variable": "presion_diferencial", "unidad": "kg/cm2", "alarma_alta": 1.5, "alarma_baja": 0.15},
+        {"tag": "F-201B", "variable": "presion_diferencial", "unidad": "kg/cm2", "alarma_alta": 1.5, "alarma_baja": 0.15},
+    ],
 }  # fmt: skip
 
 # Los cuatro textos exactos que dicta el operador virtual (operador.py: nota_seguridad).
