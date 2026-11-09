@@ -9,7 +9,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 
 | Requisito | Estado | Evidencia |
 |---|---|---|
-| Repo público en GitHub `nombre-apellido` | ❔ | La carpeta local se llama `Tupac-Flores` y la rama `entrega-1` **no se subió** (sin push, a pedido). El nombre pedido sería `rolando-flores`; hay que crearlo y subirlo |
+| Repo público en GitHub `nombre-apellido` | 🟡 | Nombre decidido (D11): **`tupac-flores`**, ya creado como `tupacflores-rgb/tupac-flores` (dato del usuario; no lo verifiqué desde acá). La rama `entrega-1` **todavía no se subió** (sin push, a pedido) |
 | En la raíz: `README.md`, `docker-compose.yml`, `tests/` | ✅ | Raíz del repo (`ls`) |
 | `docker compose up` levanta el sistema al lado de la planta | ✅ | `README.md` (cómo levantarlo); verificado desde un clon limpio (ver «Verificación con clon limpio» en `docs/resultados/linea_base.md`) |
 | Servicios solo en `planta-lan` (external), label `academia.planta: pc` | ✅ | `tests/infra/test_compose.py` (`test_red_planta_lan_externa`, `test_servicio_solo_en_planta_lan`, `test_servicio_con_label_de_planta`) |
@@ -27,7 +27,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 |---|---|---|
 | Escucha `planta/recorridas` y baja el **audio** | ✅ | `src/sistema/integraciones/mqtt.py`, `pipeline.py`; corrector A1 = 100 % |
 | …y baja las **fotos** | 🟡 | **No se descargan**: el sistema guarda las URLs de `fotos` y las asocia a la fila, pero nunca baja los bytes. Hoy nada los consume (el análisis de imágenes es de la Entrega 2) |
-| Transcribe con un modelo local de la lista cerrada | 🟡❔ | Local: sí (`asr/`, faster-whisper `small` int8; funciona sin enlace, corrector E1 = 100 %). **La lista cerrada de modelos no está en los materiales que tengo**: no puedo confirmar que `small`, `multilingual-e5-small` y `qwen3.5:2b-q4_K_M` estén en ella |
+| Transcribe con un modelo local (lista cerrada) | ✅🟡 | Local: sí (`asr/`, faster-whisper `small` int8; funciona sin enlace, corrector E1 = 100 %). Lista cerrada: modelos locales de libre elección según aclaración verbal de Novit; confirmación por escrito pendiente (BL-5) |
 | Extrae con structured output validado a `FilaParte` | ✅🟡 | `Fila.a_contrato()` valida contra `FilaParte`; el respaldo con LLM usa `with_structured_output` hacia `FilaParte` (`src/sistema/respaldo.py`, `tests/unit/test_respaldo_llm.py`). El camino principal es un **parser determinista**, no structured output |
 | Una fila por equipo y variable, aunque la nota los mezcle | ✅ | `src/sistema/voz/parser.py`; `tests/unit/test_parser_respuestas.py` |
 | Hora = `ts` de la nota, no el reloj de la máquina | ✅ | `tests/unit/test_seguridad.py::test_la_alerta_usa_ids_deterministas_y_el_ts_de_la_nota`; los eventos usan `ts_de(est)` |
@@ -86,7 +86,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 | Requisito | Estado | Evidencia |
 |---|---|---|
 | Python ≥ 3.11 con LangChain para el núcleo de agentes | ✅ | `pyproject.toml` (`requires-python`); tools como `StructuredTool`, cadenas LCEL y callback de consumo (`src/sistema/flujo.py`, `herramientas/langchain.py`) |
-| Solo modelos de la lista cerrada | ❔ | Ver arriba: la lista no está en mis materiales |
+| Solo modelos de la lista cerrada | 🟡 | modelos locales de libre elección según aclaración verbal de Novit; confirmación por escrito pendiente (BL-5) |
 | PostgreSQL 16 + pgvector; manuales con metadatos | ✅ | Ver RAG |
 | Todo se levanta con `docker compose up` | ✅ | Clon limpio |
 | README: cómo levantar y probar; qué corre en planta y qué en la nube | ✅ | `README.md` (sección «Qué corre dónde»: todo corre en la PC de planta, nada en la nube) |
@@ -99,5 +99,5 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
   desarrollo), ningún peso de modelo (`.gguf`, `.safetensors`, `.onnx`, `.bin`…), ninguna clave privada, ningún blob de más de
   2 MB y ningún patrón de credencial en los diffs. `.gitignore` excluye `/Context/`, `.env*`, `*.pem`, `*.key`, modelos y
   corridas. El hook de pre-commit (`scripts/bloquear_privados.py`, `detect-secrets`) lo vuelve a comprobar en cada commit.
-- **Pendientes que dependen de otra persona:** subir el repositorio con el nombre `rolando-flores` y confirmar con Novit el
-  origen del contrato, la lista cerrada de modelos y la decisión D16.
+- **Pendientes que dependen de otra persona:** subir la rama `entrega-1` a `tupacflores-rgb/tupac-flores` y confirmar con
+  Novit el origen del contrato, por escrito la libertad de elección de modelos locales (BL-5) y la decisión D16.

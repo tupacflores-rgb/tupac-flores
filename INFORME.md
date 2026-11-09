@@ -182,8 +182,7 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
   arreglos salieron 88,8, 88,0 y 86,8, y las cuatro corridas finales dieron 88,8.
 - **Puerta interna de 15 s no cumplida** (p99 19,3 s en el peor caso con carga al tope); causa: un trabajo del ASR en curso no
   se interrumpe.
-- **Lista cerrada de modelos:** no estaba en los materiales; no pude verificar que `small`, `multilingual-e5-small` y
-  `qwen3.5:2b-q4_K_M` pertenezcan a ella.
+- **Lista cerrada de modelos:** modelos locales de libre elección según aclaración verbal de Novit; confirmación por escrito pendiente (BL-5).
 - **Fotos:** se asocian a su fila por URL pero el sistema no las descarga.
 - **Códigos de falla del fabricante → F01–F10:** `MBP-4 §6` se recupera y se cita, pero no hay una función que traduzca.
 - **Context builder:** solo mencionado; falta el documento de diseño.
@@ -191,7 +190,7 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 - **Evaluación contra `/api/verdad`:** se hace con el corrector oficial y `evaluacion/extraccion.py`; no hay un script propio.
 - **Respaldo con LLM:** medido solo sobre 30 casos generados (53 % de valor exacto) y sin ejercitarse en el corrector.
 - **WER de `small` contra `turbo`:** solo se midió `small` (102 audios).
-- **Repositorio:** falta subirlo a GitHub con el nombre `rolando-flores`.
+- **Repositorio:** el nombre es `tupac-flores` (D11, `tupacflores-rgb/tupac-flores`); falta subir la rama `entrega-1` (sin push, a pedido).
 
 ## Conclusión: por qué estos modelos
 
