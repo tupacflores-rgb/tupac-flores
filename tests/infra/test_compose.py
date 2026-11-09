@@ -28,7 +28,7 @@ def _limites(servicio: dict) -> dict:
 
 
 def test_hay_servicios_de_planta():
-    assert {"agente", "db", "asr", "emb"} <= set(SERVICIOS)
+    assert {"agente", "db", "asr", "emb", "llm"} <= set(SERVICIOS)
 
 
 def test_red_planta_lan_externa():
@@ -110,7 +110,26 @@ def test_el_modelo_viene_en_la_imagen_con_revision_y_hash_fijos():
 
 def test_emb_con_cuota_propia_y_la_suma_de_cpu_cabe_en_la_planta():
     """El servicio de embeddings tiene 0,5 CPU y, con el ASR a 2,0, la suma sigue dentro de los 4 de la planta."""
-    assert float(_limites(SERVICIOS["emb"])["cpus"]) == 0.5
+    assert float(_limites(SERVICIOS["emb"])["cpus"]) == 0.25
     assert _memoria_gb(_limites(SERVICIOS["emb"])["memory"]) == 1.0
     assert sum(float(_limites(s)["cpus"]) for s in SERVICIOS.values()) <= LIMITE_CPU
     assert sum(_memoria_gb(_limites(s)["memory"]) for s in SERVICIOS.values()) <= LIMITE_MEM_GB
+
+
+def test_llm_con_cuota_propia_ollama_fijado_y_sin_descargas_en_runtime():
+    """El respaldo con LLM va en su propio servicio: 0,75 CPU y 2,5 GB, versión de Ollama fijada, pesos en la imagen."""
+    llm = SERVICIOS["llm"]
+    assert float(_limites(llm)["cpus"]) == 0.75
+    assert _memoria_gb(_limites(llm)["memory"]) == 2.5
+    assert (
+        "ports" not in llm and llm["networks"] == ["planta-lan"] and llm["labels"]["academia.planta"] == "pc"
+    )
+    dockerfile = (RAIZ / "docker" / "llm.Dockerfile").read_text(encoding="utf-8")
+    assert re.search(r"ARG OLLAMA_VERSION=\d+\.\d+\.\d+", dockerfile)  # versión fijada, no :latest
+    assert "ollama pull" in (RAIZ / "llm" / "preparar.sh").read_text(encoding="utf-8")
+    assert "ollama pull" not in (RAIZ / "llm" / "arranque.sh").read_text(encoding="utf-8")  # nada en runtime
+
+
+def test_la_suma_exacta_de_la_planta_con_llm_es_4_cpu_y_7_5_gb():
+    assert sum(float(_limites(s)["cpus"]) for s in SERVICIOS.values()) == 4.0
+    assert sum(_memoria_gb(_limites(s)["memory"]) for s in SERVICIOS.values()) == 7.5

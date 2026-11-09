@@ -23,8 +23,8 @@ x-proxy: &proxy
   HTTPS_PROXY: http://enlace:3128
   http_proxy: http://enlace:3128
   https_proxy: http://enlace:3128
-  NO_PROXY: broker,sim,db,asr,emb,localhost,127.0.0.1
-  no_proxy: broker,sim,db,asr,emb,localhost,127.0.0.1
+  NO_PROXY: broker,sim,db,asr,emb,llm,localhost,127.0.0.1
+  no_proxy: broker,sim,db,asr,emb,llm,localhost,127.0.0.1
 
 services:
   agente:
@@ -42,6 +42,8 @@ services:
       DATABASE_URL: postgresql://sistema:${POSTGRES_PASSWORD:-sistema}@db:5432/sistema
       ASR_URL: http://asr:8000
       EMB_URL: http://emb:8000
+      LLM_URL: http://llm:11434
+      LLM_MODELO: ${LLM_MODELO:-qwen3.5:2b}
       CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-true}
     volumes:
       - agente-journal:/var/lib/sistema/journal
@@ -102,7 +104,29 @@ services:
       start_period: 15s
     deploy:
       resources:
-        limits: {cpus: "0.5", memory: 1g}
+        limits: {cpus: "0.25", memory: 1g}
+
+  # Respaldo con modelo de lenguaje local (Ollama): solo si el parser no entiende una nota o una respuesta.
+  # Los pesos y sus digests viven dentro de la imagen; al arrancar se verifican. Sin puertos publicados.
+  llm:
+    <<: *planta
+    build:
+      context: .
+      dockerfile: docker/llm.Dockerfile
+      args:
+        MODELOS: "${LLM_MODELO:-qwen3.5:2b}"
+    environment:
+      <<: *proxy
+      MODELO: ${LLM_MODELO:-qwen3.5:2b}
+    healthcheck:
+      test: [CMD, ollama, list]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 60s
+    deploy:
+      resources:
+        limits: {cpus: "0.75", memory: 2560m}
 
   db:
     <<: *planta
