@@ -58,14 +58,11 @@ errores transitorios (red, 5xx, timeout) y un resultado uniforme `ResultadoTool`
 Servidor MCP: `python -m sistema.herramientas.servidor_mcp` (stdio) expone las seis. Probado con el cliente MCP real,
 en memoria y por stdio.
 
-## Memoria (borrador, se verifica en V6)
+## Memoria
 
-- **Estado de la conversación de cada nota** (mensaje de tablet, nota, borrador, intento): tablas `dialogo` y
-  `mensaje_nota` de Postgres (`persistencia/esquema.py`); sobrevive a un reinicio del agente.
-- **Política (borrador, se verifica en V6):** el diálogo de una nota se conserva para poder retomarlo
-  tras un reinicio; las notas y respuestas recibidas se conservan para deduplicar las entregas repetidas del broker.
-  Los plazos de limpieza y qué se descarta al cerrar una nota todavía no están definidos ni implementados: van en
-  `docs/memoria.md` (V8), después de revisar cómo se usan hoy esas tablas.
+Verificada en V6 contra las tablas reales: ver [memoria.md](memoria.md). El diálogo de cada nota (mensaje de tablet,
+nota, borrador e intento) vive en `dialogo` y `mensaje_nota` de Postgres y sobrevive a un reinicio, incluso a mitad de
+una pregunta de equipo o de una corrección.
 
 ## Pendiente
 
