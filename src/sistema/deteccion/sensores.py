@@ -49,7 +49,9 @@ class DetectorSostenido:
         estado_equipo: Callable[[str], str | None],
         emitir: Callable[[EventoSistema], bool],
         parametros: Parametros | None = None,
+        tendencia: Callable[[str, datetime], str | None] | None = None,
     ):
+        self._tendencia = tendencia
         self._limites = limites
         self._estado_equipo = estado_equipo
         self._emitir = emitir
@@ -57,12 +59,14 @@ class DetectorSostenido:
         self._estados: dict[tuple[str, str], _Estado] = {}
 
     @classmethod
-    def desde_definicion(cls, definicion: dict, estado_equipo, emitir, parametros: Parametros | None = None):
+    def desde_definicion(
+        cls, definicion: dict, estado_equipo, emitir, parametros: Parametros | None = None, tendencia=None
+    ):
         limites = {
             (s["tag"], s["variable"]): (s.get("alarma_baja"), s.get("alarma_alta"))
             for s in definicion.get("sensores", [])
         }
-        return cls(limites, estado_equipo, emitir, parametros)
+        return cls(limites, estado_equipo, emitir, parametros, tendencia)
 
     def procesar(self, lectura: dict) -> EventoSistema | None:
         """Una lectura de `planta/sensores/{TAG}/{variable}`. Devuelve el evento si abrió una anomalía."""
@@ -108,13 +112,23 @@ class DetectorSostenido:
                 nota_ids=[],
                 resumen=(
                     f"{variable} de {tag} fuera de límites ({valor:g}; baja {baja}, alta {alta}) "
-                    f"sostenido {int((ts - st.desde).total_seconds() // 60)} min."
+                    f"sostenido {int((ts - st.desde).total_seconds() // 60)} min." + self._contexto(tag, ts)
                 ),
             )
             self._emitir(evento)
             log.warning("anomalía sostenida: %s", evento.resumen)
             return evento
         return None
+
+    def _contexto(self, tag: str, ts: datetime) -> str:
+        """B-3: la tendencia de las últimas horas del equipo, si el historian la da."""
+        if self._tendencia is None:
+            return ""
+        try:
+            t = self._tendencia(tag, ts)
+        except Exception:  # contexto opcional
+            t = None
+        return f" Tendencia ({t})." if t else ""
 
     def _adentro_con_margen(self, valor: float, baja: float | None, alta: float | None) -> bool:
         h = self.p.histeresis

@@ -9,6 +9,7 @@ Los eventos salen solo de un parte que el operador confirmó (D8). Ids determini
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 
 from planta_contrato import EventoSistema, TipoEvento
@@ -50,9 +51,18 @@ def es_anomalia(fila: Fila, catalogo: Catalogo) -> bool:
 
 
 def construir(
-    nota_id: str, ts: datetime, filas: list[Fila], catalogo: Catalogo, nombre_equipo=lambda tag: tag
+    nota_id: str,
+    ts: datetime,
+    filas: list[Fila],
+    catalogo: Catalogo,
+    nombre_equipo=lambda tag: tag,
+    tendencia: Callable[[str, datetime], str | None] | None = None,
 ) -> list[EventoSistema]:
-    """Un evento por equipo, en el orden en que aparecen en el parte."""
+    """Un evento por equipo, en el orden en que aparecen en el parte.
+
+    El Escalado lleva su contexto (B-3): el parte completo del equipo, las fotos de sus filas y la tendencia
+    de las últimas horas del sensor (si `tendencia` la puede dar). El contrato no tiene campos para eso: va
+    en `resumen`."""
     por_equipo: dict[str, list[Fila]] = {}
     for f in filas:
         if f.tag is None or f.variable == VARIABLE_CONDICION_INSEGURA:
@@ -68,6 +78,8 @@ def construir(
             if anomalas
             else f"{nombre_equipo(tag)}: sin novedad ({detalle})."
         )
+        if anomalas:
+            resumen += _contexto(tag, grupo, ts, tendencia)
         eventos.append(
             EventoSistema(
                 id=id_evento(nota_id, tag),
@@ -81,6 +93,22 @@ def construir(
             )
         )
     return eventos
+
+
+def _contexto(tag: str, grupo: list[Fila], ts: datetime, tendencia) -> str:
+    """Parte del equipo, fotos y tendencia, para quien reciba el escalado."""
+    extra = f" Parte del equipo: {'; '.join(_describir(f) for f in grupo)}."
+    fotos = list(dict.fromkeys(f.foto for f in grupo if f.foto))
+    if fotos:
+        extra += f" Fotos: {', '.join(fotos)}."
+    if tendencia is not None:
+        try:
+            t = tendencia(tag, ts)
+        except Exception:  # el contexto es opcional: el evento sale igual
+            t = None
+        if t:
+            extra += f" Tendencia ({t})."
+    return extra
 
 
 def _describir(f: Fila) -> str:

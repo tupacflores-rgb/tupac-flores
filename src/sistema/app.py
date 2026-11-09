@@ -29,6 +29,7 @@ from .deteccion.eventos import construir as construir_eventos
 from .deteccion.sensores import DetectorSostenido
 from .dominio.catalogo import Catalogo
 from .dominio.rango import RangoHistorico
+from .dominio.tendencia import Tendencia
 from .estado import EstadoCompartido, RelojPlanta
 from .integraciones.asr import ClienteAsr
 from .integraciones.enlace import enlace_arriba
@@ -75,6 +76,7 @@ class Agente:
             registro=self.consumo,
         )
 
+        self.tendencia = Tendencia(self.api.historian, lambda: self.catalogo)
         self.rango = RangoHistorico(
             lambda tag, variable: [m.get("valor") for m in self.api.historian(tag, variable)]
         )
@@ -114,7 +116,12 @@ class Agente:
         """El operador confirmó el parte: recién ahora hay eventos (uno por equipo)."""
         cat = self.catalogo
         eventos = construir_eventos(
-            est.nota_id, ts_de(est), est.filas, cat, nombre_equipo=lambda t: cat.equipos[t].nombres[0]
+            est.nota_id,
+            ts_de(est),
+            est.filas,
+            cat,
+            nombre_equipo=lambda t: cat.equipos[t].nombres[0],
+            tendencia=self.tendencia.describir,
         )
         if eventos:
             self.salida.emitir_lote([(e.id, Topicos.EVENTOS, e) for e in eventos])
@@ -239,6 +246,7 @@ class Agente:
                     self.definicion,
                     self._estado_de_equipo,
                     lambda ev: self.salida.emitir(ev.id, Topicos.EVENTOS, ev),
+                    tendencia=self.tendencia.describir,
                 )
             self._detector_sensores.procesar(json.loads(e.payload))
         except Exception:
