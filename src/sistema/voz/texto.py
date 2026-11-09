@@ -48,6 +48,10 @@ def reparar_inicio_de_oracion(t: str) -> str:
     return _ARTICULO_COMIDO.sub(lambda m: f"{m.group(1)}la {m.group(2)}", t)
 
 
+# «mil seiscientos diezp psi» (medido): la «p» de «psi» pegada a la decena; sin esto se leía 1600, no 1610.
+_DECENA_CON_P = re.compile(r"\b(diez|veinte|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)p\b")
+
+
 def reparar_asr(t: str) -> str:
     """Corrige confusiones sistemáticas del transcriptor sobre texto ya normalizado (medidas en las voces de
     referencia): "el fito a" por "el filtro a" (hasta 2 letras de diferencia), "el a1" por "en la 1"."""
@@ -58,6 +62,7 @@ def reparar_asr(t: str) -> str:
             return f"filtro {m.group(2)}"
         return m.group(0)
 
+    t = _DECENA_CON_P.sub(r"\1", t)
     t = _FILTRO_MAL_DICHO.sub(filtro, t)
     return _LETRA_NUMERO.sub(lambda m: f"en la {m.group(1)}", t)
 

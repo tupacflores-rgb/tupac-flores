@@ -209,3 +209,8 @@ def test_a_uno_al_comienzo_ya_no_pierde_el_tramo_de_la_bomba():
     filas = [(f.tag, f.variable, f.valor) for f in ext.filas]
     assert ("B-101", "presion_descarga_local", 112.0) in filas
     assert ("B-101", "temperatura_rodamiento_ir", 59.0) in filas
+
+
+def test_decena_con_la_p_de_psi_pegada_se_lee_bien():
+    ext = extraer("Este, la del medio está en mil seiscientos diezp psi de descarga.", CAT)
+    assert [(f.tag, f.valor, f.unidad) for f in ext.filas] == [("B-102", 1610.0, "psi")]

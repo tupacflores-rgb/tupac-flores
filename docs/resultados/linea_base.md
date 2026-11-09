@@ -134,3 +134,33 @@ p95 15,3 s, p99 16,0 s** (`latencia_alerta_con_emb.json`). Sin `emb` fue p99 18,
 mayor que la diferencia, o sea que el servicio de embeddings no empeora la latencia. La puerta interna de 15 s sigue sin
 cumplirse. Una primera tanda con la base sucia dio 47/50 porque tres notas se descartaron como «repetidas» (ids de
 corridas anteriores del simulador); el corrector arranca con `down -v` y no tiene ese problema.
+
+## Prompt del ASR con «mil» y psi en palabras (09/11/2026)
+
+`asr/servidor.py`, pasada completa: el `initial_prompt` suma «Mil seiscientos psi, mil seiscientos cuarenta psi, mil
+quinientos psi, ciento doce kilos, ciento quince kilos, noventa y ocho bar». Sobre las 102 voces de referencia
+(`evaluacion/asr_wer.py`, mismo servicio, mismos audios):
+
+| Prompt | WER global | Transcripciones con cifras | RTF medio |
+|---|---:|---:|---:|
+| Anterior | 21,2 % | 79 de 102 | 0,59 |
+| Con «mil» y psi en palabras | **6,4 %** | **5 de 102** | 0,63 |
+
+El WER literal de antes contaba como error cada número escrito con cifras en lugar de palabras; con el prompt nuevo
+Whisper los escribe como se dictan. Residuo nuevo: «mil seiscientos diezp psi» (la «p» de «psi» pegada), reparado en
+`voz/texto.py`.
+
+## Diagnóstico de la variación de la nota entre corridas (V7)
+
+- `NOTA-00011` tiene el **mismo texto, los mismos valores y la voz sintética** en las tres corridas comparadas
+  (`/api/verdad`). No está en el banco de voces pregrabadas (`banco.buscar` es por texto exacto), así que la planta la
+  sintetiza con Piper.
+- **Piper no es determinista:** cuatro generaciones del mismo texto con la misma semilla (`crc32(nota_id)`) dieron
+  cuatro WAV distintos. La semilla fija solo gobierna el ruido y las pausas. Por eso el audio, y lo que oye el ASR,
+  cambia entre corridas. El ASR, en cambio, sí es determinista sobre un mismo audio.
+- **Qué se perdió en la corrida 2 (85,9):** el ASR oyó «**A** uno estar en 112 kilogramos…» en lugar de «La uno…». El
+  parser perdía todo el tramo de B-101 (112 kg y 59 °C) y dejaba solo una fila de «la bomba» ambigua. El operador
+  virtual corrigió tres veces, se agotaron los borradores y la nota quedó sin confirmar (D8): se perdieron las decisiones
+  `SinNovedad` de B-101, B-102 y F-201A (B1 de `martes-tranquilo` 94 % → 78 %; A3 89 % → 78 %).
+- **Arreglos:** «A uno/dos/tres» al comienzo de una oración se repara a «La…» (`reparar_inicio_de_oracion`); rango
+  histórico de 45 días (A-9) para recuperar el «mil» perdido, y el prompt del ASR de arriba.
