@@ -64,7 +64,7 @@ mantenimiento se ignora.
 ## Robustez
 
 - **Enlace caído:** todo sigue funcionando; lo procesado queda pendiente de sincronizar y el latido lo informa
-  (`pendientes_sync`); al volver, se vacía sin duplicar (ids deterministas, cola `salida`).
+  (`pendientes_sincronizar`); al volver, se vacía sin duplicar (ids deterministas, cola `salida`).
 - **Reinicio:** el diálogo de cada nota se recarga de Postgres; la cola de salida reintenta lo no publicado.
 - **Control por nota:** 12 pasos, 4.000 tokens, 120 s y 3 repeticiones; la pasada completa se corta y no se reintenta,
   la de seguridad se mide pero no se corta.

@@ -36,19 +36,32 @@ Una prueba informativa con 12 procesos sin límite en el host dio 45/50 y p99 19
 
 ## Modelos por tarea
 
-| Tarea | Modelo | Versión / revisión | Dónde corre |
-|---|---|---|---|
-| Transcripción (ASR) | faster-whisper `small`, int8 (CTranslate2) | `Systran/faster-whisper-small` @ `536b0662…`, sha256 de `model.bin` verificado en el build; faster-whisper 1.1.0 | Local, contenedor `asr` |
-| Embeddings (RAG) | `intfloat/multilingual-e5-small`, ONNX | @ `614241f6…`, sha256 de `model.onnx` verificado; onnxruntime 1.20.1 | Local, contenedor `emb` |
-| Extracción del parte | Parser determinista (sin modelo), orquestado como cadena LCEL de LangChain | `src/sistema/voz/`, `src/sistema/flujo.py` | Local |
-| Interpretación de respuestas del operador | Reglas (sin modelo) | `src/sistema/voz/respuestas.py` | Local |
-| Detección de seguridad y eventos | Reglas (sin modelo) | `src/sistema/deteccion/` | Local |
-| Análisis, visión, órdenes | No hay en la Entrega 1 | — | — |
-| Respaldo del parser y del intérprete de respuestas | **`qwen3.5:2b-q4_K_M`** (Qwen3.5, Alibaba; Ollama `0.40.15`), Q4_K_M, 1,9 B parámetros; manifest `sha256:2fcba4e039b23928…`, pesos `sha256:20cb277f0967…`; `think=false`, `temperature=0`, `num_ctx=2048`, `num_thread=1`, salida JSON schema → `FilaParte` (`langchain-ollama==1.1.0`) | `docker/llm.Dockerfile`, `src/sistema/respaldo.py` | Local, contenedor `llm` |
+| Tarea | Modelo | Proveedor | Parámetros | Versión, revisión y digest | Dónde corre |
+|---|---|---|---:|---|---|
+| Transcripción (ASR) | faster-whisper `small`, int8 (CTranslate2) | OpenAI (modelo original) · conversión de SYSTRAN | 244 M | `Systran/faster-whisper-small` @ `536b0662…`; sha256 de `model.bin` `3e30592150…` verificado en el build; faster-whisper 1.1.0 | Local, contenedor `asr` |
+| Embeddings (RAG) | `intfloat/multilingual-e5-small`, ONNX | Microsoft (autor: intfloat) | 118 M | @ `614241f6…`; sha256 de `model.onnx` `ca456c06b3…` verificado; onnxruntime 1.20.1 | Local, contenedor `emb` |
+| Respaldo del parser y del intérprete de respuestas | **`qwen3.5:2b-q4_K_M`**, Q4_K_M | Alibaba (Qwen) | 1,9 B | Ollama `0.40.15`; manifest `sha256:2fcba4e039b23928…`, pesos `sha256:20cb277f0967…`; `think=false`, `temperature=0`, `num_ctx=2048`, `num_thread=1`, salida JSON schema → `FilaParte`; `langchain-ollama==1.1.0` | Local, contenedor `llm` |
+| Extracción del parte | Parser determinista (sin modelo), orquestado como cadena LCEL de LangChain | — | — | `src/sistema/voz/`, `src/sistema/flujo.py` | Local |
+| Interpretación de respuestas del operador | Reglas (sin modelo) | — | — | `src/sistema/voz/respuestas.py` | Local |
+| Detección de seguridad y eventos | Reglas (sin modelo) | — | — | `src/sistema/deteccion/` | Local |
+| Análisis, visión, órdenes | No hay en la Entrega 1 | — | — | — | — |
 
-Nada se descarga en runtime: los pesos se bajan en el build con revisión fija y viven dentro de la imagen.
+Nada se descarga en runtime: los pesos se bajan en el build con revisión fija, su digest se verifica y viven dentro de la
+imagen. Los modelos no usan GPU (los contenedores de planta no tienen).
 
-## Hardware (límites de `docker-compose.yml`)
+## Hardware
+
+**Planta (restricción del enunciado, simulada con límites de contenedor):** sin GPU, 4 CPU y 8 GB. Es lo que verifica
+`tests/infra/test_compose.py`.
+
+**Desarrollo y pruebas (donde se hicieron todas las mediciones de este informe):** Desktop, AMD Ryzen 7 5700X (8 núcleos,
+16 hilos, 3,4 GHz), 15,9 GB de RAM, GPU NVIDIA GeForce GTX 550 Ti (**no se usa**: ningún contenedor ni modelo la usa),
+Gigabyte B550M DS3H, Windows 11 IoT Enterprise LTSC. Docker 29.9.2 con una VM de 16 CPU y ~9,7 GB de RAM; la cuota de
+planta se aplica por contenedor (`deploy.resources.limits`). Las mediciones de latencia son con esos límites, pero el
+procesador del equipo de desarrollo es más rápido que el de una PC de sala de control típica.
+
+Límites por servicio (`docker-compose.yml`):
+
 
 | Servicio | CPU | Memoria | Notas |
 |---|---:|---:|---|
@@ -64,10 +77,18 @@ La puerta original (RTF p99 ≤ 0,7) no se cumple con este modelo: el costo fijo
 
 ## Tokens y costo de nube
 
-- **Tokens de LLM por nota: 0.** No hay modelos de lenguaje en el camino de la nota. El presupuesto de tokens
-  (4.000) existe y está probado (`control/presupuesto.py`) para el análisis de la Entrega 2.
-- **Costo de nube: USD 0.** Ninguna llamada sale del entorno de planta.
-- Consumo por nota (pasos, milisegundos, cortes) en la tabla `consumo`.
+| Tarea | Tokens | Cómo se midió |
+|---|---:|---|
+| Transcripción (ASR) | No usa tokens de LLM; cuesta tiempo: 4,39 s fijos + 0,132 s por segundo de audio | Regresión sobre 104 transcripciones con la CPU saturada |
+| Embeddings (consulta RAG) | ≤ 512 tokens del tokenizador por consulta (preguntas de una frase: pocas decenas); 710 pasajes indexados una sola vez en el build | `emb/nucleo.py` (truncado a 512) |
+| Parser, diálogo, seguridad, eventos | 0 (reglas) | — |
+| Respaldo con LLM (por llamada) | **≈ 690 de entrada + 50–90 de salida = 730–780** | `usage_metadata` de `ChatOllama` en el stack del clon limpio (prompt con catálogo y 4 ejemplos) |
+| **Por nota en las corridas del corrector** | **0** | El respaldo no se llamó ni una vez en las 4 corridas finales de V7 |
+
+El presupuesto por llamada es de 2.500 tokens y por nota de 12 pasos y 120 s (`control/presupuesto.py`); el consumo de cada
+nota (pasos, tokens, milisegundos, cortes) queda en la tabla `consumo`.
+
+**Costo de nube: USD 0.** No hay modelos en la nube en la Entrega 1: ninguna llamada sale del entorno de planta.
 
 ## RAG (medido)
 
@@ -145,14 +166,45 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 
 ## Decisiones vigentes
 
-- **D8** (estricta): sin confirmación del operador el parte queda en Borrador. **D16** (flexibilizarla): pendiente de Novit.
+- **D8** (estricta): sin confirmación del operador el parte queda en Borrador. **D16** (flexibilizarla) **pendiente de Novit**:
+  es el techo de A2, A3 y B1 (88,8).
 - **D14**: S2 y S4 no llevan equipo ni filas (provisional).
 - **D17**: cola de salida con protocolo intención → publicación → marca.
-- **D18** enmendada: puerta de latencia de alerta p99 ≤ 15 s en el peor caso; **no cumplida** (18,8 s), aceptado el 09/11.
-- `planta_contrato` se instala desde un commit fijo de `academia2026-tp` (provisional; ver README).
+- **D18** enmendada: puerta interna de latencia de alerta p99 ≤ 15 s en el peor caso; **no cumplida** (p99 19,3 s), aceptado el 09/11.
+  El requisito de la rúbrica (30 s) se cumple.
 
-## Pendiente (no hecho en esta entrega)
+## Pendiente y limitaciones declaradas
 
-- El respaldo con LLM solo se midió sobre casos generados (30), no sobre tráfico real, y no se ejercitó en el corrector.
-- Latencia de alerta p99 ≤ 15 s (ver arriba).
-- WER de `small` contra `turbo` sobre las voces (solo se midió `small`, 102 audios).
+- **Contrato provisional:** `planta_contrato` se instala desde un commit fijo de `academia2026-tp`; la URL de `docs/contrato.md`
+  devuelve 404 y falta confirmación de Novit.
+- **Variabilidad de Piper:** el simulador sintetiza con Piper, que no es determinista (cuatro audios distintos con la misma
+  semilla). La nota del corrector puede variar entre corridas por errores del ASR sobre audios distintos; antes de los
+  arreglos salieron 88,8, 88,0 y 86,8, y las cuatro corridas finales dieron 88,8.
+- **Puerta interna de 15 s no cumplida** (p99 19,3 s en el peor caso con carga al tope); causa: un trabajo del ASR en curso no
+  se interrumpe.
+- **Lista cerrada de modelos:** no estaba en los materiales; no pude verificar que `small`, `multilingual-e5-small` y
+  `qwen3.5:2b-q4_K_M` pertenezcan a ella.
+- **Fotos:** se asocian a su fila por URL pero el sistema no las descarga.
+- **Códigos de falla del fabricante → F01–F10:** `MBP-4 §6` se recupera y se cita, pero no hay una función que traduzca.
+- **Context builder:** solo mencionado; falta el documento de diseño.
+- **Notas `VIVO-`:** sin tratamiento ni test específico (una nota sin equipos termina en `sin_filas`).
+- **Evaluación contra `/api/verdad`:** se hace con el corrector oficial y `evaluacion/extraccion.py`; no hay un script propio.
+- **Respaldo con LLM:** medido solo sobre 30 casos generados (53 % de valor exacto) y sin ejercitarse en el corrector.
+- **WER de `small` contra `turbo`:** solo se midió `small` (102 audios).
+- **Repositorio:** falta subirlo a GitHub con el nombre `rolando-flores`.
+
+## Conclusión: por qué estos modelos
+
+Se eligió **lo más chico que cumple, todo local**, por tres razones que vienen de las restricciones y de lo medido:
+
+1. **La planta no tiene GPU, 4 CPU y 8 GB, y el enlace puede caerse horas.** Por eso nada depende de la nube y los tres modelos
+   corren en CPU dentro de la cuota: `small` en int8 transcribe en ~4 s fijos más ~0,13 s por segundo de audio y deja la
+   alerta de seguridad en 4–5 s en el caso normal (la rúbrica pide menos de 30); `multilingual-e5-small` (118 M, ONNX) cabe en
+   0,25 CPU y busca en ~35 ms; y el LLM de respaldo es `qwen3.5:2b` en Q4_K_M porque midiéndolo con la cuota real fue tan
+   exacto como Q8_0 (53 % contra 49 %), más rápido (p95 50 s contra 74 s) y con menos memoria.
+2. **Las decisiones que importan son de código, no de un modelo.** La alerta de seguridad, los eventos, las unidades y los
+   límites se deciden con reglas reproducibles; el LLM solo propone filas cuando el parser no entiende y todo lo que propone se
+   valida y lo confirma una persona. Eso es lo que sostuvo 88,8 en cuatro corridas sin que el LLM interviniera.
+3. **Lo que no se pudo medir bien quedó dicho:** el LLM acierta ~53 % del valor exacto sobre notas deformadas (por eso es solo
+   respaldo), el ASR depende de audios que cambian entre corridas, y dos puertas internas (latencia p99 y p95 del LLM) no se
+   cumplen con holgura.

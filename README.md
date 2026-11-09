@@ -28,6 +28,20 @@ arrancar. El `client_id` MQTT es `<proyecto de compose>-agente`: dos stacks nunc
 > Antes de correr el corrector oficial, bajá cualquier stack de prueba propio (`docker compose down`): comparte el
 > broker de la planta.
 
+## Qué corre dónde
+
+**Todo corre en la PC de la planta; no hay nada en la nube en la Entrega 1** (costo de nube: USD 0). El enlace a internet
+puede caerse durante horas (`fuga-sin-enlace` lo corta a los 10 minutos) y el sistema sigue andando: la transcripción, la
+detección de seguridad, el parte y la búsqueda en los manuales no dependen de él.
+
+| Tarea | Dónde | Por qué |
+|---|---|---|
+| Transcripción de las notas | Local (`asr`, faster-whisper `small`) | La alerta de seguridad tiene que salir en < 30 s con o sin enlace |
+| Detección S1–S4, eventos, parte y diálogo | Local, en código (sin modelo) | Reproducible y sin depender de la red |
+| Búsqueda en manuales (RAG) | Local (`emb` + pgvector) | Los manuales están en la planta; límites y stock no salen del RAG (`docs/rag.md`) |
+| Respaldo con LLM | Local (`llm`, Ollama) | Solo para lo que el parser no entiende; nunca decide ni confirma |
+| Análisis de anomalías, visión, órdenes | **Entrega 2**: nube (modelos de NVIDIA) cuando llegue; hoy no existe | Necesitan modelos grandes que no entran en 4 CPU y 8 GB |
+
 ## Dependencia provisional del contrato
 
 `planta_contrato` se instala con pip desde un commit fijo de `NovitSoftware/academia2026-tp`:

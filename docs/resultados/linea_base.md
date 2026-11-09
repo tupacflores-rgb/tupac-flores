@@ -214,3 +214,22 @@ p99 ≤ 15 s sigue sin cumplirse (aceptado por el usuario el 09/11); el requisit
   de punta a punta, no en las corridas del corrector.
 - Con cuatro corridas idénticas no se puede descartar que el corrector tenga variación de audio: antes del arreglo
   salieron 88,8, 88,0 y 86,8 con el mismo diseño. Que las cuatro finales den 88,8 es un buen indicio, no una garantía.
+
+## Verificación con clon limpio (09/11/2026, commit `af1d990`)
+
+Prueba de que la entrega no depende de nada de la carpeta de trabajo.
+
+1. `git clone --branch entrega-1` del repo local a una carpeta temporal fuera de `Tupac-Flores`, llamada `rolando-flores`
+   (128 archivos rastreados; sin `Context/` ni `.env`).
+2. `docker compose build --no-cache` desde el clon: **construyó las 5 imágenes sin errores** (agente, asr, emb, llm, db) en
+   ~10 min. Todo se obtuvo de internet y de lo versionado: `planta_contrato` por pip desde GitHub, el modelo del ASR con
+   revisión y sha256, el de embeddings con revisión y sha256, y el LLM con `ollama pull` y digest verificado. Tamaño: asr 1,7 GB,
+   emb 1,3 GB, llm 12,2 GB (la imagen base de Ollama pesa 3,2 GB), db 0,6 GB, agente 0,35 GB.
+3. **Arranque en frío** (sin imágenes en uso, sin volúmenes, `docker compose up -d`): `up -d` devolvió a los 16,3 s y el
+   **primer latido `sistema/estado` llegó a los 24,4 s** (límite: 180 s), válido contra el contrato
+   (`sistema: Rolando Flores`, `enlace_ok: true`, `pendientes_sincronizar: 0`).
+4. Corrector oficial apuntando al clon (`martes-tranquilo` + `fuga-sin-enlace`): **88,8 / 100**, sin eliminatorias; A1 100 %,
+   A2 y A3 69,4 %, A4a y A4b 100 %, B1 84,7 %, B2 100 %, F1 y F2 100 %; alerta S1 a los **4,0 s**. Esta corrida es además la de
+   control del cambio de modelo del LLM (Q8_0 → Q4_K_M).
+5. Se borró la carpeta del clon y el stack de compose del proyecto `alumno-rolando-flores` (contenedores, red y volúmenes).
+   Las cinco imágenes construidas quedan en el almacén de Docker (≈ 16 GB) hasta que se autorice borrarlas.
