@@ -1,4 +1,4 @@
-"""Las seis tools de solo lectura (Anexo 1.3): equipos, sensores, órdenes, inventario, tareas y manuales.
+"""Las siete tools de solo lectura (Anexo 1.3): equipos, sensores, órdenes, inventario, tareas, manuales y códigos de falla.
 
 Qué sale de dónde (ver docs/rag.md):
 - Límites de alarma y estado de los equipos -> API de la planta (`/api/planta`), nunca del RAG.
@@ -7,14 +7,17 @@ Qué sale de dónde (ver docs/rag.md):
 - Procedimientos, causas probables y recomendaciones del fabricante -> manuales (RAG), con cita.
 """
 
+# ruff: noqa: E501
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import Field
+from pydantic import Field, field_validator
 
+from ..conocimiento.fallas import TablaFallas
 from ..conocimiento.recuperador import Recuperador
 from ..integraciones.planta_api import PlantaApi
 from .base import Entrada, ErrorDeDatos, Herramienta
@@ -245,10 +248,49 @@ class BuscarManuales(Herramienta):
         }
 
 
+# --- traducción de códigos de falla ------------------------------------------------------------------------
+
+
+class EntradaTraducirCodigo(Entrada):
+    codigo: str = Field(
+        pattern=r"^(F\d{2}|[A-Z]{2}-T\d{2})$",
+        description="código del catálogo de la planta (F01–F10) o del fabricante (TX-T07, FC-T02…)",
+    )
+
+    @field_validator("codigo", mode="before")
+    @classmethod
+    def _normalizar(cls, v):
+        if isinstance(v, str):  # «tx t07», «tx-t07», «f 03» se aceptan como se dicen en campo
+            v = re.sub(r"[\s\u2010-\u2015]+", "-", v.strip().upper())
+            v = re.sub(r"^([A-Z]{2})-?(T\d{2})$", r"\1-\2", v)
+            v = re.sub(r"^F-(\d{2})$", r"F\1", v)
+        return v
+
+
+class TraducirCodigo(Herramienta):
+    nombre = "traducir_codigo"
+    descripcion = (
+        "Traduce un código de falla entre el catálogo de la planta (F01–F10) y los códigos de los fabricantes "
+        "(TX-T07, FC-T02…), con la tarea, el ejecutor y las citas (MBP-4 §6.1 y el manual). La tabla sale del corpus."
+    )
+    entrada = EntradaTraducirCodigo
+
+    def __init__(self, tabla: TablaFallas):
+        self._tabla = tabla
+
+    def ejecutar(self, e: EntradaTraducirCodigo):
+        r = self._tabla.traducir(e.codigo)
+        if r is None:
+            raise ErrorDeDatos(f"el código {e.codigo} no figura en MBP-4 §6.1 ni en los manuales")
+        return r
+
+
 def construir(
     planta: PlantaApi, recuperador: Recuperador, materiales: dict | None = None
 ) -> dict[str, Herramienta]:
     m = materiales or cargar_materiales()
+    lexico = getattr(recuperador, "lexico", recuperador)  # el híbrido envuelve al léxico
+    tabla = TablaFallas.desde_fragmentos(lexico.fragmentos)
     todas = [
         Equipos(planta),
         HistorialSensores(planta),
@@ -256,5 +298,6 @@ def construir(
         Inventario(m),
         CatalogoTareas(m),
         BuscarManuales(recuperador),
+        TraducirCodigo(tabla),
     ]
     return {t.nombre: t for t in todas}

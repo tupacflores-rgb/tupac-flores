@@ -111,7 +111,7 @@ filtros de vigencia. Qué va por RAG y qué por API o SQL: `docs/rag.md` (límit
 El núcleo de agentes usa LangChain (versiones exactas en `pyproject.toml`: `langchain-core==1.7.6`,
 `langchain-mcp-adapters==0.3.2`, `mcp==1.30.0`; el adaptador exige `mcp<2`):
 
-- **Tools:** las seis son `StructuredTool` con su modelo Pydantic estricto como `args_schema`; un fallo es `ToolException`
+- **Tools:** las siete son `StructuredTool` con su modelo Pydantic estricto como `args_schema`; un fallo es `ToolException`
   (`herramientas/langchain.py`). El servidor MCP propio se consume con `langchain-mcp-adapters` (en memoria y por stdio).
 - **Flujo del parte:** las dos pasadas de una nota son cadenas LCEL (`RunnableSequence`) de pasos con nombre:
   `transcribir_rapido | seguridad` y `transcribir | guardar | parte` (`flujo.py`, `pipeline.py`).
@@ -149,7 +149,7 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 
 ## Tools, MCP, control y memoria
 
-- Seis tools de solo lectura con Pydantic estricto (`extra="forbid"`), timeout y reintentos solo ante fallas
+- Siete tools de solo lectura con Pydantic estricto (`extra="forbid"`), timeout y reintentos solo ante fallas
   transitorias; servidor MCP por stdio. Tests: `tests/unit/test_herramientas.py` (incluye cliente MCP real).
 - Control por nota: 12 pasos, 4.000 tokens, 120 s y 3 repeticiones; la pasada completa se corta, la de seguridad se mide
   pero no se corta.
@@ -184,7 +184,7 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
   se interrumpe.
 - **Lista cerrada de modelos:** modelos locales de libre elección según aclaración verbal de Novit; confirmación por escrito pendiente (BL-5).
 - **Fotos:** se asocian a su fila por URL pero el sistema no las descarga.
-- **Códigos de falla del fabricante → F01–F10:** `MBP-4 §6` se recupera y se cita, pero no hay una función que traduzca.
+- **Códigos de falla del fabricante → F01–F10:** la tabla `MBP-4 §6.1` se **extrae del corpus indexado** (no está escrita a mano) y la tool `traducir_codigo` (solo lectura, Pydantic estricto, también por MCP) traduce `TX-T07`↔`F09` con sus citas (MBP-4 §6.1/§6.x y el manual vigente). Un código del manual sin correspondencia en la tabla (p. ej. `TX-T09`) se informa sin inventar una.
 - **Context builder:** solo mencionado; falta el documento de diseño.
 - **Notas `VIVO-`:** sin tratamiento ni test específico (una nota sin equipos termina en `sin_filas`).
 - **Evaluación contra `/api/verdad`:** se hace con el corrector oficial y `evaluacion/extraccion.py`; no hay un script propio.

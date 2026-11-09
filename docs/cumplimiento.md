@@ -59,7 +59,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 
 | Requisito | Estado | Evidencia |
 |---|---|---|
-| Seis tools de solo lectura con Pydantic estricto (`extra="forbid"`) | ✅ | `src/sistema/herramientas/catalogo.py`; `tests/unit/test_herramientas.py` |
+| Siete tools de solo lectura con Pydantic estricto (`extra="forbid"`) | ✅ | `src/sistema/herramientas/catalogo.py`; `tests/unit/test_herramientas.py` |
 | Al menos una expuesta por MCP | ✅ | `servidor_mcp.py`; cliente MCP real en `test_herramientas.py` y por stdio con `langchain-mcp-adapters` en `test_langchain_tools.py` |
 | Errores, timeouts y reintentos en cada tool | ✅ | `herramientas/base.py`; `test_reintenta_lo_transitorio_y_termina`, `test_timeout_corta_sin_esperar_al_hilo`, `test_error_de_datos_no_se_reintenta` |
 | Tests automatizados de cada tool en `tests/` | ✅ | `tests/unit/test_herramientas.py` (una por tool) |
@@ -74,7 +74,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 | Indexa en pgvector con equipo, fabricante, documento, sección, cita, vigente | ✅ | `emb/servidor.py` (tabla `fragmento_vec`); `docs/rag.md` |
 | Trampa: Rev. C vencida con otros límites | ✅ | 0 de 71 preguntas con la Rev. C antes que la D (base: 39). `docs/resultados/retrieval.json` |
 | Trampa: secciones de otros modelos/plantas que no aplican | ✅ | Marca `aplica`; `tests/unit/test_recuperador.py` |
-| Trampa: códigos del fabricante → F01–F10 con MBP-4 §6 | 🟡 | `MBP-4 §6` se recupera y se cita como cualquier sección, pero **no hay una función que traduzca** `TX-T07` a `F0x` |
+| Trampa: códigos del fabricante → F01–F10 con MBP-4 §6 | ✅ | Tabla F01–F10 extraída de `MBP-4 §6.1` al cargar el corpus (`conocimiento/fallas.py`); tool `traducir_codigo` con citas, también por MCP; `tests/unit/test_fallas.py` |
 | recall@k con `retrieval.json` (71 preguntas) contra BM25 (hit@5 0,85, recall@5 0,66) y Rev. C antes que D | ✅ | `evaluacion/retrieval.py`: léxico, denso, híbrido y sin prefijos (`docs/rag.md`). El híbrido iguala al léxico filtrado; no lo supera con holgura |
 | Cada conclusión cita su sección | ✅🟡 | Cada resultado de `buscar_manuales` lleva su cita (`TX350-D §3.2`); en la Entrega 1 no se generan «conclusiones» de análisis |
 | Justifica qué va por RAG y qué por API o SQL | ✅ | `docs/rag.md` (tabla) |

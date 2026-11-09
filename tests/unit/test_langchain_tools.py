@@ -21,6 +21,7 @@ NOMBRES = {
     "inventario",
     "catalogo_tareas",
     "buscar_manuales",
+    "traducir_codigo",
 }
 
 
@@ -29,7 +30,7 @@ def tools(recuperador):  # noqa: F811
     return construir(_planta(_handler), recuperador, cargar_materiales())
 
 
-def test_las_seis_tools_son_structured_tool_con_esquema_pydantic_estricto(tools):
+def test_las_siete_tools_son_structured_tool_con_esquema_pydantic_estricto(tools):
     lc = a_structured_tools(tools)
     assert {t.name for t in lc} == NOMBRES
     for t in lc:

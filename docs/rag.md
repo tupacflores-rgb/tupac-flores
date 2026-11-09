@@ -66,12 +66,12 @@ Lectura:
 
 ## Tools (Anexo 1.3)
 
-`src/sistema/herramientas/`: seis tools de solo lectura, todas con entrada Pydantic `extra="forbid"` y `strict=True`
+`src/sistema/herramientas/`: seis tools de solo lectura (equipos, historial_sensores, historial_ordenes, inventario, catalogo_tareas, buscar_manuales, traducir_codigo), todas con entrada Pydantic `extra="forbid"` y `strict=True`
 (un argumento de más o un tipo equivocado se rechaza, no se corrige), timeout por intento, reintentos solo ante
 errores transitorios (red, 5xx, timeout) y un resultado uniforme `ResultadoTool` (`ok`, `datos` o `error`, `intentos`,
 `ms`). Una tool nunca lanza hacia el llamador. Tests en `tests/unit/test_herramientas.py`.
 
-Servidor MCP: `python -m sistema.herramientas.servidor_mcp` (stdio) expone las seis; `buscar_manuales` usa el híbrido si hay `EMB_URL`. Probado con el cliente MCP real,
+Servidor MCP: `python -m sistema.herramientas.servidor_mcp` (stdio) expone las siete; `buscar_manuales` usa el híbrido si hay `EMB_URL`. Probado con el cliente MCP real,
 en memoria y por stdio.
 
 ## Memoria

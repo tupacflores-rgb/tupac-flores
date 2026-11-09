@@ -53,7 +53,7 @@ def tools(recuperador):
     return construir(_planta(_handler), recuperador, cargar_materiales())
 
 
-def test_seis_tools_con_entrada_estricta(tools):
+def test_siete_tools_con_entrada_estricta(tools):
     assert set(tools) == {
         "equipos",
         "historial_sensores",
@@ -61,6 +61,7 @@ def test_seis_tools_con_entrada_estricta(tools):
         "inventario",
         "catalogo_tareas",
         "buscar_manuales",
+        "traducir_codigo",
     }
     for t in tools.values():
         assert t.entrada.model_config["extra"] == "forbid"

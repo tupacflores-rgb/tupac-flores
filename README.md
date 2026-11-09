@@ -81,7 +81,7 @@ src/sistema/
   voz/                               parser determinista, intérprete de respuestas y diálogo con la tablet
   deteccion/                         seguridad S1–S4, eventos por equipo, anomalía sostenida de sensores
   conocimiento/                      corpus, recuperador léxico y híbrido (RAG)
-  herramientas/                      seis tools (StructuredTool de LangChain), servidor MCP y su consumo con langchain-mcp-adapters
+  herramientas/                      siete tools (StructuredTool de LangChain), servidor MCP y su consumo con langchain-mcp-adapters
   control/                           presupuesto de pasos y tokens, timeout y cortes por nota
   persistencia/, integraciones/      Postgres, cola de salida, MQTT, API de la planta, ASR
 asr/, emb/, llm/                     servicios de transcripción, embeddings y LLM de respaldo (Ollama)
