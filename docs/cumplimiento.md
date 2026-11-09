@@ -26,7 +26,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 | Requisito | Estado | Evidencia |
 |---|---|---|
 | Escucha `planta/recorridas` y baja el **audio** | ✅ | `src/sistema/integraciones/mqtt.py`, `pipeline.py`; corrector A1 = 100 % |
-| …y baja las **fotos** | 🟡 | **No se descargan**: el sistema guarda las URLs de `fotos` y las asocia a la fila, pero nunca baja los bytes. Hoy nada los consume (el análisis de imágenes es de la Entrega 2) |
+| …y baja las **fotos** | ✅ | `src/sistema/fotos.py`: se bajan a un volumen (`agente-fotos`) con el sha256 como nombre, asociadas a su fila y a la nota (tabla `foto`); timeout y reintentos; si falla se guarda la URL y queda `pendiente` hasta que baje. `tests/unit/test_fotos.py` (14). El análisis de imágenes es de la Entrega 2 |
 | Transcribe con un modelo local (lista cerrada) | ✅🟡 | Local: sí (`asr/`, faster-whisper `small` int8; funciona sin enlace, corrector E1 = 100 %). Lista cerrada: modelos locales de libre elección según aclaración verbal de Novit; confirmación por escrito pendiente (BL-5) |
 | Extrae con structured output validado a `FilaParte` | ✅🟡 | `Fila.a_contrato()` valida contra `FilaParte`; el respaldo con LLM usa `with_structured_output` hacia `FilaParte` (`src/sistema/respaldo.py`, `tests/unit/test_respaldo_llm.py`). El camino principal es un **parser determinista**, no structured output |
 | Una fila por equipo y variable, aunque la nota los mezcle | ✅ | `src/sistema/voz/parser.py`; `tests/unit/test_parser_respuestas.py` |
@@ -65,7 +65,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 | Tests automatizados de cada tool en `tests/` | ✅ | `tests/unit/test_herramientas.py` (una por tool) |
 | Condiciones de corte, presupuesto de pasos y tokens, timeout global por nota | ✅ | `src/sistema/control/presupuesto.py`; `tests/unit/test_presupuesto.py`, `test_flujo_lcel.py` |
 | Mini spec del flujo del parte (SDD) | ✅ | `docs/spec-parte.md` |
-| Primera evaluación contra `/api/verdad`: aciertos por campo y si preguntó solo cuando había ambigüedad | 🟡 | Se mide con el corrector oficial (A2/A3/A4a/A4b, `docs/resultados/linea_base.md`) y con `evaluacion/extraccion.py` (OperadorVirtual real). No hay un script propio que lea `/api/verdad` y reporte aciertos por campo |
+| Primera evaluación contra `/api/verdad`: aciertos por campo y si preguntó solo cuando había ambigüedad | ✅ | `evaluacion/verdad.py` lee `/api/verdad` y `/api/registro` (o una corrida del corrector) y reporta aciertos por campo, preguntas en notas ambiguas vs claras y falsos positivos/negativos. Sobre la corrida de control (13 notas, commit 55a6fe4): equipo, variable, valor y unidad 25/25; 3 notas ambiguas con 1 pregunta cada una, 10 claras con 0; 1/1 alerta de seguridad, 0 falsos. Muestra chica. `docs/resultados/verdad.md`; `tests/unit/test_verdad.py` |
 
 ## RAG, contexto y memoria
 

@@ -1,0 +1,870 @@
+{
+ "resumen": {
+  "notas": 13,
+  "con_parte_esperado": 13,
+  "sin_borrador": [],
+  "ultimo": {
+   "campos": {
+    "fila": [
+     25,
+     25
+    ],
+    "valor": [
+     25,
+     25
+    ],
+    "unidad": [
+     25,
+     25
+    ],
+    "observacion": [
+     3,
+     3
+    ]
+   },
+   "faltan": 0,
+   "sobran": 0
+  },
+  "primero": {
+   "campos": {
+    "fila": [
+     25,
+     25
+    ],
+    "valor": [
+     25,
+     25
+    ],
+    "unidad": [
+     25,
+     25
+    ],
+    "observacion": [
+     3,
+     3
+    ]
+   },
+   "faltan": 0,
+   "sobran": 0
+  },
+  "grupos": {
+   "ambiguas": {
+    "notas": 3,
+    "preguntas": 3,
+    "borradores_extra": 0,
+    "con_pregunta": 3,
+    "ultimo": {
+     "campos": {
+      "fila": [
+       6,
+       6
+      ],
+      "valor": [
+       6,
+       6
+      ],
+      "unidad": [
+       6,
+       6
+      ],
+      "observacion": [
+       2,
+       2
+      ]
+     },
+     "faltan": 0,
+     "sobran": 0
+    }
+   },
+   "claras": {
+    "notas": 10,
+    "preguntas": 0,
+    "borradores_extra": 0,
+    "con_pregunta": 0,
+    "ultimo": {
+     "campos": {
+      "fila": [
+       19,
+       19
+      ],
+      "valor": [
+       19,
+       19
+      ],
+      "unidad": [
+       19,
+       19
+      ],
+      "observacion": [
+       1,
+       1
+      ]
+     },
+     "faltan": 0,
+     "sobran": 0
+    }
+   }
+  },
+  "dialogos": {
+   "total": 13,
+   "confirmados": 10,
+   "con_problemas": 0
+  },
+  "seguridad": {
+   "inseguras": 1,
+   "alertas_emitidas": 1,
+   "falsos_negativos": [],
+   "falsos_positivos": []
+  }
+ },
+ "escenarios": [
+  {
+   "escenario": "fuga-sin-enlace",
+   "notas": [
+    {
+     "nota": "NOTA-00001",
+     "ambigua": false,
+     "segura": false,
+     "seguridad": "S1",
+     "alerta": true,
+     "esperadas": 1,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        1,
+        1
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        1,
+        1
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00006",
+     "ambigua": true,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 1,
+     "borradores": 1,
+     "preguntas": 1,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        1,
+        1
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        1,
+        1
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00004",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 2,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00005",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 2,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    }
+   ],
+   "dialogos": {
+    "total": 3,
+    "confirmados": 2,
+    "con_problemas": 0
+   }
+  },
+  {
+   "escenario": "martes-tranquilo",
+   "notas": [
+    {
+     "nota": "NOTA-00002",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 2,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00003",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 2,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00005",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 1,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00008",
+     "ambigua": true,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 1,
+     "borradores": 1,
+     "preguntas": 1,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        1,
+        1
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        1,
+        1
+       ],
+       "valor": [
+        1,
+        1
+       ],
+       "unidad": [
+        1,
+        1
+       ],
+       "observacion": [
+        1,
+        1
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00007",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 2,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00006",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 2,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00010",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 2,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        2,
+        2
+       ],
+       "valor": [
+        2,
+        2
+       ],
+       "unidad": [
+        2,
+        2
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00011",
+     "ambigua": true,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 4,
+     "borradores": 1,
+     "preguntas": 1,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        4,
+        4
+       ],
+       "valor": [
+        4,
+        4
+       ],
+       "unidad": [
+        4,
+        4
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        4,
+        4
+       ],
+       "valor": [
+        4,
+        4
+       ],
+       "unidad": [
+        4,
+        4
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    },
+    {
+     "nota": "NOTA-00013",
+     "ambigua": false,
+     "segura": true,
+     "seguridad": null,
+     "alerta": false,
+     "esperadas": 3,
+     "borradores": 1,
+     "preguntas": 0,
+     "sin_borrador": false,
+     "primero": {
+      "campos": {
+       "fila": [
+        3,
+        3
+       ],
+       "valor": [
+        3,
+        3
+       ],
+       "unidad": [
+        3,
+        3
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "ultimo": {
+      "campos": {
+       "fila": [
+        3,
+        3
+       ],
+       "valor": [
+        3,
+        3
+       ],
+       "unidad": [
+        3,
+        3
+       ],
+       "observacion": [
+        0,
+        0
+       ]
+      },
+      "faltan": [],
+      "sobran": []
+     },
+     "vacia": false
+    }
+   ],
+   "dialogos": {
+    "total": 10,
+    "confirmados": 8,
+    "con_problemas": 0
+   }
+  }
+ ]
+}
