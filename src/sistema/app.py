@@ -259,6 +259,8 @@ class Agente:
         self.sup.lanzar("reloj", self._worker_reloj)
         self.sup.lanzar("enlace", self._worker_enlace)
         self.sup.lanzar("entrada", self._worker_entrada)
+        for i in (1, 2):  # dos plazas de seguridad en el ASR: una nota insegura no espera a otra en curso
+            self.sup.lanzar(f"pipeline-seguridad-{i}", self.pipeline.correr_seguridad)
         self.sup.lanzar("pipeline", self.pipeline.correr)
         self.sup.lanzar("dialogo", self.dialogo.correr)
         self.sup.lanzar("sincronizacion", self.sync.correr)

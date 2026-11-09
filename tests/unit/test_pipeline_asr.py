@@ -84,8 +84,10 @@ class Asr:
     def __init__(self, texto):
         self.texto = texto
 
-    def transcribir(self, audio):
-        return Transcripcion(self.texto, 9.3, 4.0)
+    def transcribir(self, audio, carril="completa"):
+        self.carriles = getattr(self, "carriles", []) + [carril]
+        texto = self.texto[carril] if isinstance(self.texto, dict) else self.texto
+        return Transcripcion(texto, 9.3, 4.0)
 
 
 class SalidaFalsa:
@@ -199,27 +201,49 @@ def _wav(segundos: float) -> bytes:
     return b.getvalue()
 
 
-def test_la_cola_atiende_primero_la_nota_mas_corta_y_no_deja_sin_atender_a_la_larga(monkeypatch):
+def test_la_cola_de_seguridad_atiende_primero_la_nota_mas_corta_y_respeta_el_tope_de_espera():
+    import time
+
     from sistema import pipeline as mod
 
     audios = {"/larga.wav": _wav(20), "/corta.wav": _wav(5), "/media.wav": _wav(10)}
 
-    class Api:
+    class ApiWav:
         def descargar(self, ruta, **_):
             return audios[ruta]
 
-    pipe = mod.Pipeline(Api(), None, lambda *_: None, None, lambda: None)  # type: ignore[arg-type]
-    for nid, ruta in (("L", "/larga.wav"), ("C", "/corta.wav"), ("M", "/media.wav")):
-        pipe.encolar(
-            NotaRecorrida(id=nid, ts=NOTA.ts, operador="x", audio_url=ruta, fotos=[], recorrida_id="R")
-        )
-    orden = [pipe._siguiente().nota.id for _ in range(3)]
-    assert orden == ["C", "M", "L"]
+    def nota(nid, ruta):
+        return NotaRecorrida(id=nid, ts=NOTA.ts, operador="x", audio_url=ruta, fotos=[], recorrida_id="R")
 
-    # Una nota que esperó más que el tope pasa primero aunque sea larga.
-    for nid, ruta in (("L2", "/larga.wav"), ("C2", "/corta.wav")):
-        pipe.encolar(
-            NotaRecorrida(id=nid, ts=NOTA.ts, operador="x", audio_url=ruta, fotos=[], recorrida_id="R")
-        )
-    pipe._cola[0].t_recibida -= mod.ESPERA_MAX_S + 1
-    assert pipe._siguiente().nota.id == "L2"
+    cola = mod._Cola(ApiWav(), corta_primero=True)
+    for nid, ruta in (("L", "/larga.wav"), ("C", "/corta.wav"), ("M", "/media.wav")):
+        cola.poner(mod._Pendiente(nota(nid, ruta), 1, time.monotonic()))
+    assert [cola.siguiente().nota.id for _ in range(3)] == ["C", "M", "L"]
+
+    cola.poner(mod._Pendiente(nota("L2", "/larga.wav"), 1, time.monotonic() - mod.ESPERA_MAX_S - 1))
+    cola.poner(mod._Pendiente(nota("C2", "/corta.wav"), 1, time.monotonic()))
+    assert cola.siguiente().nota.id == "L2"
+
+    fifo = mod._Cola(ApiWav(), corta_primero=False)
+    for nid, ruta in (("L", "/larga.wav"), ("C", "/corta.wav")):
+        fifo.poner(mod._Pendiente(nota(nid, ruta), 1, time.monotonic()))
+    assert fifo.siguiente().nota.id == "L"
+
+
+def test_dos_pasadas_alertan_una_sola_vez_y_la_rapida_alcanza_sola():
+    # La pasada rápida entiende la frase y la completa no: alerta igual, y no se duplica si ambas la entienden.
+    pipe, salida, _, posteriores = armar({"seguridad": S1, "completa": "La uno hace un ruido raro."})
+    pipe.atender_seguridad(NOTA)
+    pipe.atender(NOTA)
+    assert len(salida.lotes) == 1
+    assert posteriores[0][2].codigo == "S1"  # el parte conoce la detección de la pasada rápida
+
+    pipe2, salida2, *_ = armar({"seguridad": S1, "completa": S1})
+    pipe2.atender_seguridad(NOTA)
+    pipe2.atender(NOTA)
+    assert len(salida2.lotes) == 1
+
+    pipe3, salida3, *_ = armar({"seguridad": "Se escucha un golpeteo.", "completa": S1})
+    pipe3.atender_seguridad(NOTA)
+    pipe3.atender(NOTA)
+    assert len(salida3.lotes) == 1  # la completa también puede dar la alerta

@@ -58,6 +58,8 @@ NEGATIVOS = [
     "La uno está disparada, no arranca.",
     "Recorrida sin novedad, todo normal.",
     "Bueno, la bomba está en ciento quince kilos de descarga. Además el primario me dio uno ocho de diferencial.",
+    # negación mal oída por el ASR (medida: «Lo hay olor a gas» por «No hay olor a gas»)
+    "Recorrida de las cuatro. Lo hay olor a gas, no sale humo de ningún motor y nadie está herido.",
     # negaciones
     "No hay olor a gas, todo normal.",
     "Sin humo en el motor de la dos.",
@@ -162,4 +164,45 @@ def test_s2_tolera_los_errores_medidos_del_asr(texto):
     ],
 )
 def test_la_reparacion_de_s2_no_crea_falsas_alarmas(texto):
+    assert detectar(texto, CAT) is None, texto
+
+
+@pytest.mark.parametrize(
+    ("texto", "codigo"),
+    [
+        (
+            "Atención, te rompió algo en la descarga de la de la punta, salí agua a presión para todos lados.",
+            "S1",
+        ),
+        (
+            "Atención se rompió algo en la descarga de la del fondo. Saler agua a presión para todos lados",
+            "S1",
+        ),
+        ("Hay olor hagas fuerte del lado del portón.", "S2"),
+        ("Sale como del motor de la dos, hay olor a quemao.", "S3"),
+        (
+            "Ni compañero se evulpeó la mano con la llave en el skip de filtros, está sangrando bastante.",
+            "S4",
+        ),
+        ("Y compañero se golpeó la mano con la llave, está sangran do bastante.", "S4"),
+    ],
+)
+def test_coincidencia_aproximada_de_las_frases_de_las_plantillas(texto, codigo):
+    d = detectar(texto, CAT)
+    assert d is not None and d.codigo == codigo, texto
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "Hay olor a gasoil en el tanque de la otra planta.",
+        "La presión del agua en la dos está bien.",
+        "No hay olor a quemado ni humo en el motor.",
+        "No sale humo del motor de la dos.",
+        "Todavía no está sangrando la junta, solo gotea.",
+        "Se rompió una bolsa de cartuchos en el depósito.",
+        "Sale vapor del motor de la bomba de achique.",
+    ],
+)
+def test_la_coincidencia_aproximada_no_crea_falsas_alarmas(texto):
     assert detectar(texto, CAT) is None, texto

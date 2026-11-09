@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from difflib import SequenceMatcher
 
 from ..dominio.catalogo import Catalogo
 from ..voz.texto import oraciones
@@ -79,9 +80,10 @@ class Deteccion:
         return DESCRIPCION[self.codigo]
 
 
-def _negada(oracion: str, inicio: int) -> bool:
-    previas = oracion[:inicio].split()[-3:]
-    return any(p in NEGADORES for p in previas)
+def _negada(oracion: str, inicio: int, por_palabra: bool = False) -> bool:
+    """Hay un negador en las tres palabras anteriores. `inicio` es una posición de letra, o de palabra."""
+    anteriores = oracion.split()[:inicio] if por_palabra else oracion[:inicio].split()
+    return any(p in NEGADORES for p in anteriores[-3:])
 
 
 # Final de oración que deja una negación abierta: «no hay», «sin», «ni», «ningún». Un «no» suelto no cuenta:
@@ -95,6 +97,11 @@ _COLGANTES = {"sin", "ni", "ningun", "ninguna", "nada", "nadie"}
 _OLOR_A_GAS = re.compile(r"\b(?:h?olor ?(?:a |al )?|h?olora ?|h?olo ?)h?[ao]?gas(?:es)?\b")
 
 
+# El ASR oyó «No hay olor a gas» como «Lo hay olor a gas» (medido en la pasada rápida): «lo hay» no existe
+# como comienzo de frase, se lee como la negación que era.
+_LO_HAY = re.compile(r"\blo hay\b")
+
+
 def _negacion_colgante(oracion: str) -> bool:
     palabras = oracion.split()
     return bool(palabras) and (palabras[-1] in _COLGANTES or palabras[-2:] == ["no", "hay"])
@@ -106,13 +113,48 @@ def _oraciones_unidas(texto: str) -> list[str]:
     salida: list[str] = []
     unir = False
     for o in oraciones(texto):
-        o = _OLOR_A_GAS.sub("olor a gas", o)
+        o = _LO_HAY.sub("no hay", _OLOR_A_GAS.sub("olor a gas", o))
         if unir and salida:
             salida[-1] = f"{salida[-1]} {o}"
         else:
             salida.append(o)
         unir = _negacion_colgante(salida[-1])
     return salida
+
+
+# Frases clave de las plantillas del operador (operador.py), sin tildes. Se comparan sin espacios y con
+# tolerancia: el ASR parte y junta palabras («hólogas», «hagas», «olores quemados»).
+FRASES_CLAVE: dict[str, list[str]] = {
+    "S1": ["agua a presion", "se rompio algo en la descarga", "sale agua a presion para todos lados"],
+    "S2": ["olor a gas fuerte", "olor a gas"],
+    "S3": ["sale humo del motor", "olor a quemado"],
+    "S4": ["esta sangrando bastante", "sangrando bastante", "se golpeo la mano con la llave"],
+}
+UMBRAL_DIFUSO = 0.86
+UMBRAL_DIFUSO_CORTA = 0.90  # frases de hasta 10 letras: más exigentes, tienen menos de dónde agarrarse
+
+
+def _difusa(oracion: str) -> tuple[str, str] | None:
+    """Coincidencia aproximada de una frase clave sobre ventanas de palabras pegadas: (código, frase)."""
+    palabras = oracion.split()
+    for codigo, frases in FRASES_CLAVE.items():
+        for frase in frases:
+            plana = frase.replace(" ", "")
+            umbral = UMBRAL_DIFUSO_CORTA if len(plana) <= 10 else UMBRAL_DIFUSO
+            k = len(frase.split())
+            for ini in range(len(palabras)):
+                for largo in (k, k - 1, k + 1):
+                    if largo < 1 or ini + largo > len(palabras):
+                        continue
+                    ventana = palabras[ini : ini + largo]
+                    if NEGADORES & set(ventana):  # la negación entró en la ventana: no es la frase
+                        continue
+                    s = "".join(ventana)
+                    if abs(len(s) - len(plana)) > 2:
+                        continue
+                    if SequenceMatcher(None, s, plana).ratio() >= umbral and not _negada(oracion, ini, True):
+                        return codigo, " ".join(ventana)
+    return None
 
 
 def detectar(texto: str, catalogo: Catalogo | None = None) -> Deteccion | None:
@@ -128,6 +170,12 @@ def detectar(texto: str, catalogo: Catalogo | None = None) -> Deteccion | None:
                 if m and not _negada(oracion, m.start()):
                     equipo = _equipo(oracion, texto, catalogo) if codigo in CON_EQUIPO else None
                     return Deteccion(codigo, equipo, m.group(0))
+    for oracion in _oraciones_unidas(texto):
+        difusa = _difusa(_OLOR_A_GAS.sub("olor a gas", oracion))
+        if difusa is not None:
+            codigo, frase = difusa
+            equipo = _equipo(oracion, texto, catalogo) if codigo in CON_EQUIPO else None
+            return Deteccion(codigo, equipo, frase)
     return None
 
 

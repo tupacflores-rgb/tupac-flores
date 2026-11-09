@@ -57,11 +57,49 @@ def liberar(nombres: list[str]) -> None:
         subprocess.run(["docker", "rm", "-f", *nombres], capture_output=True)
 
 
+PROPIOS = ("tupac-flores-agente-1", "tupac-flores-db-1", "tupac-flores-emb-1")
+
+
+def cargar_propios() -> list[str]:
+    """Procesos que queman CPU dentro de nuestros contenedores: topan en su cuota (agente 0,5, db 0,5, emb)."""
+    lanzados = []
+    for c in PROPIOS:
+        if subprocess.run(["docker", "inspect", c], capture_output=True).returncode != 0:
+            continue
+        for _ in range(3):  # más procesos que la cuota: el contenedor queda al tope
+            subprocess.run(
+                ["docker", "exec", "-d", c, "sh", "-c", "echo $$ > /tmp/quemador.$$; while :; do :; done"],
+                capture_output=True,
+            )
+        lanzados.append(c)
+    return lanzados
+
+
+def parar_propios(contenedores: list[str]) -> None:
+    for c in contenedores:
+        # Cada bucle dejó su PID en /tmp/quemador.*: se cortan sin tocar el proceso principal del contenedor.
+        subprocess.run(
+            [
+                "docker",
+                "exec",
+                c,
+                "sh",
+                "-c",
+                "kill $(cat /tmp/quemador.*) 2>/dev/null; rm -f /tmp/quemador.*",
+            ],
+            capture_output=True,
+        )
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--planta", default="http://localhost:8100")
     ap.add_argument("--disparos", type=int, default=50)
     ap.add_argument("--saturar", type=int, default=0, help="procesos que queman CPU en otros contenedores")
+    ap.add_argument(
+        "--cargar-propios", action="store_true",
+        help="carga CPU al tope dentro de nuestros contenedores (agente, db y emb si existe), sin tocar asr ni la planta",
+    )  # fmt: skip
     ap.add_argument("--sin-nota-larga", action="store_true")
     ap.add_argument("--espera-max", type=float, default=60.0)
     ap.add_argument("--json")
@@ -92,6 +130,9 @@ def main() -> None:
 
     previas = {n["nota_id"] for n in verdad()}
     quemadores = saturar(a.saturar)
+    propios = cargar_propios() if a.cargar_propios else []
+    if propios:
+        print("carga al tope dentro de:", ", ".join(propios), flush=True)
     filas, no_llegaron = [], []
     try:
         time.sleep(3)
@@ -135,6 +176,7 @@ def main() -> None:
             time.sleep(7)  # que el sistema termine la nota larga y el diálogo antes del siguiente disparo
     finally:
         liberar(quemadores)
+        parar_propios(propios)
 
     time.sleep(8)
     inseguras = {n["nota_id"] for n in verdad() if n.get("seguridad")}
@@ -150,7 +192,7 @@ def main() -> None:
     res = {
         "disparos": a.disparos, "con_alerta": len(lat), "sin_alerta": a.disparos - len(lat),
         "falsas_alarmas": len(falsas), "mensajes_invalidos": invalidos,
-        "saturacion_procesos": a.saturar, "nota_larga_antes": not a.sin_nota_larga,
+        "saturacion_procesos": a.saturar, "carga_en_contenedores_propios": propios, "nota_larga_antes": not a.sin_nota_larga,
         "alerta_s": {"p50": pct(lat, 0.5), "p95": pct(lat, 0.95), "p99": pct(lat, 0.99), "max": max(lat),
                      "media": round(statistics.mean(lat), 2)} if lat else None,
         "por_codigo": {c: round(max(f["alerta_s"] for f in filas if f["codigo"] == c and f["alerta_s"]), 2)

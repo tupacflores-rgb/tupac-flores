@@ -94,8 +94,8 @@ def test_db_tiene_healthcheck_y_el_agente_la_espera():
 def test_asr_en_su_propio_servicio_con_cuota_propia():
     """El ASR no comparte los 0,5 CPU del agente: protege los 30 s de la alerta de seguridad (B2)."""
     limites = _limites(SERVICIOS["asr"])
-    assert float(limites["cpus"]) == 1.5
-    assert _memoria_gb(limites["memory"]) == 1.5
+    assert float(limites["cpus"]) == 2.0
+    assert _memoria_gb(limites["memory"]) == 2.0
     assert float(_limites(SERVICIOS["agente"])["cpus"]) == 0.5
     assert SERVICIOS["agente"]["depends_on"]["asr"]["condition"] == "service_healthy"
     assert "healthcheck" in SERVICIOS["asr"]

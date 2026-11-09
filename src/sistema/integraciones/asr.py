@@ -39,9 +39,13 @@ class ClienteAsr:
             self._ok = False
         return self._ok
 
-    def transcribir(self, audio: bytes) -> Transcripcion:
+    def transcribir(self, audio: bytes, carril: str = "completa") -> Transcripcion:
+        """`carril="seguridad"`: pasada rápida (beam 1, sin marcas de tiempo, prompt de emergencia)."""
         r = self._http.post(
-            "/transcribir", content=audio, headers={"Content-Type": "application/octet-stream"}
+            "/transcribir",
+            params={"carril": carril},
+            content=audio,
+            headers={"Content-Type": "application/octet-stream"},
         )
         r.raise_for_status()
         d = r.json()
