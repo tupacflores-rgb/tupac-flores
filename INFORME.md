@@ -44,7 +44,7 @@ Una prueba informativa con 12 procesos sin límite en el host dio 45/50 y p99 19
 | Interpretación de respuestas del operador | Reglas (sin modelo) | `src/sistema/voz/respuestas.py` | Local |
 | Detección de seguridad y eventos | Reglas (sin modelo) | `src/sistema/deteccion/` | Local |
 | Análisis, visión, órdenes | No hay en la Entrega 1 | — | — |
-| LLM de respaldo del parser (servicio `llm`, llama.cpp, Qwen2.5-1.5B-Instruct Q4_K_M) | **No incluido**: pendiente de aprobación del usuario | — | — |
+| Respaldo del parser y del intérprete de respuestas | **`qwen3.5:2b`** (Ollama `0.40.15`), Q8_0, 1,9 B parámetros; manifest `sha256:ae1e257587aba653…`; `think=false`, `temperature=0`, `num_ctx=2048`, `num_thread=1`, salida JSON schema → `FilaParte` (`langchain-ollama==1.1.0`) | `docker/llm.Dockerfile`, `src/sistema/respaldo.py` | Local, contenedor `llm` |
 
 Nada se descarga en runtime: los pesos se bajan en el build con revisión fija y viven dentro de la imagen.
 
@@ -54,9 +54,10 @@ Nada se descarga en runtime: los pesos se bajan en el build con revisión fija y
 |---|---:|---:|---|
 | `agente` | 0,5 | 1 GB | MQTT, pipeline, diálogo, latido, detección |
 | `asr` | 2,0 | 2 GB | dos carriles (seguridad: 2 plazas, completa: 1) de un hilo cada uno |
-| `emb` | 0,5 | 1 GB | 774 MiB en uso medido |
+| `emb` | 0,25 | 1 GB | 774 MiB en uso medido |
 | `db` | 0,5 | 1 GB | PostgreSQL 16 + pgvector |
-| **Total** | **3,5 de 4** | **5 de 8 GB** | verificado por `tests/infra/test_compose.py` |
+| `llm` | 0,75 | 2,5 GB | Ollama con `qwen3.5:2b`; solo respaldo (RAM pico medida: 2,5 GiB, sin margen) |
+| **Total** | **4,0 de 4** | **7,5 de 8 GB** | verificado por `tests/infra/test_compose.py` |
 
 Costo del ASR medido con la CPU saturada: **4,39 s fijos + 0,132 s por segundo de audio** (p95 de 7,4 s por nota).
 La puerta original (RTF p99 ≤ 0,7) no se cumple con este modelo: el costo fijo domina en audios cortos.
@@ -97,6 +98,30 @@ El núcleo de agentes usa LangChain (versiones exactas en `pyproject.toml`: `lan
   registra el consumo al terminar la cadena. La ruta de seguridad se mide pero no se corta.
 - No hay modelo de lenguaje en el camino de la nota; con la cadena y el callback ya montados, sumar uno es agregar un paso.
 
+## LLM de respaldo (Ollama)
+
+Solo respaldo: el parser determinista sigue siendo el camino principal. El LLM entra cuando el parser no saca filas de una
+nota que habla de equipos o variables, para los tramos que no interpretó y para respuestas del operador que el intérprete
+no entiende. **Nunca confirma un parte ni decide reglas**: su salida pasa por las mismas validaciones deterministas (el
+equipo existe, la variable corresponde a su tipo, la unidad es la del manómetro si no se dijo otra, y cada número tiene que
+haberse dicho). Si el servicio falla, tarda más de 90 s o se pasa de 2.500 tokens (callback de consumo), la nota sigue por
+el camino determinista y nunca queda sin respuesta.
+
+Los pesos viven dentro de la imagen (se bajan en el build, con digest verificado y `manifest.json`; el arranque los
+vuelve a verificar; nada se descarga en runtime). La imagen lleva solo el modelo elegido.
+
+Benchmark con la cuota real (0,75 CPU / 2,5 GB), 30 casos generados con el `OperadorVirtual` y variantes reales de ASR
+(`docs/resultados/llm.md`):
+
+| Modelo | Casos | Valor exacto | Equipo + variable | p50 / p95 | RAM pico |
+|---|---:|---:|---:|---|---:|
+| `qwen2.5:1.5b` (Q4_K_M) | 30 | 39,8 % | 49,4 % | 10,7 / 26,8 s | 2,0 GiB |
+| `qwen3.5:0.8b` (Q8_0) | 30 | 21,7 % | 41,0 % | 17,5 / 42,0 s | 2,0 GiB |
+| **`qwen3.5:2b` (Q8_0)** | **6** | **84,6 %** | **92,3 %** | 38,7 / 77,6 s | 2,5 GiB |
+
+`qwen3.5:2b` se midió con 6 casos (30 no entraban en el tope de 40 min a 0,68 tokens/s); su p95 es el máximo de 6
+llamadas y su RAM llega al tope. Detalle y limitaciones en `docs/resultados/llm.md`.
+
 ## Tools, MCP, control y memoria
 
 - Seis tools de solo lectura con Pydantic estricto (`extra="forbid"`), timeout y reintentos solo ante fallas
@@ -124,6 +149,6 @@ El núcleo de agentes usa LangChain (versiones exactas en `pyproject.toml`: `lan
 
 ## Pendiente (no hecho en esta entrega)
 
-- **Servicio `llm`** con llama.cpp (respaldo del parser y del intérprete de respuestas): no se hizo, a la espera de aprobación.
+- El LLM de respaldo se midió con 6 casos para `qwen3.5:2b` (ver arriba) y su RAM no tiene margen: hay que mirarlo en producción.
 - Latencia de alerta p99 ≤ 15 s (ver arriba).
 - WER de `small` contra `turbo` sobre las voces (solo se midió `small`, 102 audios).

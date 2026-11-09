@@ -10,17 +10,18 @@ Requiere la planta de Novit levantada (crea la red externa `planta-lan`):
 
 ```bash
 docker compose -p planta -f <repo de la planta>/docker-compose.yml up -d --build
-docker compose up -d --build        # agente, asr, emb y db
+docker compose up -d --build        # agente, asr, emb, llm y db (el build del llm baja el modelo: ~2,7 GB)
 ```
 
 | Servicio | Qué hace | CPU / memoria |
 |---|---|---|
 | `agente` | MQTT, pipeline de notas, diálogo con la tablet, detección, latido cada 30 s | 0,5 / 1 GB |
 | `asr` | faster-whisper `small` local, dos carriles (seguridad rápida y completa) | 2,0 / 2 GB |
-| `emb` | embeddings e5-small (ONNX) y búsqueda en pgvector | 0,5 / 1 GB |
+| `emb` | embeddings e5-small (ONNX) y búsqueda en pgvector | 0,25 / 1 GB |
 | `db` | PostgreSQL 16 con pgvector | 0,5 / 1 GB |
+| `llm` | Ollama con `qwen3.5:2b`: respaldo del parser (nunca confirma partes) | 0,75 / 2,5 GB |
 
-Los cuatro van solo en `planta-lan`, llevan el label `academia.planta: pc`, suman 3,5 de 4 CPU y 5 de 8 GB, y salen a
+Los cinco van solo en `planta-lan`, llevan el label `academia.planta: pc`, suman 4,0 de 4 CPU y 7,5 de 8 GB, y salen a
 internet por `HTTP(S)_PROXY=http://enlace:3128`. Los modelos viven dentro de las imágenes; no se descarga nada al
 arrancar. El `client_id` MQTT es `<proyecto de compose>-agente`: dos stacks nunca se pisan la sesión.
 
@@ -69,7 +70,8 @@ src/sistema/
   herramientas/                      seis tools (StructuredTool de LangChain), servidor MCP y su consumo con langchain-mcp-adapters
   control/                           presupuesto de pasos y tokens, timeout y cortes por nota
   persistencia/, integraciones/      Postgres, cola de salida, MQTT, API de la planta, ASR
-asr/, emb/                           servicios de transcripción y de embeddings
+asr/, emb/, llm/                     servicios de transcripción, embeddings y LLM de respaldo (Ollama)
+  respaldo.py                        LLM de respaldo: esquema, prompt y validación determinista
 tests/                               unit/, infra/ (compose), integracion/ (Postgres real)
 evaluacion/                          corrector, latencia de alerta, ASR, RAG, extracción offline
 docs/                                spec-parte.md, rag.md, memoria.md, resultados/
