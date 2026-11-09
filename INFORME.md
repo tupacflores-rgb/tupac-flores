@@ -40,10 +40,11 @@ Una prueba informativa con 12 procesos sin límite en el host dio 45/50 y p99 19
 |---|---|---|---|
 | Transcripción (ASR) | faster-whisper `small`, int8 (CTranslate2) | `Systran/faster-whisper-small` @ `536b0662…`, sha256 de `model.bin` verificado en el build; faster-whisper 1.1.0 | Local, contenedor `asr` |
 | Embeddings (RAG) | `intfloat/multilingual-e5-small`, ONNX | @ `614241f6…`, sha256 de `model.onnx` verificado; onnxruntime 1.20.1 | Local, contenedor `emb` |
-| Extracción del parte | Parser determinista (sin modelo) | `src/sistema/voz/` | Local |
+| Extracción del parte | Parser determinista (sin modelo), orquestado como cadena LCEL de LangChain | `src/sistema/voz/`, `src/sistema/flujo.py` | Local |
 | Interpretación de respuestas del operador | Reglas (sin modelo) | `src/sistema/voz/respuestas.py` | Local |
 | Detección de seguridad y eventos | Reglas (sin modelo) | `src/sistema/deteccion/` | Local |
 | Análisis, visión, órdenes | No hay en la Entrega 1 | — | — |
+| LLM de respaldo del parser (servicio `llm`, llama.cpp, Qwen2.5-1.5B-Instruct Q4_K_M) | **No incluido**: pendiente de aprobación del usuario | — | — |
 
 Nada se descarga en runtime: los pesos se bajan en el build con revisión fija y viven dentro de la imagen.
 
@@ -83,6 +84,19 @@ cita y vigente. Suite oficial de 71 preguntas (`docs/resultados/retrieval.json`,
 El híbrido mejora a la línea base BM25, pero **no supera con holgura al léxico filtrado**; la mejora real viene de los
 filtros de vigencia. Qué va por RAG y qué por API o SQL: `docs/rag.md` (límites y stock nunca salen del RAG).
 
+## LangChain
+
+El núcleo de agentes usa LangChain (versiones exactas en `pyproject.toml`: `langchain-core==1.7.6`,
+`langchain-mcp-adapters==0.3.2`, `mcp==1.30.0`; el adaptador exige `mcp<2`):
+
+- **Tools:** las seis son `StructuredTool` con su modelo Pydantic estricto como `args_schema`; un fallo es `ToolException`
+  (`herramientas/langchain.py`). El servidor MCP propio se consume con `langchain-mcp-adapters` (en memoria y por stdio).
+- **Flujo del parte:** las dos pasadas de una nota son cadenas LCEL (`RunnableSequence`) de pasos con nombre:
+  `transcribir_rapido | seguridad` y `transcribir | guardar | parte` (`flujo.py`, `pipeline.py`).
+- **Consumo:** `CallbackConsumo` es un `BaseCallbackHandler`: cuenta pasos, tools y tokens, corta por presupuesto y
+  registra el consumo al terminar la cadena. La ruta de seguridad se mide pero no se corta.
+- No hay modelo de lenguaje en el camino de la nota; con la cadena y el callback ya montados, sumar uno es agregar un paso.
+
 ## Tools, MCP, control y memoria
 
 - Seis tools de solo lectura con Pydantic estricto (`extra="forbid"`), timeout y reintentos solo ante fallas
@@ -91,6 +105,14 @@ filtros de vigencia. Qué va por RAG y qué por API o SQL: `docs/rag.md` (límit
   pero no se corta.
 - Memoria: `docs/memoria.md`, verificada contra las tablas reales de Postgres (`tests/integracion/`), con reinicio a
   mitad de diálogo probado.
+- **Diálogo:** hasta 5 borradores por nota (`MAX_BORRADORES`); el operador virtual de la planta responde sin tope, el
+  corte es nuestro. El timeout global por nota (120 s) se mantiene.
+- **Rango histórico (A-9):** un valor fuera de lo medido en 45 días (`/api/historian`, caché de 1 h) se avisa en el
+  borrador; si con el «mil» recuperado cae adentro (600 → 1600 psi) se muestra ese valor como provisional, con aviso y
+  sin opciones.
+- **Foto por fila (A-6):** cada «le saqué foto» se lleva la siguiente foto de la nota para las filas de su tramo.
+- **Contexto del escalado (B-3):** el `Escalado` lleva el parte del equipo, las fotos y la tendencia de las últimas 3 h
+  (en `resumen`; el contrato no tiene campos para eso).
 
 ## Decisiones vigentes
 
@@ -102,9 +124,6 @@ filtros de vigencia. Qué va por RAG y qué por API o SQL: `docs/rag.md` (límit
 
 ## Pendiente (no hecho en esta entrega)
 
-- **Rango histórico** (`/api/historian`, 45 días): un valor fuera de rango no pide confirmación todavía.
-- **Fotos** asociadas a la fila del parte y **contexto del escalado** (parte, fotos y tendencia de las últimas horas): el
-  `Escalado` hoy lleva un resumen mínimo.
-- **LangChain**: el sistema no usa un framework de agentes; el parser y el diálogo son código propio.
+- **Servicio `llm`** con llama.cpp (respaldo del parser y del intérprete de respuestas): no se hizo, a la espera de aprobación.
 - Latencia de alerta p99 ≤ 15 s (ver arriba).
 - WER de `small` contra `turbo` sobre las voces (solo se midió `small`, 102 audios).
