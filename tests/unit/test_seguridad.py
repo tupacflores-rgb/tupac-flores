@@ -64,6 +64,12 @@ NEGATIVOS = [
     "No sale humo de ningún motor.",
     "Nadie está herido, ningún accidente.",
     "No se rompió nada en la descarga.",
+    # negación partida entre segmentos del ASR (los segmentos se unen con un espacio, a veces con un punto)
+    " ".join(["Revisé la tres, no hay", "olor a gas en el sector."]),
+    " ".join(["Revisé el sector del portón y no", "hay olor a gas."]),
+    " ".join(["En la motobomba, sin.", "Humo en ningún lado."]),
+    " ".join(["En el skid de filtros no hay...", "olor a gas, todo normal."]),
+    " ".join(["Está todo bien en la uno, nadie se", "golpeó ni se lastimó."]),
     # palabras sueltas: no alcanzan
     "La presión de la dos está bien.",
     "Hay mucho gas en el tanque de la otra planta pero el nuestro está bien",
@@ -118,3 +124,11 @@ def test_s2_y_s4_no_asignan_equipo():
     for texto in (S2, S4):
         evento, _ = alertas.construir(NotaFalsa(), detectar(texto, CAT))
         assert evento.equipo is None
+
+
+def test_alerta_real_despues_de_un_no_suelto_no_se_pierde():
+    """Un «No.» completo (respuesta o muletilla) no es una negación colgante: la alerta siguiente sale."""
+    d = detectar("¿Todo bien? No. Sale humo del motor de la dos.", CAT)
+    assert d is not None and d.codigo == "S3"
+    d = detectar(" ".join(["Hay algo raro, no.", "Sale humo del motor de la dos."]), CAT)
+    assert d is not None and d.codigo == "S3"

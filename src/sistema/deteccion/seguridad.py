@@ -83,9 +83,38 @@ def _negada(oracion: str, inicio: int) -> bool:
     return any(p in NEGADORES for p in previas)
 
 
+# Final de oración que deja una negación abierta: «no hay», «sin», «ni», «ningún». Un «no» suelto no cuenta:
+# es una respuesta o una muletilla y la oración siguiente puede ser una alerta real (perderla es
+# eliminatoria).
+_COLGANTES = {"sin", "ni", "ningun", "ninguna", "nada", "nadie"}
+
+
+def _negacion_colgante(oracion: str) -> bool:
+    palabras = oracion.split()
+    return bool(palabras) and (palabras[-1] in _COLGANTES or palabras[-2:] == ["no", "hay"])
+
+
+def _oraciones_unidas(texto: str) -> list[str]:
+    """Las oraciones del texto completo; si el ASR cortó una negación en el límite de un segmento (punto o
+    puntos suspensivos después de «no hay»), se une con la siguiente y la negación sigue valiendo."""
+    salida: list[str] = []
+    unir = False
+    for o in oraciones(texto):
+        if unir and salida:
+            salida[-1] = f"{salida[-1]} {o}"
+        else:
+            salida.append(o)
+        unir = _negacion_colgante(salida[-1])
+    return salida
+
+
 def detectar(texto: str, catalogo: Catalogo | None = None) -> Deteccion | None:
-    """Devuelve la primera condición insegura del texto, o None. S1 y S3 llevan el equipo si se nombra."""
-    for oracion in oraciones(texto):
+    """Devuelve la primera condición insegura del texto completo, o None.
+
+    El texto es la transcripción entera de la nota, nunca un segmento suelto. S1 y S3 llevan el equipo
+    si se nombra.
+    """
+    for oracion in _oraciones_unidas(texto):
         for codigo, patrones in PATRONES.items():
             for patron in patrones:
                 m = patron.search(oracion)
