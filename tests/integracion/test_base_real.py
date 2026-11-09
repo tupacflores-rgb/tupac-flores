@@ -46,13 +46,14 @@ def test_las_tablas_de_la_politica_de_memoria_existen_con_sus_columnas(base):
                 "SELECT column_name FROM information_schema.columns WHERE table_name = %s", (t,)
             )
         }
-        for t in ("nota", "respuesta", "dialogo", "mensaje_nota", "salida", "consumo")
+        for t in ("nota", "respuesta", "dialogo", "mensaje_nota", "salida", "consumo", "foto")
     }
     assert {"nota_id", "recibida_en", "transcripcion"} <= cols["nota"]
     assert {"nota_id", "estado", "actualizado"} <= cols["dialogo"]
     assert {"mensaje_id", "nota_id", "creado"} <= cols["mensaje_nota"]
     assert {"estado", "publicado"} <= cols["salida"]
     assert {"nota_id", "carril", "pasos", "tokens_in", "tokens_out", "ms", "corte", "ts"} <= cols["consumo"]
+    assert {"url", "nota_id", "estado", "sha256", "ruta", "bytes", "intentos", "ultimo_error"} <= cols["foto"]
 
 
 def test_registro_de_consumo(base):
@@ -163,3 +164,18 @@ def test_dialogo_con_la_base_real_sobrevive_a_un_reinicio_a_mitad_de_dialogo(bas
     )
     assert len(confirmados) == 1
     assert base.cargar_dialogo(nota_id)["estado"] == EstadoParte.confirmado.value
+
+
+def test_fotos_pendientes_y_descargadas_se_persisten_y_la_pendiente_vuelve_a_la_cola(base):
+    u1, u2 = f"/media/fotos/{_id('F')}.jpg", f"/media/fotos/{_id('F')}.jpg"
+    nota = _id("NOTA-F")
+    base.guardar_foto(u1, nota, "pendiente", None, None, None, 1, "TimeoutError: sim")
+    base.guardar_foto(u2, nota, "descargada", "ab" * 32, "/var/lib/sistema/fotos/ab/x.jpg", 1234, 1, None)
+    pendientes = dict(base.fotos_pendientes())
+    assert pendientes.get(u1) == nota and u2 not in pendientes
+    base.guardar_foto(
+        u1, nota, "descargada", "cd" * 32, "/var/lib/sistema/fotos/cd/y.jpg", 99, 2, None
+    )  # reintento OK
+    assert u1 not in dict(base.fotos_pendientes())
+    estado, sha, ruta, tam = base.foto_por_url(u1)
+    assert (estado, sha, tam) == ("descargada", "cd" * 32, 99)

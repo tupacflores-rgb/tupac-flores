@@ -9,6 +9,7 @@ Verificada contra las tablas reales de Postgres (`tests/integracion/test_base_re
 | Notas recibidas y su transcripción | `nota` | Al llegar la nota | **7 días**, salvo que su diálogo siga vivo | Deduplicar las reentregas del broker (QoS 1) |
 | Respuestas del operador | `respuesta` | Al llegar | **7 días** | Deduplicar |
 | Mensajes publicados | `salida` | Antes de publicar (intención → publicación → marca) | Publicados: **7 días**. Pendientes de publicar: **nunca se borran** | Cola D17, sincronización tras el corte de enlace |
+| Fotos de las notas (url, sha256, ruta, estado, intentos, último error) | `foto` + volumen `agente-fotos` | Al llegar la nota (pendiente) y al descargarse | La fila: sin purga en la Entrega 1. Los archivos quedan en el volumen con el sha256 como nombre | Reintentar las que fallaron y citarlas en el contexto de un Escalado |
 | Consumo por nota y carril (pasos, tokens, ms, corte) | `consumo` | Al cerrar cada nota | **30 días** | Informe de consumo y de cortes |
 
 Reglas:

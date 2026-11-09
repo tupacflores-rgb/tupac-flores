@@ -129,6 +129,31 @@ class Base:
         )
         return bool(filas)
 
+    # -- fotos -----------------------------------------------------------------------------------
+
+    def guardar_foto(
+        self, url: str, nota_id: str, estado: str, sha256: str | None, ruta: str | None, tamano: int | None,
+        intentos: int, error: str | None,
+    ) -> None:  # fmt: skip
+        self.ejecutar(
+            "INSERT INTO foto (url, nota_id, estado, sha256, ruta, bytes, intentos, ultimo_error) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s) "
+            "ON CONFLICT (url) DO UPDATE SET estado = EXCLUDED.estado, sha256 = EXCLUDED.sha256, "
+            "ruta = EXCLUDED.ruta, bytes = EXCLUDED.bytes, intentos = EXCLUDED.intentos, "
+            "ultimo_error = EXCLUDED.ultimo_error, actualizado = now()",
+            (url, nota_id, estado, sha256, ruta, tamano, intentos, error),
+        )
+
+    def fotos_pendientes(self, limite: int = 200) -> list[tuple[str, str]]:
+        filas = self.ejecutar(
+            "SELECT url, nota_id FROM foto WHERE estado <> 'descargada' ORDER BY creado LIMIT %s", (limite,)
+        )
+        return [(u, n) for u, n in filas]
+
+    def foto_por_url(self, url: str) -> tuple | None:
+        filas = self.ejecutar("SELECT estado, sha256, ruta, bytes FROM foto WHERE url = %s", (url,))
+        return filas[0] if filas else None
+
     # -- consumo y retención (V6) --------------------------------------------------------------------
 
     def registrar_consumo(self, c: dict) -> None:

@@ -48,6 +48,21 @@ CREATE TABLE IF NOT EXISTS consumo (
 );
 CREATE INDEX IF NOT EXISTS consumo_nota ON consumo (nota_id);
 
+-- Fotos de las notas: descargadas a un volumen con su sha256, o pendientes con la URL guardada. Ver fotos.py.
+CREATE TABLE IF NOT EXISTS foto (
+    url          text PRIMARY KEY,
+    nota_id      text NOT NULL,
+    estado       text NOT NULL DEFAULT 'pendiente',
+    sha256       text,
+    ruta         text,
+    bytes        integer,
+    intentos     integer NOT NULL DEFAULT 0,
+    ultimo_error text,
+    creado       timestamptz NOT NULL DEFAULT now(),
+    actualizado  timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS foto_pendientes ON foto (estado) WHERE estado <> 'descargada';
+
 -- Cola de salida (intención -> publicación -> marca). Ver persistencia/salida.py.
 CREATE TABLE IF NOT EXISTS salida (
     id        text PRIMARY KEY,

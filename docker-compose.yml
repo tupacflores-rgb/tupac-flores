@@ -47,6 +47,7 @@ services:
       CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-true}
     volumes:
       - agente-journal:/var/lib/sistema/journal
+      - agente-fotos:/var/lib/sistema/fotos
     depends_on:
       db:
         condition: service_healthy
@@ -158,3 +159,4 @@ networks:
 volumes:
   db-datos:
   agente-journal:
+  agente-fotos:

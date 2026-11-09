@@ -20,7 +20,7 @@ ENV PATH=/opt/venv/bin:$PATH \
     PYTHONDONTWRITEBYTECODE=1
 
 RUN useradd --system --uid 10001 sistema \
-    && mkdir -p /var/lib/sistema/journal \
+    && mkdir -p /var/lib/sistema/journal /var/lib/sistema/fotos \
     && chown -R sistema /var/lib/sistema
 USER sistema
 

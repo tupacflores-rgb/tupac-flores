@@ -43,6 +43,7 @@ class Config:
     asr_url: str = "http://asr:8000"
     emb_url: str = "http://emb:8000"  # búsqueda densa (pgvector); vacío = solo léxico
     journal_dir: str = "/var/lib/sistema/journal"
+    fotos_dir: str = "/var/lib/sistema/fotos"  # volumen: las fotos se descargan acá, con su sha256
 
     # Enlace: se sondea con un CONNECT a través del proxy. Caído = el proxy corta sin responder.
     enlace_proxy: str = "enlace:3128"
@@ -96,6 +97,7 @@ class Config:
             asr_url=e.get("ASR_URL", d.asr_url).rstrip("/"),
             emb_url=e.get("EMB_URL", d.emb_url).rstrip("/"),
             journal_dir=e.get("JOURNAL_DIR", d.journal_dir),
+            fotos_dir=e.get("FOTOS_DIR", d.fotos_dir),
             enlace_proxy=e.get("ENLACE_PROXY", d.enlace_proxy),
             enlace_destino=e.get("ENLACE_DESTINO", d.enlace_destino),
             latido_s=float(e.get("LATIDO_S", d.latido_s)),

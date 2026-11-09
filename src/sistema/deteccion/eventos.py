@@ -57,6 +57,7 @@ def construir(
     catalogo: Catalogo,
     nombre_equipo=lambda tag: tag,
     tendencia: Callable[[str, datetime], str | None] | None = None,
+    foto: Callable[[str], str | None] | None = None,
 ) -> list[EventoSistema]:
     """Un evento por equipo, en el orden en que aparecen en el parte.
 
@@ -79,7 +80,7 @@ def construir(
             else f"{nombre_equipo(tag)}: sin novedad ({detalle})."
         )
         if anomalas:
-            resumen += _contexto(tag, grupo, ts, tendencia)
+            resumen += _contexto(tag, grupo, ts, tendencia, foto)
         eventos.append(
             EventoSistema(
                 id=id_evento(nota_id, tag),
@@ -95,12 +96,12 @@ def construir(
     return eventos
 
 
-def _contexto(tag: str, grupo: list[Fila], ts: datetime, tendencia) -> str:
+def _contexto(tag: str, grupo: list[Fila], ts: datetime, tendencia, foto=None) -> str:
     """Parte del equipo, fotos y tendencia, para quien reciba el escalado."""
     extra = f" Parte del equipo: {'; '.join(_describir(f) for f in grupo)}."
     fotos = list(dict.fromkeys(f.foto for f in grupo if f.foto))
     if fotos:
-        extra += f" Fotos: {', '.join(fotos)}."
+        extra += f" Fotos: {', '.join((foto(u) if foto else u) or u for u in fotos)}."
     if tendencia is not None:
         try:
             t = tendencia(tag, ts)

@@ -31,6 +31,7 @@ from .dominio.catalogo import Catalogo
 from .dominio.rango import RangoHistorico
 from .dominio.tendencia import Tendencia
 from .estado import EstadoCompartido, RelojPlanta
+from .fotos import Fotos
 from .integraciones.asr import ClienteAsr
 from .integraciones.enlace import enlace_arriba
 from .integraciones.mqtt import ClienteMqtt, Entrante
@@ -63,6 +64,9 @@ class Agente:
         self.definicion: dict | None = None
         self._catalogo: Catalogo | None = None
         self.consumo = RegistroConsumo(self.base)
+        self.fotos = Fotos(
+            lambda url: self.api.descargar(url, timeout_s=3.0, reintentos=2), config.fotos_dir, self.base
+        )
         self._detector_sensores: DetectorSostenido | None = None
         self._estados_equipo: tuple[float, dict[str, str]] = (0.0, {})
         self.pipeline = Pipeline(
@@ -140,6 +144,7 @@ class Agente:
             cat,
             nombre_equipo=lambda t: cat.equipos[t].nombres[0],
             tendencia=self.tendencia.describir,
+            foto=self.fotos.descripcion,
         )
         if eventos:
             self.salida.emitir_lote([(e.id, Topicos.EVENTOS, e) for e in eventos])
@@ -296,6 +301,7 @@ class Agente:
             )
             return
         if self.guardar_nota(nota):
+            self.fotos.encolar(nota.id, nota.fotos)  # se descargan en su propio hilo
             self.al_recibir_nota(nota)
         else:
             log.info("nota %s repetida (entrega duplicada del broker); ya estaba guardada", nota.id)
@@ -355,6 +361,7 @@ class Agente:
         self.sup.lanzar("entrada", self._worker_entrada)
         for i in (1, 2):  # dos plazas de seguridad en el ASR: una nota insegura no espera a otra en curso
             self.sup.lanzar(f"pipeline-seguridad-{i}", self.pipeline.correr_seguridad)
+        self.sup.lanzar("fotos", self.fotos.correr)
         self.sup.lanzar("pipeline", self.pipeline.correr)
         self.sup.lanzar("dialogo", self.dialogo.correr)
         self.sup.lanzar("sincronizacion", self.sync.correr)
