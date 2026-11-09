@@ -151,3 +151,11 @@ def test_un_decimal_dicho_con_coma_no_se_toma_por_un_equipo():
 def test_un_error_en_el_identificador_no_se_adivina():
     # «la dso» podría ser «la dos»; se prefiere preguntar antes que tomar una bomba por otra.
     assert CAT.menciones("la dso esta en mil seiscientos psi de descarga") == []
+
+
+def test_el_nombre_pegado_launo_se_reconoce_como_la_uno():
+    n = normalizar("launo estaen ciento doce kilos dedescarga")
+    assert [m.tag for m in CAT.menciones(reparar_asr(n))] == ["B-101"]
+    assert ("B-101", "presion_descarga_local", 112.0, None) in filas(
+        "launo estaen ciento doce kilos dedescarga"
+    )

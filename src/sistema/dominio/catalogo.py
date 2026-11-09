@@ -122,7 +122,10 @@ class Catalogo:
                     if s.isdigit() or abs(len(s) - len(plano)) > tolerancia:
                         continue
                     d = distancia_de_edicion(s, plano)
-                    if d == 0 or d > tolerancia or not self._identificador_coincide(ventana, alias):
+                    # d == 0 con otras palabras es el nombre pegado («launo»); si ya es el nombre, ya se vio.
+                    if (d == 0 and " ".join(w[2] for w in ventana) == alias) or d > tolerancia:
+                        continue
+                    if not self._identificador_coincide(ventana, alias):
                         continue
                     inicio, fin = ventana[0][0], ventana[-1][1]
                     if any(inicio < e.fin and e.inicio < fin for e in exactas):
@@ -149,6 +152,12 @@ class Catalogo:
         if any(w[2] in ("coma", "punto") for w in ventana):
             return False
         ultima_alias, ultima = palabras_alias[-1], ventana[-1][2]
+        if len(ventana) < len(
+            palabras_alias
+        ):  # palabras pegadas («launo»): el identificador va al final, exacto
+            s = "".join(w[2] for w in ventana)
+            cabeza = "".join(palabras_alias[:-1])
+            return s.endswith(ultima_alias) and distancia_de_edicion(s[: -len(ultima_alias)], cabeza) <= 1
         if ultima != ultima_alias and not (
             len(ultima_alias) >= 6 and distancia_de_edicion(ultima, ultima_alias) <= 1
         ):

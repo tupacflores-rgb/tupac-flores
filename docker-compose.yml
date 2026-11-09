@@ -118,8 +118,12 @@ services:
     environment:
       <<: *proxy
       MODELO: ${LLM_MODELO:-qwen3.5:2b}
+      # El cliente `ollama` del healthcheck y de la precarga habla con el servidor local: que no pase por el
+      # proxy del enlace (el servidor escucha en 0.0.0.0).
+      NO_PROXY: broker,sim,db,asr,emb,llm,localhost,127.0.0.1,0.0.0.0
+      no_proxy: broker,sim,db,asr,emb,llm,localhost,127.0.0.1,0.0.0.0
     healthcheck:
-      test: [CMD, ollama, list]
+      test: [CMD-SHELL, "OLLAMA_HOST=127.0.0.1:11434 ollama list"]
       interval: 5s
       timeout: 5s
       retries: 60

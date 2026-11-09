@@ -199,7 +199,7 @@ GARABATO = "la uno esta en ciento doce kilos de descarga con un ruido tssss brrr
 
 
 def test_una_nota_que_el_parser_no_entiende_va_al_llm_y_el_operador_la_confirma():
-    texto = "launo estaen ciento doce kilos dedescarga"  # el parser no la entiende; el LLM sí
+    texto = "la uno ciento doce kilos descarga"  # sin «de descarga» el parser no la entiende; el LLM sí
     chat = ChatFalso([fp("B-101", "presion_descarga_local", 112.0, "kg/cm2")])
     d, salida, confirmados, nota = dialogo(chat)
     d.procesar_nota(nota, texto, None)
@@ -217,7 +217,7 @@ def test_una_nota_que_el_parser_no_entiende_va_al_llm_y_el_operador_la_confirma(
 def test_si_el_llm_esta_caido_la_nota_igual_recibe_una_respuesta():
     chat = ChatFalso(falla=ConnectionError("llm caído"))
     d, salida, confirmados, nota = dialogo(chat)
-    d.procesar_nota(nota, "launo estaen ciento doce kilos dedescarga", None)
+    d.procesar_nota(nota, "la uno ciento doce kilos descarga", None)
     m = salida.mensajes[-1]
     assert m.espera_respuesta and "repetís" in m.texto  # nunca una nota sin respuesta por falla del parser
     assert confirmados == []
@@ -225,7 +225,7 @@ def test_si_el_llm_esta_caido_la_nota_igual_recibe_una_respuesta():
 
 def test_sin_llm_configurado_una_nota_que_menciona_equipos_pero_no_se_entiende_igual_se_responde():
     d, salida, *_, nota = dialogo(None)
-    d.procesar_nota(nota, "launo estaen ciento doce kilos dedescarga", None)
+    d.procesar_nota(nota, "la uno ciento doce kilos descarga", None)
     assert salida.mensajes[-1].espera_respuesta
 
 
@@ -292,3 +292,13 @@ def test_revisalo_todo_no_dispara_el_llm():
         )
     )
     assert len(chat.pedidos) == pedidos
+
+
+def test_una_fila_de_un_equipo_que_la_nota_no_nombra_se_descarta():
+    # El modelo contestó B-102 para «la uno»: es un equipo que existe pero la nota no menciona.
+    r = validar(
+        [fp("B-102", "presion_descarga_local", 112.0, "kg/cm2")],
+        "la uno esta en ciento doce kilos de descarga",
+        CAT,
+    )
+    assert r.filas == [] and r.descartadas == 1

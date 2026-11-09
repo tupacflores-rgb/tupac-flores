@@ -242,7 +242,12 @@ def validar(filas: list[FilaParte], texto: str, cat: Catalogo) -> Resultado:
     salida: list[Fila] = []
     vistas: set[tuple[str, str]] = set()
     descartadas = 0
+    # Si la nota nombra equipos (aunque mal oídos), una fila de otro equipo es una invención del modelo.
+    mencionados = {m.tag for m in cat.menciones(norm) if m.tag}
     for f in filas:
+        if mencionados and f.tag not in mencionados:
+            descartadas += 1
+            continue
         if f.tag not in cat.equipos or f.variable not in VARIABLES.get(cat.tipo_de(f.tag), set()):
             descartadas += 1
             continue
