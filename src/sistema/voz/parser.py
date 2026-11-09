@@ -50,21 +50,31 @@ LIMITE_RODAMIENTO_CALIENTE = 75
 DIFERENCIAL_MIN_AMBIGUO, DIFERENCIAL_MAX_AMBIGUO = 10, 39
 
 
-def extraer(texto: str, catalogo: Catalogo) -> Extraccion:
+def extraer(texto: str, catalogo: Catalogo, fotos: list[str] | tuple[str, ...] = ()) -> Extraccion:
     norm = reparar_asr(normalizar(reparar_inicio_de_oracion(texto)))
     menciones = catalogo.menciones(norm)
     ext = Extraccion()
+    pendientes = list(fotos)  # A-6: cada «le saqué foto» se lleva la siguiente foto de la nota, en orden
     for i, m in enumerate(menciones):
         fin = menciones[i + 1].inicio if i + 1 < len(menciones) else len(norm)
         resto = norm[m.fin : fin]
         if m.tag is not None and m.tag not in ext.equipos_dichos:
             ext.equipos_dichos.append(m.tag)
+        antes = len(ext.filas)
         {
             "filtro": _filtro,
             "tanque": _tanque,
             "bomba": _bomba,
         }.get(m.tipo, _nada)(m, resto, catalogo, ext)
+        if pendientes and _dice_foto(resto):
+            foto = pendientes.pop(0)
+            for fila in ext.filas[antes:]:
+                fila.foto = foto
     return ext
+
+
+def _dice_foto(tramo: str) -> bool:
+    return re.search(r"\bfotos?\b", tramo) is not None
 
 
 def _nada(*_args) -> None:

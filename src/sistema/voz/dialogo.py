@@ -164,9 +164,9 @@ class Dialogo:
             return
         est = Estado(nota.id, nota.ts.isoformat(), EstadoParte.borrador, texto=texto)
         if deteccion is not None:
-            self._nota_insegura(est, texto, deteccion, cat)
+            self._nota_insegura(est, texto, deteccion, cat, nota.fotos)
             return
-        ext = extraer(texto, cat)
+        ext = extraer(texto, cat, nota.fotos)
         est.filas, est.ambiguedades_valor = ext.filas, ext.ambiguedades_valor
         if not ext.filas:
             est.estado = EstadoParte.sin_filas
@@ -182,13 +182,16 @@ class Dialogo:
             return
         self._mostrar_borrador(est, cat)
 
-    def _nota_insegura(self, est: Estado, texto: str, d: Deteccion, cat: Catalogo) -> None:
+    def _nota_insegura(
+        self, est: Estado, texto: str, d: Deteccion, cat: Catalogo, fotos: list[str] | None = None
+    ) -> None:
         # S2 y S4 no llevan equipo (D14 provisional): sin filas, solo el aviso de emergencia que ya salió.
         if d.codigo not in CON_EQUIPO or d.equipo is None:
             est.estado = EstadoParte.sin_filas
             self._guardar(est)
             return
-        est.filas = [Fila(d.equipo, VARIABLE_CONDICION_INSEGURA, None, None, texto[:200])]
+        foto = fotos[0] if fotos else None
+        est.filas = [Fila(d.equipo, VARIABLE_CONDICION_INSEGURA, None, None, texto[:200], foto=foto)]
         est.estado = EstadoParte.pendiente_validacion
         nombre = self._nombre(cat, d.equipo)
         self._enviar(

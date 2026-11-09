@@ -51,6 +51,7 @@ class Fila:
     unidad: str | None = None
     observacion: str | None = None
     provisional: bool = False  # candidato ambiguo (p. ej. 1,8 o 18): no es definitivo hasta la respuesta
+    foto: str | None = None  # A-6: la foto de la nota que corresponde a esta fila (el contrato no la lleva)
 
     def a_contrato(self, observacion_visible: str | None = None) -> FilaParte:
         """La fila como se muestra en la tablet. `observacion_visible` reemplaza a la observación real solo en
