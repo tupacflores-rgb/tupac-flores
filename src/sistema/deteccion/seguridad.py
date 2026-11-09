@@ -89,6 +89,11 @@ def _negada(oracion: str, inicio: int) -> bool:
 _COLGANTES = {"sin", "ni", "ningun", "ninguna", "nada", "nadie"}
 
 
+# Error medido del ASR sobre «olor a gas»: «Hay hólogas fuertes» (todo pegado) y variantes sin la «a».
+# Se repara antes de buscar frases; «gas» tiene que ser palabra completa, así que «hologramas» no entra.
+_OLOR_A_GAS = re.compile(r"\b(?:h?olor ?(?:a |al )?|h?olora ?|h?olo ?)gas(?:es)?\b")
+
+
 def _negacion_colgante(oracion: str) -> bool:
     palabras = oracion.split()
     return bool(palabras) and (palabras[-1] in _COLGANTES or palabras[-2:] == ["no", "hay"])
@@ -100,6 +105,7 @@ def _oraciones_unidas(texto: str) -> list[str]:
     salida: list[str] = []
     unir = False
     for o in oraciones(texto):
+        o = _OLOR_A_GAS.sub("olor a gas", o)
         if unir and salida:
             salida[-1] = f"{salida[-1]} {o}"
         else:

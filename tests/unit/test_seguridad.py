@@ -132,3 +132,29 @@ def test_alerta_real_despues_de_un_no_suelto_no_se_pierde():
     assert d is not None and d.codigo == "S3"
     d = detectar(" ".join(["Hay algo raro, no.", "Sale humo del motor de la dos."]), CAT)
     assert d is not None and d.codigo == "S3"
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "Hay hólogas fuertes del lado del portón, viene del lado del separador.",  # transcripción real del ASR
+        "Hay olorgas fuerte en el portón.",
+        "Huele a gas del lado del separador.",
+        "Hay hologas en el sector del separador.",
+    ],
+)
+def test_s2_tolera_los_errores_medidos_del_asr(texto):
+    d = detectar(texto, CAT)
+    assert d is not None and d.codigo == "S2", texto
+
+
+@pytest.mark.parametrize(
+    "texto",
+    [
+        "No hay hólogas fuertes en el portón.",
+        "El visor tiene hologramas de la marca.",
+        "Sin olorgas en el sector.",
+    ],
+)
+def test_la_reparacion_de_s2_no_crea_falsas_alarmas(texto):
+    assert detectar(texto, CAT) is None, texto
