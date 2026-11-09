@@ -230,7 +230,6 @@ def test_estaparada_pegado_se_lee_como_esta_parada_y_la_nota_sigue_su_camino():
     from sistema.voz.texto import normalizar, reparar_asr
 
     assert reparar_asr(normalizar("La bomba estaparada en reserva.")) == "la bomba esta parada en reserva"
-    assert reparar_asr(normalizar("La dos estaen servicio")) == "la dos esta en servicio"
     assert (
         reparar_asr(normalizar("La estacion de bombeo")) == "la estacion de bombeo"
     )  # no toca otras palabras

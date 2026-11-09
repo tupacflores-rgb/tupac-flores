@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from difflib import SequenceMatcher
 
 _SEPARADORES_DE_ORACION = re.compile(r"[.!?;\n¡¿]+")
 
@@ -28,9 +29,6 @@ _NO_ES_FILTRO = {"foto", "fotos", "fuga", "fuera", "falta", "fue", "fino", "fina
 # Confusiones medidas a más de 2 letras de «filtro» («el frito a medio…»): se aceptan por nombre, no con
 # una tolerancia mayor, que dejaría pasar «foto» o «falta».
 _CONFUNDIDOS_CON_FILTRO = {"frito", "fritro"}
-# «La bomba estaparada en reserva» (medido): el ASR pega «está» con la palabra siguiente. Solo las que
-# dicen el estado de un equipo, para no tocar otras palabras.
-_ESTA_PEGADO = re.compile(r"\b(esta|estan)(parad[ao]s?|en|bajo|baja|alto|alta|rebalsando|disparad[ao]s?)\b")
 _LETRA_NUMERO = re.compile(r"\b(?:el|en el|en) a([123])\b")
 
 
@@ -58,6 +56,76 @@ def reparar_inicio_de_oracion(t: str) -> str:
 _DECENA_CON_P = re.compile(r"\b(diez|veinte|treinta|cuarenta|cincuenta|sesenta|setenta|ochenta|noventa)p\b")
 
 
+# Frases que el parser busca tal cual (observaciones de las plantillas del operador, estados, unidades). Se
+# buscan también sin espacios y con tolerancia, como el léxico de seguridad: el ASR pega y parte palabras
+# («estaparada», «golpe teo», «de descarga» -> «dedescarga»).
+FRASES_CONOCIDAS = [
+    "parada en reserva",
+    "parada por mantenimiento",
+    "esta parada",
+    "esta disparada",
+    "disparada",
+    "de descarga",
+    "de diferencial",
+    "con la pistola",
+    "empaquetadura",
+    "rodamiento",
+    "golpeteo metalico",
+    "piedras adentro",
+    "ruido raro de rodamiento",
+    "pierde bastante",
+    "chorrea",
+    "visor de aceite",
+    "rebalsando",
+    "kilogramos",
+    "libras",
+]
+UMBRAL_FRASE = 0.88
+UMBRAL_FRASE_CORTA = 0.93  # hasta 8 letras sin espacios: menos margen para no cambiar palabras legítimas
+
+
+def canonizar_frases(t: str) -> str:
+    """Reemplaza por su forma canónica las frases conocidas mal pegadas o mal cortadas por el ASR.
+
+    Ventanas de palabras que coinciden sin espacios: igual de palabras que la frase -> con tolerancia;
+    distinta cantidad (palabras pegadas o partidas) -> solo si coinciden exactamente sin espacios. Nunca
+    toca números."""
+    palabras = t.split()
+    for frase in sorted(FRASES_CONOCIDAS, key=len, reverse=True):
+        plana, k = frase.replace(" ", ""), len(frase.split())
+        umbral = UMBRAL_FRASE_CORTA if len(plana) <= 8 else UMBRAL_FRASE
+        i = 0
+        while i < len(palabras):
+            reemplazo = None
+            # Primero lo exacto sin espacios (pegado o partido), después la coincidencia aproximada.
+            for aproximada in (False, True):
+                for largo in (k, k - 1, k + 1):
+                    if largo < 1 or i + largo > len(palabras) or (aproximada and largo != k):
+                        continue
+                    ventana = palabras[i : i + largo]
+                    if any(c.isdigit() for p in ventana for c in p) or " ".join(ventana) == frase:
+                        continue
+                    s = "".join(ventana)
+                    if aproximada:
+                        ok = (
+                            abs(len(s) - len(plana)) <= 1
+                            and SequenceMatcher(None, s, plana).ratio() >= umbral
+                        )
+                    else:
+                        ok = s == plana
+                    if ok:
+                        reemplazo = (largo, frase.split())
+                        break
+                if reemplazo:
+                    break
+            if reemplazo:
+                palabras[i : i + reemplazo[0]] = reemplazo[1]
+                i += len(reemplazo[1])
+            else:
+                i += 1
+    return " ".join(palabras)
+
+
 def reparar_asr(t: str) -> str:
     """Corrige confusiones sistemáticas del transcriptor sobre texto ya normalizado (medidas en las voces de
     referencia): "el fito a" por "el filtro a" (hasta 2 letras de diferencia), "el a1" por "en la 1"."""
@@ -70,7 +138,7 @@ def reparar_asr(t: str) -> str:
             return f"filtro {m.group(2)}"
         return m.group(0)
 
-    t = _ESTA_PEGADO.sub(r"\1 \2", t)
+    t = canonizar_frases(t)
     t = _DECENA_CON_P.sub(r"\1", t)
     t = _FILTRO_MAL_DICHO.sub(filtro, t)
     return _LETRA_NUMERO.sub(lambda m: f"en la {m.group(1)}", t)

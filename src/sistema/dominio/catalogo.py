@@ -9,10 +9,17 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
-from ..voz.texto import normalizar
+from ..voz.texto import distancia_de_edicion, normalizar
 
 # Equivalencias de dígito: Whisper puede escribir "la 2" por "la dos".
 _NUMEROS = {"1": "uno", "2": "dos", "3": "tres"}
+# Palabras de variable o unidad que, cerca de un nombre mal oído, confirman que se habla de un equipo.
+CONTEXTO_DE_EQUIPO = {
+    "descarga", "diferencial", "metros", "kilos", "kilogramos", "psi", "bar", "libras", "grados",
+    "rodamiento", "empaquetadura", "golpeteo", "parada", "reserva", "mantenimiento", "disparada", "aceite",
+    "correas", "pistola", "pierde", "chorrea", "visor",
+}  # fmt: skip
+VENTANA_DE_CONTEXTO = 10  # palabras que se miran después del nombre
 GENERICOS = {"la bomba": "bomba", "una bomba": "bomba", "bomba": "bomba", "el filtro": "filtro"}
 
 
@@ -68,6 +75,8 @@ class Catalogo:
         todos = sorted([*self._alias, *genericos], key=len, reverse=True)
         self._genericos = genericos
         self._regex = re.compile(r"\b(" + "|".join(re.escape(a) for a in todos) + r")\b")
+        # Para la coincidencia aproximada: solo nombres hablados (sin dígitos ni tags como «b-101»).
+        self._naturales = [(a, t) for a, t in self._alias.items() if a.replace(" ", "").isalpha()]
 
     @staticmethod
     def _variantes(nombre: str) -> set[str]:
@@ -91,7 +100,60 @@ class Catalogo:
                 salida.append(Mencion(m.start(), m.end(), tag, self.equipos[tag].tipo, nombre))
             else:
                 salida.append(Mencion(m.start(), m.end(), None, self._genericos[nombre], nombre))
-        return salida
+        salida.extend(self._difusas(texto_normalizado, salida))
+        return sorted(salida, key=lambda m: m.inicio)
+
+    def _difusas(self, norm: str, exactas: list[Mencion]) -> list[Mencion]:
+        """Nombres de equipo mal oídos («a uno» por «la uno»): hasta 2 letras de diferencia sobre el nombre
+        sin espacios (1 si es corto), con una variable o unidad cerca y sin pisar una mención exacta.
+
+        Si un mismo tramo queda a igual distancia de equipos distintos, no se elige ninguno."""
+        palabras = [(m.start(), m.end(), m.group()) for m in re.finditer(r"\S+", norm)]
+        candidatas: list[tuple[int, int, int, str, str]] = []
+        for alias, tag in self._naturales:
+            plano, k = alias.replace(" ", ""), len(alias.split())
+            tolerancia = 2 if len(plano) >= 9 else 1
+            for i in range(len(palabras)):
+                for largo in (k, k - 1, k + 1):
+                    if largo < 1 or i + largo > len(palabras):
+                        continue
+                    ventana = palabras[i : i + largo]
+                    s = "".join(w[2] for w in ventana)
+                    if s.isdigit() or abs(len(s) - len(plano)) > tolerancia:
+                        continue
+                    d = distancia_de_edicion(s, plano)
+                    if d == 0 or d > tolerancia or not self._identificador_coincide(ventana, alias):
+                        continue
+                    inicio, fin = ventana[0][0], ventana[-1][1]
+                    if any(inicio < e.fin and e.inicio < fin for e in exactas):
+                        continue
+                    despues = palabras[i + largo : i + largo + VENTANA_DE_CONTEXTO]
+                    if any(w[2] in CONTEXTO_DE_EQUIPO for w in despues):
+                        candidatas.append((d, inicio, fin, tag, alias))
+        elegidas: list[Mencion] = []
+        for d, inicio, fin, tag, alias in sorted(candidatas):
+            if any(inicio < e.fin and e.inicio < fin for e in elegidas):
+                continue
+            rivales = {c[3] for c in candidatas if c[0] == d and c[1] == inicio and c[2] == fin}
+            if len(rivales) > 1:
+                continue
+            elegidas.append(Mencion(inicio, fin, tag, self.equipos[tag].tipo, alias))
+        return elegidas
+
+    @staticmethod
+    def _identificador_coincide(ventana: list[tuple[int, int, str]], alias: str) -> bool:
+        """Lo que distingue un equipo de otro (el número o la letra del final) tiene que estar bien dicho: un
+        error ahí sería tomar una bomba por otra. El comienzo («la», «el filtro») tolera una letra, y los
+        decimales («uno coma tres») nunca son un nombre."""
+        palabras_alias = alias.split()
+        if any(w[2] in ("coma", "punto") for w in ventana):
+            return False
+        ultima_alias, ultima = palabras_alias[-1], ventana[-1][2]
+        if ultima != ultima_alias and not (
+            len(ultima_alias) >= 6 and distancia_de_edicion(ultima, ultima_alias) <= 1
+        ):
+            return False
+        return distancia_de_edicion(ventana[0][2], palabras_alias[0]) <= 1
 
     def unidad_manometro(self, tag: str) -> str | None:
         return self.equipos[tag].unidad_manometro
