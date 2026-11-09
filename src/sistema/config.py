@@ -61,6 +61,15 @@ class Config:
     # genera eventos. Si Novit permite validar de otra forma (BL-3 / D16), se cambia con esta bandera.
     confirmacion_estricta: bool = True
 
+    # Diálogo: borradores por nota antes de dejar el parte pendiente de validación. El operador virtual de la
+    # planta responde a cada mensaje sin tope, así que el corte es nuestro. Los mensajes admiten además la
+    # pregunta de equipo, el aviso «guardado» y un margen. El timeout global por nota sigue valiendo.
+    max_borradores: int = 5
+
+    @property
+    def max_mensajes(self) -> int:
+        return self.max_borradores + 3
+
     # Control por nota (V6): pasos, tokens y timeout global. La ruta de seguridad está exenta de los cortes.
     presupuesto_pasos: int = 12
     presupuesto_tokens: int = 4000
@@ -87,6 +96,7 @@ class Config:
             latido_arranque_max_s=float(e.get("LATIDO_ARRANQUE_MAX_S", d.latido_arranque_max_s)),
             nota_vieja_horas=float(e.get("NOTA_VIEJA_HORAS", d.nota_vieja_horas)),
             confirmacion_estricta=_bool(e.get("CONFIRMACION_ESTRICTA"), d.confirmacion_estricta),
+            max_borradores=int(e.get("MAX_BORRADORES", d.max_borradores)),
             presupuesto_pasos=int(e.get("PRESUPUESTO_PASOS", d.presupuesto_pasos)),
             presupuesto_tokens=int(e.get("PRESUPUESTO_TOKENS", d.presupuesto_tokens)),
             timeout_nota_s=float(e.get("TIMEOUT_NOTA_S", d.timeout_nota_s)),

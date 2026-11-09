@@ -43,9 +43,6 @@ from .respuestas import aplicar, interpretar
 
 log = logging.getLogger("sistema.dialogo")
 
-MAX_BORRADORES = 3  # por nota
-MAX_MENSAJES = 6  # preguntas + borradores por nota
-
 
 @dataclass
 class Estado:
@@ -203,7 +200,7 @@ class Dialogo:
         )
 
     def _preguntar_equipo(self, est: Estado, cat: Catalogo) -> None:
-        if est.mensajes >= MAX_MENSAJES:
+        if est.mensajes >= self._config.max_mensajes:
             self._pendiente(est)
             return
         est.estado = EstadoParte.pregunta_equipo
@@ -218,7 +215,7 @@ class Dialogo:
         )
 
     def _mostrar_borrador(self, est: Estado, cat: Catalogo, corregido: bool = False) -> None:
-        if est.borradores >= MAX_BORRADORES or est.mensajes >= MAX_MENSAJES:
+        if est.borradores >= self._config.max_borradores or est.mensajes >= self._config.max_mensajes:
             self._pendiente(est)
             return
         completar_unidades(est.filas, cat)

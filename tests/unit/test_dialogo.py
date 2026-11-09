@@ -218,15 +218,33 @@ def test_nota_sin_equipos_avisa_sin_inventar_filas(e):
     assert m.pantalla is None
 
 
-def test_presupuesto_de_tres_borradores_y_luego_pendiente_de_validacion(e):
+def test_presupuesto_de_cinco_borradores_por_defecto_y_luego_pendiente_de_validacion(e):
     e.nota(NOTA_CLARA)
-    for _ in range(2):
+    for _ in range(4):
         e.responde("No. Y hay más cosas, revisalo todo.")
     ultimo = e.responde("No. Y hay más cosas, revisalo todo.")
     assert not ultimo.espera_respuesta
     assert "pendiente de validación" in ultimo.texto
     assert e.confirmados == []
-    assert sum(1 for m in e.salida.tablet if m.pantalla and m.pantalla.filas) == 3
+    assert sum(1 for m in e.salida.tablet if m.pantalla and m.pantalla.filas) == 5
+
+
+def test_el_tope_de_borradores_es_configurable():
+    e = Entorno()
+    e.dialogo._config = Config(max_borradores=2)
+    e.nota(NOTA_CLARA)
+    e.responde("No. Y hay más cosas, revisalo todo.")
+    ultimo = e.responde("No. Y hay más cosas, revisalo todo.")
+    assert "pendiente de validación" in ultimo.texto
+    assert sum(1 for m in e.salida.tablet if m.pantalla and m.pantalla.filas) == 2
+
+
+def test_una_correccion_que_llega_al_cuarto_borrador_todavia_se_confirma(e):
+    e.nota(NOTA_CLARA)
+    for _ in range(3):
+        e.responde("No. Y hay más cosas, revisalo todo.")
+    e.responde("Sí, confirmo.")
+    assert len(e.confirmados) == 1
 
 
 def test_ids_de_tablet_nunca_se_repiten(e):

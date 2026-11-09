@@ -23,3 +23,9 @@ def test_sin_proyecto_usa_el_valor_por_defecto_y_el_override_explicito_gana():
     assert (
         Config.desde_entorno({"COMPOSE_PROJECT_NAME": "x", "MQTT_CLIENT_ID": "fijo"}).mqtt_client_id == "fijo"
     )
+
+
+def test_max_borradores_por_defecto_y_por_entorno():
+    assert Config.desde_entorno({}).max_borradores == 5
+    assert Config.desde_entorno({}).max_mensajes == 8
+    assert Config.desde_entorno({"MAX_BORRADORES": "3"}).max_mensajes == 6
