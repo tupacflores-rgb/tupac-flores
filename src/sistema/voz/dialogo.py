@@ -27,12 +27,14 @@ from ..config import Config
 from ..deteccion.seguridad import CON_EQUIPO, Deteccion
 from ..dominio.catalogo import Catalogo
 from ..dominio.parte import (
+    UNIDAD_MOSTRADA,
     VARIABLE_CONDICION_INSEGURA,
     AmbiguedadValor,
     EstadoParte,
     Fila,
     filas_desde_dict,
 )
+from ..dominio.rango import RangoHistorico
 from ..estado import RelojPlanta
 from ..persistencia.salida import Salida
 from .numeros import formatear
@@ -57,6 +59,9 @@ class Estado:
     ambiguedades_valor: list[AmbiguedadValor] = field(default_factory=list)
     opciones_equipo: list[str] = field(default_factory=list)
     ultimo_mensaje_id: str | None = None
+    # A-9: filas cuyo valor se corrigió por el rango histórico (se perdió el «mil») y avisos del borrador.
+    filas_con_mil: list[dict] = field(default_factory=list)
+    avisos_rango: list[str] = field(default_factory=list)
 
     def a_dict(self) -> dict:
         d = asdict(self)
@@ -85,7 +90,9 @@ class Dialogo:
         catalogo: Callable[[], Catalogo | None],
         reloj: RelojPlanta,
         al_confirmar: Callable[[Estado], None] | None = None,
+        rango: RangoHistorico | None = None,
     ):
+        self._rango = rango
         self._config = config
         self._salida = salida
         self._base = base
@@ -215,8 +222,10 @@ class Dialogo:
             self._pendiente(est)
             return
         completar_unidades(est.filas, cat)
+        self._revisar_rango(est, cat)
         est.borradores += 1
-        provisional = [f for f in est.filas if f.provisional]
+        # Solo los valores ambiguos (1,8 o 18) ofrecen opciones; el «mil» recuperado por el rango no.
+        provisional = [f for f in est.filas if f.provisional and self._ambigua(est, f)]
         opciones: list[str] = []
         resumen = "; ".join(f.descripcion(self._nombre(cat, f.tag)) for f in est.filas if f.tag)
         if provisional:
@@ -229,6 +238,9 @@ class Dialogo:
         else:
             cabecera = "Corregí el parte" if corregido else "Esto es lo que entendí"
             texto = f"{cabecera}: {resumen}. ¿Confirmás?"
+        if est.avisos_rango:
+            pregunta = texto.replace("¿Confirmás?", "¿Confirmás o me corregís?")
+            texto = f"Ojo: {' '.join(est.avisos_rango)} {pregunta}"
         if not est.confirmable and self._config.confirmacion_estricta:
             # D8 estricta: nada que el operador pueda comparar y confirmar. Queda Borrador, sin eventos.
             est.estado = EstadoParte.pendiente_validacion
@@ -243,8 +255,44 @@ class Dialogo:
         est.estado = EstadoParte.borrador
         self._enviar(est, texto, filas=est.filas, opciones=opciones, espera=True)
 
+    def _revisar_rango(self, est: Estado, cat: Catalogo) -> None:
+        """A-9: un valor fuera del rango de los últimos 45 días se avisa; si con el «mil» recuperado cae
+        adentro, se muestra ese valor como provisional (sin opciones). Sin historia, no opina."""
+        est.avisos_rango = []
+        if self._rango is None:
+            return
+        ya = {d["fila"] for d in est.filas_con_mil}
+        for i, f in enumerate(est.filas):
+            if not f.tag or f.valor is None or i in ya or self._ambigua(est, f):
+                continue
+            ev = self._rango.evaluar(f.tag, f.variable, f.valor, f.unidad)
+            if ev is None or ev.dentro:
+                continue
+            nombre, u = self._nombre(cat, f.tag), UNIDAD_MOSTRADA.get(f.unidad or "", f.unidad or "")
+            tramo = f"{formatear(ev.rango.minimo)} a {formatear(ev.rango.maximo)} kg/cm²"
+            if ev.con_mil is not None:
+                est.filas_con_mil.append({"fila": i, "dicho": f.valor, "valor": ev.con_mil})
+                est.avisos_rango.append(
+                    f"entendí {formatear(f.valor)} {u} de {nombre}, que está fuera de lo que midió en los "
+                    f"últimos 45 días ({tramo}); lo anoté como {formatear(ev.con_mil)} {u} "
+                    "(¿se perdió el «mil»?)."
+                )
+                f.valor, f.provisional = ev.con_mil, True
+            else:
+                est.avisos_rango.append(
+                    f"{formatear(f.valor)} {u} de {nombre} está fuera de lo que midió en los últimos 45 días "
+                    f"({tramo})."
+                )
+
+    @staticmethod
+    def _ambigua(est: Estado, fila: Fila) -> bool:
+        return any(a.fila < len(est.filas) and est.filas[a.fila] is fila for a in est.ambiguedades_valor)
+
     def _observacion_provisional(self, est: Estado, fila: Fila) -> str:
         """Solo se muestra; la observación real de la fila no se toca (no es una anomalía)."""
+        for d in est.filas_con_mil:
+            if d["fila"] < len(est.filas) and est.filas[d["fila"]] is fila:
+                return f"provisional: dijiste {formatear(d['dicho'])}, ¿se perdió el «mil»?"
         return f"provisional: ¿{' o '.join(formatear(c) for c in self._candidatos(est, fila))}?"
 
     @staticmethod

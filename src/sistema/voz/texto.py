@@ -38,6 +38,16 @@ def distancia_de_edicion(a: str, b: str) -> int:
     return previa[-1]
 
 
+# El ASR se come la «l» de «la» al comienzo de una oración: «A uno estar en 112 kilogramos» por «La uno
+# está en 112». Sin esta reparación el parser pierde todo el tramo del equipo (medido en el corrector).
+_ARTICULO_COMIDO = re.compile(r"(^|[.!?;]\s+)a (uno|dos|tres|1|2|3)\b", re.IGNORECASE)
+
+
+def reparar_inicio_de_oracion(t: str) -> str:
+    """Sobre el texto crudo (con signos): «A uno…» al comienzo de una oración es «La uno…»."""
+    return _ARTICULO_COMIDO.sub(lambda m: f"{m.group(1)}la {m.group(2)}", t)
+
+
 def reparar_asr(t: str) -> str:
     """Corrige confusiones sistemáticas del transcriptor sobre texto ya normalizado (medidas en las voces de
     referencia): "el fito a" por "el filtro a" (hasta 2 letras de diferencia), "el a1" por "en la 1"."""

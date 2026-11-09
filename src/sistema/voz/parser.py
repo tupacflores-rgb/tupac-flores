@@ -26,7 +26,7 @@ from ..dominio.parte import (
     Fila,
 )
 from .numeros import numero_antes_de
-from .texto import normalizar, reparar_asr
+from .texto import normalizar, reparar_asr, reparar_inicio_de_oracion
 
 UNIDADES_DE_PRESION = {
     "kilos": "kg/cm2", "kilogramos": "kg/cm2", "kg/cm2": "kg/cm2", "kg": "kg/cm2",
@@ -51,7 +51,7 @@ DIFERENCIAL_MIN_AMBIGUO, DIFERENCIAL_MAX_AMBIGUO = 10, 39
 
 
 def extraer(texto: str, catalogo: Catalogo) -> Extraccion:
-    norm = reparar_asr(normalizar(texto))
+    norm = reparar_asr(normalizar(reparar_inicio_de_oracion(texto)))
     menciones = catalogo.menciones(norm)
     ext = Extraccion()
     for i, m in enumerate(menciones):

@@ -28,6 +28,7 @@ from .control import Presupuesto, RegistroConsumo
 from .deteccion.eventos import construir as construir_eventos
 from .deteccion.sensores import DetectorSostenido
 from .dominio.catalogo import Catalogo
+from .dominio.rango import RangoHistorico
 from .estado import EstadoCompartido, RelojPlanta
 from .integraciones.asr import ClienteAsr
 from .integraciones.enlace import enlace_arriba
@@ -74,7 +75,12 @@ class Agente:
             registro=self.consumo,
         )
 
-        self.dialogo = Dialogo(config, self.salida, self.base, lambda: self.catalogo, self.reloj)
+        self.rango = RangoHistorico(
+            lambda tag, variable: [m.get("valor") for m in self.api.historian(tag, variable)]
+        )
+        self.dialogo = Dialogo(
+            config, self.salida, self.base, lambda: self.catalogo, self.reloj, rango=self.rango
+        )
         self.pipeline.posterior = self._nota_procesada
         self.sync = Sincronizacion(self.estado)
         self.dialogo.al_confirmar = self.al_confirmar_parte
@@ -136,6 +142,7 @@ class Agente:
                 if self.definicion is None:
                     self.definicion = self.api.planta()
                     log.info("definición de la planta cargada (%d equipos)", len(self.definicion["equipos"]))
+                    self._precalentar_rango()
                 self.reloj.fijar(datetime.fromisoformat(self.api.estado()["ts"]))
             except Exception as e:
                 log.warning("planta no disponible todavía: %s", e)
@@ -199,6 +206,17 @@ class Agente:
             self._recibir_respuesta(datos)
         elif e.topico == Topicos.CIERRES:
             log.info("cierre recibido (fuera del alcance de la Entrega 1): %s", datos.get("id"))
+
+    def _precalentar_rango(self) -> None:
+        """Trae el rango histórico (45 días) de lo que se dicta en campo, sin frenar el arranque."""
+        pares = [
+            (e["tag"], "presion_descarga" if e["tipo"] == "bomba" else "presion_diferencial")
+            for e in self.definicion["equipos"]
+            if e["tipo"] in ("bomba", "filtro")
+        ]
+        threading.Thread(
+            target=self.rango.precalentar, args=(pares,), name="rango-historico", daemon=True
+        ).start()
 
     def _estado_de_equipo(self, tag: str) -> str | None:
         """Estado de la bomba (marcha, parada, mantenimiento, disparo) de /api/estado, con caché de 10 s."""
