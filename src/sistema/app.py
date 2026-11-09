@@ -26,6 +26,7 @@ from pydantic import ValidationError
 from .config import Config
 from .control import Presupuesto, RegistroConsumo
 from .deteccion.eventos import construir as construir_eventos
+from .deteccion.sensores import DetectorSostenido
 from .dominio.catalogo import Catalogo
 from .estado import EstadoCompartido, RelojPlanta
 from .integraciones.asr import ClienteAsr
@@ -59,6 +60,8 @@ class Agente:
         self.definicion: dict | None = None
         self._catalogo: Catalogo | None = None
         self.consumo = RegistroConsumo(self.base)
+        self._detector_sensores: DetectorSostenido | None = None
+        self._estados_equipo: tuple[float, dict[str, str]] = (0.0, {})
         self.pipeline = Pipeline(
             self.api,
             self.asr,
@@ -183,7 +186,8 @@ class Agente:
 
     def _procesar_entrante(self, e: Entrante) -> None:
         if e.topico.startswith("planta/sensores/"):
-            return  # Entrega 1: los sensores no intervienen en el parte ni en la seguridad.
+            self._procesar_sensor(e)  # anomalía sostenida -> Escalado; nunca una alerta de seguridad
+            return
         try:
             datos = json.loads(e.payload)
         except json.JSONDecodeError:
@@ -195,6 +199,32 @@ class Agente:
             self._recibir_respuesta(datos)
         elif e.topico == Topicos.CIERRES:
             log.info("cierre recibido (fuera del alcance de la Entrega 1): %s", datos.get("id"))
+
+    def _estado_de_equipo(self, tag: str) -> str | None:
+        """Estado de la bomba (marcha, parada, mantenimiento, disparo) de /api/estado, con caché de 10 s."""
+        t, estados = self._estados_equipo
+        if time.monotonic() - t > 10.0:
+            try:
+                estados = {b["tag"]: b["estado"] for b in self.api.estado().get("bombas", [])}
+                self._estados_equipo = (time.monotonic(), estados)
+            except Exception:
+                log.warning("no se pudo consultar el estado de los equipos; se usa el último conocido")
+                self._estados_equipo = (time.monotonic(), estados)
+        return estados.get(tag)
+
+    def _procesar_sensor(self, e: Entrante) -> None:
+        if self.definicion is None:
+            return
+        try:
+            if self._detector_sensores is None:
+                self._detector_sensores = DetectorSostenido.desde_definicion(
+                    self.definicion,
+                    self._estado_de_equipo,
+                    lambda ev: self.salida.emitir(ev.id, Topicos.EVENTOS, ev),
+                )
+            self._detector_sensores.procesar(json.loads(e.payload))
+        except Exception:
+            log.exception("falló el procesamiento de una lectura de sensor")
 
     def es_vieja(self, ts: datetime) -> bool:
         """Resto de un escenario anterior: más de `nota_vieja_horas` simuladas del reloj de la planta."""
