@@ -1,0 +1,375 @@
+{
+  "disparos": 50,
+  "con_alerta": 45,
+  "sin_alerta": 5,
+  "falsas_alarmas": 0,
+  "mensajes_invalidos": 0,
+  "saturacion_procesos": 12,
+  "nota_larga_antes": true,
+  "alerta_s": {
+    "p50": 13.25,
+    "p95": 18.27,
+    "p99": 19.03,
+    "max": 19.03,
+    "media": 11.7
+  },
+  "por_codigo": {
+    "S1": 18.13,
+    "S2": 17.16,
+    "S3": 18.9,
+    "S4": 19.03
+  },
+  "puerta_p99_15s": false,
+  "filas": [
+    {
+      "i": 0,
+      "codigo": "S1",
+      "nota": "NOTA-00108",
+      "alerta_s": 16.49,
+      "aviso_s": 16.49
+    },
+    {
+      "i": 1,
+      "codigo": "S2",
+      "nota": "NOTA-00112",
+      "alerta_s": 13.25,
+      "aviso_s": 13.25
+    },
+    {
+      "i": 2,
+      "codigo": "S3",
+      "nota": "NOTA-00116",
+      "alerta_s": 16.1,
+      "aviso_s": 16.1
+    },
+    {
+      "i": 3,
+      "codigo": "S4",
+      "nota": "NOTA-00120",
+      "alerta_s": 13.92,
+      "aviso_s": 13.92
+    },
+    {
+      "i": 4,
+      "codigo": "S1",
+      "nota": "NOTA-00124",
+      "alerta_s": 13.69,
+      "aviso_s": 13.69
+    },
+    {
+      "i": 5,
+      "codigo": "S3",
+      "nota": "NOTA-00128",
+      "alerta_s": 12.24,
+      "aviso_s": 12.24
+    },
+    {
+      "i": 6,
+      "codigo": "S1",
+      "nota": "NOTA-00132",
+      "alerta_s": 17.02,
+      "aviso_s": 17.02
+    },
+    {
+      "i": 7,
+      "codigo": "S2",
+      "nota": "NOTA-00136",
+      "alerta_s": 14.6,
+      "aviso_s": 14.6
+    },
+    {
+      "i": 8,
+      "codigo": "S3",
+      "nota": "NOTA-00140",
+      "alerta_s": 18.27,
+      "aviso_s": 18.27
+    },
+    {
+      "i": 9,
+      "codigo": "S4",
+      "nota": "NOTA-00144",
+      "alerta_s": 12.09,
+      "aviso_s": 12.09
+    },
+    {
+      "i": 10,
+      "codigo": "S1",
+      "nota": "NOTA-00148",
+      "alerta_s": 17.19,
+      "aviso_s": 17.19
+    },
+    {
+      "i": 11,
+      "codigo": "S3",
+      "nota": "NOTA-00152",
+      "alerta_s": 14.55,
+      "aviso_s": 14.55
+    },
+    {
+      "i": 12,
+      "codigo": "S1",
+      "nota": "NOTA-00156",
+      "alerta_s": 18.08,
+      "aviso_s": 18.08
+    },
+    {
+      "i": 13,
+      "codigo": "S2",
+      "nota": "NOTA-00160",
+      "alerta_s": null,
+      "aviso_s": 15.99
+    },
+    {
+      "i": 14,
+      "codigo": "S3",
+      "nota": "NOTA-00166",
+      "alerta_s": 5.02,
+      "aviso_s": 5.02
+    },
+    {
+      "i": 15,
+      "codigo": "S4",
+      "nota": "NOTA-00170",
+      "alerta_s": 4.53,
+      "aviso_s": 4.53
+    },
+    {
+      "i": 16,
+      "codigo": "S1",
+      "nota": "NOTA-00174",
+      "alerta_s": 5.52,
+      "aviso_s": 5.52
+    },
+    {
+      "i": 17,
+      "codigo": "S3",
+      "nota": "NOTA-00178",
+      "alerta_s": null,
+      "aviso_s": 4.52
+    },
+    {
+      "i": 18,
+      "codigo": "S1",
+      "nota": "NOTA-00182",
+      "alerta_s": 5.54,
+      "aviso_s": 5.54
+    },
+    {
+      "i": 19,
+      "codigo": "S2",
+      "nota": "NOTA-00186",
+      "alerta_s": 4.53,
+      "aviso_s": null
+    },
+    {
+      "i": 20,
+      "codigo": "S3",
+      "nota": "NOTA-00190",
+      "alerta_s": null,
+      "aviso_s": 4.53
+    },
+    {
+      "i": 21,
+      "codigo": "S4",
+      "nota": "NOTA-00194",
+      "alerta_s": 19.03,
+      "aviso_s": 19.03
+    },
+    {
+      "i": 22,
+      "codigo": "S1",
+      "nota": "NOTA-00198",
+      "alerta_s": 6.03,
+      "aviso_s": 6.03
+    },
+    {
+      "i": 23,
+      "codigo": "S3",
+      "nota": "NOTA-00202",
+      "alerta_s": 5.04,
+      "aviso_s": 5.04
+    },
+    {
+      "i": 24,
+      "codigo": "S1",
+      "nota": "NOTA-00206",
+      "alerta_s": 7.04,
+      "aviso_s": 7.04
+    },
+    {
+      "i": 25,
+      "codigo": "S2",
+      "nota": "NOTA-00210",
+      "alerta_s": 17.16,
+      "aviso_s": 17.16
+    },
+    {
+      "i": 26,
+      "codigo": "S3",
+      "nota": "NOTA-00214",
+      "alerta_s": 17.43,
+      "aviso_s": 17.43
+    },
+    {
+      "i": 27,
+      "codigo": "S4",
+      "nota": "NOTA-00218",
+      "alerta_s": 14.88,
+      "aviso_s": 14.88
+    },
+    {
+      "i": 28,
+      "codigo": "S1",
+      "nota": "NOTA-00222",
+      "alerta_s": 15.81,
+      "aviso_s": 15.81
+    },
+    {
+      "i": 29,
+      "codigo": "S3",
+      "nota": "NOTA-00226",
+      "alerta_s": 18.9,
+      "aviso_s": 18.9
+    },
+    {
+      "i": 30,
+      "codigo": "S1",
+      "nota": "NOTA-00230",
+      "alerta_s": 18.13,
+      "aviso_s": 18.13
+    },
+    {
+      "i": 31,
+      "codigo": "S2",
+      "nota": "NOTA-00234",
+      "alerta_s": 14.65,
+      "aviso_s": 14.65
+    },
+    {
+      "i": 32,
+      "codigo": "S3",
+      "nota": "NOTA-00238",
+      "alerta_s": 18.0,
+      "aviso_s": 18.0
+    },
+    {
+      "i": 33,
+      "codigo": "S4",
+      "nota": "NOTA-00242",
+      "alerta_s": 16.92,
+      "aviso_s": 16.92
+    },
+    {
+      "i": 34,
+      "codigo": "S1",
+      "nota": "NOTA-00246",
+      "alerta_s": 14.93,
+      "aviso_s": 14.93
+    },
+    {
+      "i": 35,
+      "codigo": "S3",
+      "nota": "NOTA-00250",
+      "alerta_s": 12.93,
+      "aviso_s": 12.93
+    },
+    {
+      "i": 36,
+      "codigo": "S1",
+      "nota": "NOTA-00254",
+      "alerta_s": 16.58,
+      "aviso_s": 16.58
+    },
+    {
+      "i": 37,
+      "codigo": "S2",
+      "nota": "NOTA-00258",
+      "alerta_s": null,
+      "aviso_s": 16.33
+    },
+    {
+      "i": 38,
+      "codigo": "S3",
+      "nota": "NOTA-00266",
+      "alerta_s": 5.04,
+      "aviso_s": 5.04
+    },
+    {
+      "i": 39,
+      "codigo": "S4",
+      "nota": "NOTA-00270",
+      "alerta_s": 5.55,
+      "aviso_s": null
+    },
+    {
+      "i": 40,
+      "codigo": "S1",
+      "nota": "NOTA-00274",
+      "alerta_s": 6.04,
+      "aviso_s": 6.04
+    },
+    {
+      "i": 41,
+      "codigo": "S3",
+      "nota": "NOTA-00278",
+      "alerta_s": 5.04,
+      "aviso_s": 5.04
+    },
+    {
+      "i": 42,
+      "codigo": "S1",
+      "nota": "NOTA-00282",
+      "alerta_s": 6.63,
+      "aviso_s": 6.63
+    },
+    {
+      "i": 43,
+      "codigo": "S2",
+      "nota": "NOTA-00286",
+      "alerta_s": 5.06,
+      "aviso_s": 5.06
+    },
+    {
+      "i": 44,
+      "codigo": "S3",
+      "nota": "NOTA-00290",
+      "alerta_s": null,
+      "aviso_s": 5.06
+    },
+    {
+      "i": 45,
+      "codigo": "S4",
+      "nota": "NOTA-00294",
+      "alerta_s": 5.04,
+      "aviso_s": 5.04
+    },
+    {
+      "i": 46,
+      "codigo": "S1",
+      "nota": "NOTA-00298",
+      "alerta_s": 6.06,
+      "aviso_s": 6.06
+    },
+    {
+      "i": 47,
+      "codigo": "S3",
+      "nota": "NOTA-00302",
+      "alerta_s": 4.53,
+      "aviso_s": 4.53
+    },
+    {
+      "i": 48,
+      "codigo": "S1",
+      "nota": "NOTA-00306",
+      "alerta_s": 5.57,
+      "aviso_s": 5.57
+    },
+    {
+      "i": 49,
+      "codigo": "S2",
+      "nota": "NOTA-00310",
+      "alerta_s": 15.81,
+      "aviso_s": 15.81
+    }
+  ]
+}
