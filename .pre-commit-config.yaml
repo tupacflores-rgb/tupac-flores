@@ -1,0 +1,35 @@
+# Se ejecuta dentro del contenedor de desarrollo (ver .githooks/pre-commit y docker/compose.dev.yml).
+# Hooks locales: no descargan nada y no dependen de repositorios externos.
+repos:
+  - repo: local
+    hooks:
+      - id: bloquear-privados
+        name: bloquear Context/, credenciales y pesos
+        entry: python scripts/bloquear_privados.py
+        language: system
+        pass_filenames: true
+
+      - id: ruff
+        name: ruff check
+        entry: ruff check
+        language: system
+        types: [python]
+
+      - id: ruff-format
+        name: ruff format --check
+        entry: ruff format --check
+        language: system
+        types: [python]
+
+      - id: secretos
+        name: detect-secrets
+        entry: detect-secrets-hook --disable-plugin HexHighEntropyString --disable-plugin Base64HighEntropyString
+        language: system
+        pass_filenames: true
+
+      - id: tests-rapidos
+        name: pytest (unitarios, sin integración)
+        entry: pytest -q -x -m "not integracion"
+        language: system
+        pass_filenames: false
+        types: [python]

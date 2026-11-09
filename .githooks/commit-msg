@@ -1,0 +1,10 @@
+#!/bin/sh
+# Exige Conventional Commits en la primera línea: tipo(alcance opcional): descripción
+primera=$(grep -v '^#' "$1" | head -n 1)
+patron='^(feat|fix|test|refactor|docs|build|ci|chore|perf|style|revert)(\([a-z0-9_.,-]+\))?!?: .+'
+if ! printf '%s\n' "$primera" | grep -Eq "$patron"; then
+  echo "Mensaje de commit inválido. Formato: tipo(alcance): descripción" >&2
+  echo "Tipos: feat fix test refactor docs build ci chore perf style revert" >&2
+  echo "Recibido: $primera" >&2
+  exit 1
+fi

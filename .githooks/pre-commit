@@ -1,0 +1,8 @@
+#!/bin/sh
+# Verificaciones previas al commit (Plan Maestro §14). Corren dentro del contenedor de desarrollo, no en el host.
+# Se usan los archivos en el índice con `--files`: pre-commit no hace stash ni toca el árbol de trabajo.
+# Activación (una vez por clon):  git config core.hooksPath .githooks
+set -e
+cd "$(git rev-parse --show-toplevel)"
+git diff --cached --name-only -z --diff-filter=ACMR \
+  | xargs -0 -r docker compose -f docker/compose.dev.yml run --rm -T dev pre-commit run --files

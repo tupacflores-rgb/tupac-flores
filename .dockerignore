@@ -1,0 +1,16 @@
+# El contexto de build no debe incluir material de trabajo ni datos oficiales.
+.git
+Context
+context
+Claude outputs
+.claude
+.env
+.env.*
+!.env.example
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.venv
+corridas
+modelos

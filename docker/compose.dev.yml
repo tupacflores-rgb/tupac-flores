@@ -1,0 +1,16 @@
+# Contenedor de desarrollo. No es el docker-compose.yml que corrige Novit (ese está en la raíz).
+#
+#   docker compose -f docker/compose.dev.yml run --rm dev pytest
+#   docker compose -f docker/compose.dev.yml run --rm dev ruff check .
+name: tupac-dev
+
+services:
+  dev:
+    build:
+      context: ..
+      dockerfile: docker/dev.Dockerfile
+    image: tupac-flores-dev
+    working_dir: /work
+    volumes:
+      - ..:/work
+    command: ["pytest"]
