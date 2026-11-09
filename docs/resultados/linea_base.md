@@ -105,3 +105,32 @@ Latencia de alerta, 50 disparos S1–S4 con una nota de ~20 s en cola (`evaluaci
 
 Con las 102 voces (`evaluacion/seguridad_voces.py`): 0 falsas alarmas y la nota S1 detectada.
 **Puerta interna D18 (p99 ≤ 15 s) no cumplida: p99 = 18,8 s en el peor caso realista. Requisito de la rúbrica (30 s) cumplido; 50/50 alertas, 0 falsas alarmas.** El usuario aceptó cerrar V2 así el 09/11; no se trocean audios. No se pasó a B1 ni a `base`.
+
+## V7 · corridas finales de la Entrega 1 (09/11/2026)
+
+Corrector local sobre `martes-tranquilo` + `fuga-sin-enlace`, stack propio bajado antes de cada corrida (`docker ps` limpio).
+
+| Corrida | Commit | Nota | A1 | A2 | A3 | A4a | A4b | B1 | B2 | F1 | F2 | Alerta S1 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| Línea base | `ef5905b` | 88,8 | 100 | 69,4 | 69,4 | 100 | 100 | 84,7 | 100 | 100 | 100 | 4,5 s |
+| V2 | `849eb73` | 88,8 | 100 | 69,4 | 69,4 | 100 | 100 | 84,7 | 100 | 100 | 100 | 4,0 s |
+| V7 · 1 | `0a5eabb` | 88,0 | 100 | 63,9 | 69,4 | 100 | 100 | 84,7 | 100 | 100 | 100 | 4,0 s |
+| V7 · 2 | `0a5eabb` | **85,9** | 100 | 63,9 | 63,9 | 100 | 100 | 76,4 | 100 | 100 | 100 | 5,0 s |
+
+Sin eliminatorias en ninguna. **Hay una caída de hasta 2,9 puntos respecto de 88,8** en A2, A3 y B1 de
+`martes-tranquilo`: una o dos notas necesitaron una corrección o no se confirmaron. Qué se sabe:
+
+- El ASR es **determinista**: el mismo audio dio la misma transcripción 6 de 6 veces, con el carril libre y con la
+  pasada de seguridad corriendo en paralelo.
+- Dos corridas del mismo commit transcriben distinto la misma nota (`NOTA-00011`: «1600 psi» contra «600 psi»). Con un
+  ASR determinista, eso indica que el **audio de entrada no es idéntico entre corridas** (inferencia; no se compararon
+  los archivos). La puntuación de A2, A3 y B1 depende de qué errores del ASR caen en cada nota.
+- Por lo tanto, 88,8 no es un valor estable: en cuatro corridas con el mismo diseño de ASR salió 88,8, 88,8, 88,0 y 85,9.
+
+## Latencia de alerta con `emb` levantado (50 disparos, base limpia)
+
+Carga al tope dentro de agente, db y emb; nota de ~20 s delante: **50/50 alertas, 0 falsas alarmas, p50 8,5 s,
+p95 15,3 s, p99 16,0 s** (`latencia_alerta_con_emb.json`). Sin `emb` fue p99 18,8 s: la variación entre corridas es
+mayor que la diferencia, o sea que el servicio de embeddings no empeora la latencia. La puerta interna de 15 s sigue sin
+cumplirse. Una primera tanda con la base sucia dio 47/50 porque tres notas se descartaron como «repetidas» (ids de
+corridas anteriores del simulador); el corrector arranca con `down -v` y no tiene ese problema.
