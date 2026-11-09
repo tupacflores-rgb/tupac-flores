@@ -26,33 +26,27 @@ from .catalogo import construir
 
 
 def crear_servidor(tools: dict[str, Herramienta]) -> Server:
-    async def listar(ctx, params) -> types.ListToolsResult:
-        return types.ListToolsResult(
-            tools=[
-                types.Tool(
-                    name=t.nombre, description=t.descripcion, inputSchema=t.entrada.model_json_schema()
-                )
-                for t in tools.values()
-            ]
-        )
+    server = Server("tupac-flores-herramientas")
 
-    async def llamar(ctx, params: types.CallToolRequestParams) -> types.CallToolResult:
-        tool = tools.get(params.name)
+    @server.list_tools()
+    async def _listar() -> list[types.Tool]:
+        return [
+            types.Tool(name=t.nombre, description=t.descripcion, inputSchema=t.entrada.model_json_schema())
+            for t in tools.values()
+        ]
+
+    @server.call_tool()
+    async def _llamar(nombre: str, argumentos: dict | None) -> list[types.TextContent]:
+        tool = tools.get(nombre)
         if tool is None:
-            return _error(f"tool desconocida: {params.name}")
+            raise ValueError(f"tool desconocida: {nombre}")
         # La tool es síncrona (httpx + reintentos): se corre en un hilo para no frenar el loop del servidor.
-        res = await asyncio.to_thread(tool, **(params.arguments or {}))
+        res = await asyncio.to_thread(tool, **(argumentos or {}))
         if not res.ok:
-            return _error(res.error or "error")
-        return types.CallToolResult(
-            content=[types.TextContent(type="text", text=json.dumps(res.datos, ensure_ascii=False))]
-        )
+            raise ValueError(res.error or "error")  # el SDK lo devuelve como resultado con isError
+        return [types.TextContent(type="text", text=json.dumps(res.datos, ensure_ascii=False))]
 
-    return Server("tupac-flores-herramientas", on_list_tools=listar, on_call_tool=llamar)
-
-
-def _error(mensaje: str) -> types.CallToolResult:
-    return types.CallToolResult(content=[types.TextContent(type="text", text=mensaje)], isError=True)
+    return server
 
 
 def herramientas_por_defecto(cfg: Config | None = None) -> dict[str, Herramienta]:

@@ -171,16 +171,16 @@ def test_error_de_datos_no_se_reintenta():
 
 
 def test_servidor_mcp_real_en_memoria(tools):
-    from mcp import Client
+    from mcp.shared.memory import create_connected_server_and_client_session
 
     async def correr():
-        async with Client(crear_servidor(tools)) as cliente:
+        async with create_connected_server_and_client_session(crear_servidor(tools)) as cliente:
             listado = await cliente.list_tools()
             assert {t.name for t in listado.tools} == set(tools)
             ok = await cliente.call_tool("inventario", {"codigo": "TX-EMP-KIT"})
-            assert not ok.is_error
+            assert not ok.isError
             assert json.loads(ok.content[0].text)["repuestos"][0]["costo_usd"] == 420
             mal = await cliente.call_tool("inventario", {"codigo": "TX-EMP-KIT", "extra": 1})
-            assert mal.is_error
+            assert mal.isError
 
     asyncio.run(correr())
