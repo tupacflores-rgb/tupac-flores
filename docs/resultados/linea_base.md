@@ -80,3 +80,28 @@ sh evaluacion/correr_e1.sh        # corrector oficial local + resumen (requiere 
 docker run --rm -v <repo>:/work -v "<repo>/Context/Clon del REPO:/oficial:ro" planta-sim \
     python /work/evaluacion/extraccion.py --recorridas 300      # evaluación offline
 ```
+
+## Cierre de V2 (commit `849eb73`, 09/11/2026)
+
+Corrida del corrector local sobre `martes-tranquilo` + `fuga-sin-enlace`: **88,8 / 100**, igual a la línea base, sin
+eliminatorias; A1 100 %, A2 y A3 69,4 %, A4a y A4b 100 %, B1 84,7 %, B2 100 %, F1 y F2 100 %. Alerta S1 a los 4,02 s.
+
+Una corrida previa dio 74,8 por un error del arnés, no del código: el stack de pruebas propio (`tupac-flores`) seguía
+levantado con el mismo `client_id` MQTT que el del corrector («Session taken over»). Hay que hacer
+`docker compose down` antes de correr el corrector.
+
+Pasadas de ASR (Plan B2'): rápida (beam 1, sin marcas de tiempo, prompt de emergencia, 2 plazas, nota más corta
+primero) y completa (parámetros normales). `asr` a 2,0 CPU y 2 GB (suma de la planta: 3,5 de 4 CPU).
+Costo del ASR con la CPU saturada: 4,39 s fijos + 0,132 s por segundo de audio (p95 7,4 s por nota).
+
+Latencia de alerta, 50 disparos S1–S4 con una nota de ~20 s en cola (`evaluacion/latencia_alerta.py`):
+
+| Prueba | Con alerta | Falsas | p50 | p95 | p99 |
+|---|---:|---:|---:|---:|---:|
+| 12 procesos sin límite (informativa), 1 pasada | 45/50 | 0 | 13,3 | 18,3 | 19,0 |
+| ídem, cola por duración | 48/50 | 0 | 13,6 | 18,0 | 19,3 |
+| Carga solo en agente y db, 2 pasadas, 1 plaza | 50/50 | 1 | 13,3 | 16,0 | 16,7 |
+| Carga solo en agente y db, 2 pasadas, 2 plazas | **50/50** | **0** | 10,4 | 15,7 | **18,8** |
+
+Con las 102 voces (`evaluacion/seguridad_voces.py`): 0 falsas alarmas y la nota S1 detectada.
+**No se alcanzó p99 ≤ 15 s** (D18 enmendada). Queda abierto; no se pasó a B1 ni a `base`.
