@@ -44,7 +44,7 @@ Una prueba informativa con 12 procesos sin límite en el host dio 45/50 y p99 19
 | Interpretación de respuestas del operador | Reglas (sin modelo) | `src/sistema/voz/respuestas.py` | Local |
 | Detección de seguridad y eventos | Reglas (sin modelo) | `src/sistema/deteccion/` | Local |
 | Análisis, visión, órdenes | No hay en la Entrega 1 | — | — |
-| Respaldo del parser y del intérprete de respuestas | **`qwen3.5:2b`** (Ollama `0.40.15`), Q8_0, 1,9 B parámetros; manifest `sha256:ae1e257587aba653…`; `think=false`, `temperature=0`, `num_ctx=2048`, `num_thread=1`, salida JSON schema → `FilaParte` (`langchain-ollama==1.1.0`) | `docker/llm.Dockerfile`, `src/sistema/respaldo.py` | Local, contenedor `llm` |
+| Respaldo del parser y del intérprete de respuestas | **`qwen3.5:2b-q4_K_M`** (Qwen3.5, Alibaba; Ollama `0.40.15`), Q4_K_M, 1,9 B parámetros; manifest `sha256:2fcba4e039b23928…`, pesos `sha256:20cb277f0967…`; `think=false`, `temperature=0`, `num_ctx=2048`, `num_thread=1`, salida JSON schema → `FilaParte` (`langchain-ollama==1.1.0`) | `docker/llm.Dockerfile`, `src/sistema/respaldo.py` | Local, contenedor `llm` |
 
 Nada se descarga en runtime: los pesos se bajan en el build con revisión fija y viven dentro de la imagen.
 
@@ -56,7 +56,7 @@ Nada se descarga en runtime: los pesos se bajan en el build con revisión fija y
 | `asr` | 2,0 | 2 GB | dos carriles (seguridad: 2 plazas, completa: 1) de un hilo cada uno |
 | `emb` | 0,25 | 1 GB | 774 MiB en uso medido |
 | `db` | 0,5 | 1 GB | PostgreSQL 16 + pgvector |
-| `llm` | 0,75 | 2,5 GB | Ollama con `qwen3.5:2b`; solo respaldo (RAM pico medida: 2,5 GiB, sin margen) |
+| `llm` | 0,75 | 2,5 GB | Ollama con `qwen3.5:2b-q4_K_M`; solo respaldo (RAM pico medida: 2,3 GiB) |
 | **Total** | **4,0 de 4** | **7,5 de 8 GB** | verificado por `tests/infra/test_compose.py` |
 
 Costo del ASR medido con la CPU saturada: **4,39 s fijos + 0,132 s por segundo de audio** (p95 de 7,4 s por nota).
@@ -117,10 +117,14 @@ Benchmark con la cuota real (0,75 CPU / 2,5 GB), 30 casos generados con el `Oper
 |---|---:|---:|---:|---|---:|
 | `qwen2.5:1.5b` (Q4_K_M) | 30 | 39,8 % | 49,4 % | 10,7 / 26,8 s | 2,0 GiB |
 | `qwen3.5:0.8b` (Q8_0) | 30 | 21,7 % | 41,0 % | 17,5 / 42,0 s | 2,0 GiB |
-| **`qwen3.5:2b` (Q8_0)** | **6** | **84,6 %** | **92,3 %** | 38,7 / 77,6 s | 2,5 GiB |
+| `qwen3.5:2b` (Q8_0) | 30 | 49,4 % | 63,9 % | 37,0 / 73,6 s | 2,5 GiB (tope) |
+| **`qwen3.5:2b-q4_K_M`** | **30** | **53,0 %** | **68,7 %** | **27,9 / 50,1 s** | **2,3 GiB** |
 
-`qwen3.5:2b` se midió con 6 casos (30 no entraban en el tope de 40 min a 0,68 tokens/s); su p95 es el máximo de 6
-llamadas y su RAM llega al tope. Detalle y limitaciones en `docs/resultados/llm.md`.
+Se eligió Q4_K_M: no queda por debajo de Q8_0 (3,6 puntos por encima en valor exacto, dentro del ruido de 83 filas),
+es más rápida y usa menos memoria. Un resultado anterior de este informe (84,6 % para Q8_0) salía de solo 6 casos;
+con los 30 completos Q8_0 da 49,4 %. **Aun el mejor modelo acierta ~53 % del valor exacto sobre notas deformadas**:
+por eso es solo respaldo (el operador confirma todo y la validación descarta lo que no se dijo). En las cuatro
+corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `docs/resultados/llm.md`.
 
 ## Tools, MCP, control y memoria
 
@@ -149,6 +153,6 @@ llamadas y su RAM llega al tope. Detalle y limitaciones en `docs/resultados/llm.
 
 ## Pendiente (no hecho en esta entrega)
 
-- El LLM de respaldo se midió con 6 casos para `qwen3.5:2b` (ver arriba) y su RAM no tiene margen: hay que mirarlo en producción.
+- El respaldo con LLM solo se midió sobre casos generados (30), no sobre tráfico real, y no se ejercitó en el corrector.
 - Latencia de alerta p99 ≤ 15 s (ver arriba).
 - WER de `small` contra `turbo` sobre las voces (solo se midió `small`, 102 audios).

@@ -68,8 +68,8 @@ class Config:
 
     # Respaldo con modelo de lenguaje local (Ollama). `llm_url` vacío lo desactiva. Solo respaldo.
     llm_url: str = "http://llm:11434"
-    llm_modelo: str = "qwen3.5:2b"
-    llm_timeout_s: float = 90.0  # qwen3.5:2b a 0,75 CPU: p50 39 s, p95 78 s (docs/resultados/llm.md)
+    llm_modelo: str = "qwen3.5:2b-q4_K_M"
+    llm_timeout_s: float = 90.0  # qwen3.5:2b Q4_K_M a 0,75 CPU: p50 28 s, p95 50 s (docs/resultados/llm.md)
     llm_max_tokens: int = 2500  # el prompt con ejemplos ronda los 1.000 tokens
 
     @property

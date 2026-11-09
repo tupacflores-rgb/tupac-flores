@@ -43,7 +43,7 @@ services:
       ASR_URL: http://asr:8000
       EMB_URL: http://emb:8000
       LLM_URL: http://llm:11434
-      LLM_MODELO: ${LLM_MODELO:-qwen3.5:2b}
+      LLM_MODELO: ${LLM_MODELO:-qwen3.5:2b-q4_K_M}
       CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-true}
     volumes:
       - agente-journal:/var/lib/sistema/journal
@@ -114,10 +114,10 @@ services:
       context: .
       dockerfile: docker/llm.Dockerfile
       args:
-        MODELOS: "${LLM_MODELO:-qwen3.5:2b}"
+        MODELOS: "${LLM_MODELO:-qwen3.5:2b-q4_K_M}"
     environment:
       <<: *proxy
-      MODELO: ${LLM_MODELO:-qwen3.5:2b}
+      MODELO: ${LLM_MODELO:-qwen3.5:2b-q4_K_M}
       # El cliente `ollama` del healthcheck y de la precarga habla con el servidor local: que no pase por el
       # proxy del enlace (el servidor escucha en 0.0.0.0).
       NO_PROXY: broker,sim,db,asr,emb,llm,localhost,127.0.0.1,0.0.0.0

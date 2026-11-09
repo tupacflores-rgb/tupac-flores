@@ -19,7 +19,7 @@ docker compose up -d --build        # agente, asr, emb, llm y db (el build del l
 | `asr` | faster-whisper `small` local, dos carriles (seguridad rápida y completa) | 2,0 / 2 GB |
 | `emb` | embeddings e5-small (ONNX) y búsqueda en pgvector | 0,25 / 1 GB |
 | `db` | PostgreSQL 16 con pgvector | 0,5 / 1 GB |
-| `llm` | Ollama con `qwen3.5:2b`: respaldo del parser (nunca confirma partes) | 0,75 / 2,5 GB |
+| `llm` | Ollama con `qwen3.5:2b` (Q4_K_M): respaldo del parser (nunca confirma partes) | 0,75 / 2,5 GB |
 
 Los cinco van solo en `planta-lan`, llevan el label `academia.planta: pc`, suman 4,0 de 4 CPU y 7,5 de 8 GB, y salen a
 internet por `HTTP(S)_PROXY=http://enlace:3128`. Los modelos viven dentro de las imágenes; no se descarga nada al

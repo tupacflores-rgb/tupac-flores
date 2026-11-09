@@ -121,10 +121,12 @@ def main() -> None:
     ap.add_argument("--casos", type=Path, required=True)
     ap.add_argument("--contenedor", help="nombre del contenedor llm (para medir la RAM pico)")
     ap.add_argument("--timeout", type=float, default=120.0)
+    ap.add_argument("--desde", type=int, default=0, help="saltea los primeros N casos")
     ap.add_argument("--max", type=int, default=0)
     ap.add_argument("--salida", type=Path, required=True)
     a = ap.parse_args()
     casos = json.loads(a.casos.read_text(encoding="utf-8"))
+    casos = casos[a.desde :]
     if a.max:
         casos = casos[: a.max]
     todos = []
