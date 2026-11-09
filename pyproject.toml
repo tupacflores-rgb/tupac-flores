@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tupac-flores"
+version = "0.1.0"
+description = "Academia Novit 2026 · TP Planta de inyección: sistema conectado, parte por voz y detección"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # PROVISIONAL, pendiente de confirmación de Novit (BL-1 / D13).
+    # La URL de docs/contrato.md (NovitSoftware/academia2026-planta) devuelve 404. Se fija el commit del repo
+    # público NovitSoftware/academia2026-tp cuyo contenido coincide byte a byte con la copia oficial.
+    # Si Novit indica otra URL o commit, se cambia solo esta línea.
+    "planta-contrato @ git+https://github.com/NovitSoftware/academia2026-tp@ab65b95e911731351dba395817a74a8cc60da2b2#subdirectory=contrato",
+    "pydantic>=2.7",
+    "paho-mqtt>=2.1,<3",
+    "httpx>=0.27",
+    "psycopg[binary]>=3.2",
+    "pyyaml>=6",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "pre-commit>=3.8",
+    "detect-secrets>=1.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "integracion: necesita servicios de Docker levantados (no corre en el hook de pre-commit)",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
