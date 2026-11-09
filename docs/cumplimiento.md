@@ -78,7 +78,7 @@ Leyenda: ✅ cumple y tiene evidencia · 🟡 cumple en parte (se dice qué falt
 | recall@k con `retrieval.json` (71 preguntas) contra BM25 (hit@5 0,85, recall@5 0,66) y Rev. C antes que D | ✅ | `evaluacion/retrieval.py`: léxico, denso, híbrido y sin prefijos (`docs/rag.md`). El híbrido iguala al léxico filtrado; no lo supera con holgura |
 | Cada conclusión cita su sección | ✅🟡 | Cada resultado de `buscar_manuales` lleva su cita (`TX350-D §3.2`); en la Entrega 1 no se generan «conclusiones» de análisis |
 | Justifica qué va por RAG y qué por API o SQL | ✅ | `docs/rag.md` (tabla) |
-| Context builder **diseñado** | ❌ | Está como pendiente en `docs/rag.md`; no hay documento de diseño |
+| Context builder **diseñado** | ✅ | `docs/context-builder.md`: qué entra, de dónde (API/SQL vs RAG), orden y presupuesto, para las tools, el respaldo LLM y el Escalado. Es diseño; no hay un orquestador que arme contexto para preguntas libres (declarado) |
 | Memoria: estado de la conversación de cada nota en Postgres + política escrita | ✅ | `docs/memoria.md`; `tests/integracion/test_base_real.py`; reinicio a mitad de diálogo en `tests/unit/test_dialogo.py` |
 
 ## Restricciones del Enunciado y entregables
