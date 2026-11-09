@@ -41,6 +41,7 @@ class Config:
     # Valor por defecto de desarrollo para la base interna de planta-lan (sin puertos publicados).
     database_url: str = "postgresql://sistema:sistema@db:5432/sistema"  # pragma: allowlist secret
     asr_url: str = "http://asr:8000"
+    emb_url: str = "http://emb:8000"  # búsqueda densa (pgvector); vacío = solo léxico
     journal_dir: str = "/var/lib/sistema/journal"
 
     # Enlace: se sondea con un CONNECT a través del proxy. Caído = el proxy corta sin responder.
@@ -78,6 +79,7 @@ class Config:
             planta_url=e.get("PLANTA_URL", d.planta_url).rstrip("/"),
             database_url=e.get("DATABASE_URL", d.database_url),
             asr_url=e.get("ASR_URL", d.asr_url).rstrip("/"),
+            emb_url=e.get("EMB_URL", d.emb_url).rstrip("/"),
             journal_dir=e.get("JOURNAL_DIR", d.journal_dir),
             enlace_proxy=e.get("ENLACE_PROXY", d.enlace_proxy),
             enlace_destino=e.get("ENLACE_DESTINO", d.enlace_destino),

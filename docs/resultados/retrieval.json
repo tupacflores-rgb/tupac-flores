@@ -1,126 +1,656 @@
 {
-  "bm25_oficial": {
-    "mrr": 0.573,
-    "hit@1": 0.352,
-    "recall@1": 0.251,
-    "distractor@1": 0.056,
-    "hit@3": 0.775,
-    "recall@3": 0.601,
-    "distractor@3": 0.085,
-    "hit@5": 0.845,
-    "recall@5": 0.664,
-    "distractor@5": 0.099,
-    "hit@10": 0.93,
-    "recall@10": 0.772,
-    "distractor@10": 0.099
+  "BM25 oficial": {
+    "total": {
+      "mrr": 0.573,
+      "hit@1": 0.352,
+      "recall@1": 0.251,
+      "distractor@1": 0.056,
+      "hit@3": 0.775,
+      "recall@3": 0.601,
+      "distractor@3": 0.085,
+      "hit@5": 0.845,
+      "recall@5": 0.664,
+      "distractor@5": 0.099,
+      "hit@10": 0.93,
+      "recall@10": 0.772,
+      "distractor@10": 0.099
+    },
+    "rev_c_antes_que_d": 39,
+    "por_tipo": {
+      "certificacion": {
+        "n": 5,
+        "hit@1": 0.4,
+        "recall@1": 0.3,
+        "hit@3": 1.0,
+        "recall@3": 0.9,
+        "hit@5": 1.0,
+        "recall@5": 0.9,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      },
+      "contrato": {
+        "n": 7,
+        "hit@1": 0.714,
+        "recall@1": 0.548,
+        "hit@3": 0.857,
+        "recall@3": 0.762,
+        "hit@5": 0.857,
+        "recall@5": 0.762,
+        "hit@10": 0.857,
+        "recall@10": 0.81
+      },
+      "diagnostico": {
+        "n": 14,
+        "hit@1": 0.357,
+        "recall@1": 0.155,
+        "hit@3": 0.929,
+        "recall@3": 0.679,
+        "hit@5": 1.0,
+        "recall@5": 0.774,
+        "hit@10": 1.0,
+        "recall@10": 0.905
+      },
+      "historial": {
+        "n": 11,
+        "hit@1": 0.273,
+        "recall@1": 0.182,
+        "hit@3": 0.727,
+        "recall@3": 0.47,
+        "hit@5": 0.818,
+        "recall@5": 0.591,
+        "hit@10": 0.818,
+        "recall@10": 0.591
+      },
+      "limites": {
+        "n": 11,
+        "hit@1": 0.091,
+        "recall@1": 0.091,
+        "hit@3": 0.545,
+        "recall@3": 0.394,
+        "hit@5": 0.636,
+        "recall@5": 0.424,
+        "hit@10": 0.818,
+        "recall@10": 0.5
+      },
+      "operacion": {
+        "n": 11,
+        "hit@1": 0.636,
+        "recall@1": 0.576,
+        "hit@3": 0.636,
+        "recall@3": 0.606,
+        "hit@5": 0.636,
+        "recall@5": 0.606,
+        "hit@10": 1.0,
+        "recall@10": 0.909
+      },
+      "procedimiento": {
+        "n": 8,
+        "hit@1": 0.0,
+        "recall@1": 0.0,
+        "hit@3": 0.75,
+        "recall@3": 0.521,
+        "hit@5": 1.0,
+        "recall@5": 0.646,
+        "hit@10": 1.0,
+        "recall@10": 0.688
+      },
+      "seguridad": {
+        "n": 4,
+        "hit@1": 0.5,
+        "recall@1": 0.25,
+        "hit@3": 1.0,
+        "recall@3": 0.75,
+        "hit@5": 1.0,
+        "recall@5": 0.875,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      }
+    },
+    "ms_por_pregunta": 0.4
   },
-  "propio": {
-    "mrr": 0.679,
-    "hit@1": 0.535,
-    "recall@1": 0.352,
-    "distractor@1": 0.0,
-    "hit@3": 0.803,
-    "recall@3": 0.615,
-    "distractor@3": 0.014,
-    "hit@5": 0.859,
-    "recall@5": 0.707,
-    "distractor@5": 0.014,
-    "hit@10": 0.915,
-    "recall@10": 0.786,
-    "distractor@10": 0.014
+  "léxico (propio)": {
+    "total": {
+      "mrr": 0.679,
+      "hit@1": 0.535,
+      "recall@1": 0.352,
+      "distractor@1": 0.0,
+      "hit@3": 0.803,
+      "recall@3": 0.615,
+      "distractor@3": 0.014,
+      "hit@5": 0.859,
+      "recall@5": 0.707,
+      "distractor@5": 0.014,
+      "hit@10": 0.915,
+      "recall@10": 0.786,
+      "distractor@10": 0.014
+    },
+    "rev_c_antes_que_d": 0,
+    "por_tipo": {
+      "certificacion": {
+        "n": 5,
+        "hit@1": 0.2,
+        "recall@1": 0.1,
+        "hit@3": 1.0,
+        "recall@3": 0.9,
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      },
+      "contrato": {
+        "n": 7,
+        "hit@1": 0.714,
+        "recall@1": 0.548,
+        "hit@3": 0.714,
+        "recall@3": 0.619,
+        "hit@5": 0.714,
+        "recall@5": 0.619,
+        "hit@10": 0.714,
+        "recall@10": 0.619
+      },
+      "diagnostico": {
+        "n": 14,
+        "hit@1": 0.714,
+        "recall@1": 0.405,
+        "hit@3": 1.0,
+        "recall@3": 0.75,
+        "hit@5": 1.0,
+        "recall@5": 0.81,
+        "hit@10": 1.0,
+        "recall@10": 0.94
+      },
+      "historial": {
+        "n": 11,
+        "hit@1": 0.273,
+        "recall@1": 0.182,
+        "hit@3": 0.636,
+        "recall@3": 0.424,
+        "hit@5": 0.818,
+        "recall@5": 0.591,
+        "hit@10": 0.818,
+        "recall@10": 0.591
+      },
+      "limites": {
+        "n": 11,
+        "hit@1": 0.455,
+        "recall@1": 0.303,
+        "hit@3": 0.727,
+        "recall@3": 0.5,
+        "hit@5": 0.818,
+        "recall@5": 0.591,
+        "hit@10": 0.909,
+        "recall@10": 0.667
+      },
+      "operacion": {
+        "n": 11,
+        "hit@1": 0.636,
+        "recall@1": 0.576,
+        "hit@3": 0.727,
+        "recall@3": 0.636,
+        "hit@5": 0.727,
+        "recall@5": 0.636,
+        "hit@10": 0.909,
+        "recall@10": 0.818
+      },
+      "procedimiento": {
+        "n": 8,
+        "hit@1": 0.375,
+        "recall@1": 0.167,
+        "hit@3": 0.75,
+        "recall@3": 0.521,
+        "hit@5": 0.875,
+        "recall@5": 0.688,
+        "hit@10": 1.0,
+        "recall@10": 0.812
+      },
+      "seguridad": {
+        "n": 4,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 0.75,
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      }
+    },
+    "ms_por_pregunta": 0.4
   },
-  "rev_c_antes_que_d": {
-    "BM25 oficial": 39,
-    "propio": 0
+  "denso con prefijos": {
+    "total": {
+      "mrr": 0.66,
+      "hit@1": 0.549,
+      "recall@1": 0.366,
+      "distractor@1": 0.0,
+      "hit@3": 0.732,
+      "recall@3": 0.561,
+      "distractor@3": 0.014,
+      "hit@5": 0.789,
+      "recall@5": 0.631,
+      "distractor@5": 0.028,
+      "hit@10": 0.873,
+      "recall@10": 0.739,
+      "distractor@10": 0.028
+    },
+    "rev_c_antes_que_d": 0,
+    "por_tipo": {
+      "certificacion": {
+        "n": 5,
+        "hit@1": 0.2,
+        "recall@1": 0.1,
+        "hit@3": 0.6,
+        "recall@3": 0.6,
+        "hit@5": 0.8,
+        "recall@5": 0.7,
+        "hit@10": 0.8,
+        "recall@10": 0.8
+      },
+      "contrato": {
+        "n": 7,
+        "hit@1": 0.286,
+        "recall@1": 0.286,
+        "hit@3": 0.714,
+        "recall@3": 0.548,
+        "hit@5": 0.857,
+        "recall@5": 0.69,
+        "hit@10": 1.0,
+        "recall@10": 0.833
+      },
+      "diagnostico": {
+        "n": 14,
+        "hit@1": 0.643,
+        "recall@1": 0.321,
+        "hit@3": 0.857,
+        "recall@3": 0.583,
+        "hit@5": 0.929,
+        "recall@5": 0.714,
+        "hit@10": 0.929,
+        "recall@10": 0.786
+      },
+      "historial": {
+        "n": 11,
+        "hit@1": 0.364,
+        "recall@1": 0.273,
+        "hit@3": 0.455,
+        "recall@3": 0.333,
+        "hit@5": 0.545,
+        "recall@5": 0.364,
+        "hit@10": 0.727,
+        "recall@10": 0.485
+      },
+      "limites": {
+        "n": 11,
+        "hit@1": 0.545,
+        "recall@1": 0.394,
+        "hit@3": 0.727,
+        "recall@3": 0.53,
+        "hit@5": 0.727,
+        "recall@5": 0.561,
+        "hit@10": 0.818,
+        "recall@10": 0.697
+      },
+      "operacion": {
+        "n": 11,
+        "hit@1": 0.636,
+        "recall@1": 0.576,
+        "hit@3": 0.727,
+        "recall@3": 0.667,
+        "hit@5": 0.727,
+        "recall@5": 0.667,
+        "hit@10": 0.818,
+        "recall@10": 0.788
+      },
+      "procedimiento": {
+        "n": 8,
+        "hit@1": 0.75,
+        "recall@1": 0.417,
+        "hit@3": 0.875,
+        "recall@3": 0.562,
+        "hit@5": 0.875,
+        "recall@5": 0.688,
+        "hit@10": 1.0,
+        "recall@10": 0.75
+      },
+      "seguridad": {
+        "n": 4,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 0.875,
+        "hit@5": 1.0,
+        "recall@5": 0.875,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      }
+    },
+    "ms_por_pregunta": 32.5
   },
-  "por_tipo": {
-    "certificacion": {
-      "n": 5,
-      "hit@1": 0.2,
-      "recall@1": 0.1,
-      "hit@3": 1.0,
-      "recall@3": 0.9,
-      "hit@5": 1.0,
-      "recall@5": 1.0,
-      "hit@10": 1.0,
-      "recall@10": 1.0
+  "híbrido con prefijos": {
+    "total": {
+      "mrr": 0.683,
+      "hit@1": 0.563,
+      "recall@1": 0.38,
+      "distractor@1": 0.0,
+      "hit@3": 0.746,
+      "recall@3": 0.599,
+      "distractor@3": 0.014,
+      "hit@5": 0.859,
+      "recall@5": 0.702,
+      "distractor@5": 0.014,
+      "hit@10": 0.915,
+      "recall@10": 0.779,
+      "distractor@10": 0.014
     },
-    "contrato": {
-      "n": 7,
-      "hit@1": 0.714,
-      "recall@1": 0.548,
-      "hit@3": 0.714,
-      "recall@3": 0.619,
-      "hit@5": 0.714,
-      "recall@5": 0.619,
-      "hit@10": 0.714,
-      "recall@10": 0.619
+    "rev_c_antes_que_d": 0,
+    "por_tipo": {
+      "certificacion": {
+        "n": 5,
+        "hit@1": 0.6,
+        "recall@1": 0.4,
+        "hit@3": 0.8,
+        "recall@3": 0.7,
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      },
+      "contrato": {
+        "n": 7,
+        "hit@1": 0.429,
+        "recall@1": 0.357,
+        "hit@3": 0.571,
+        "recall@3": 0.5,
+        "hit@5": 0.714,
+        "recall@5": 0.619,
+        "hit@10": 0.714,
+        "recall@10": 0.619
+      },
+      "diagnostico": {
+        "n": 14,
+        "hit@1": 0.786,
+        "recall@1": 0.429,
+        "hit@3": 1.0,
+        "recall@3": 0.69,
+        "hit@5": 1.0,
+        "recall@5": 0.845,
+        "hit@10": 1.0,
+        "recall@10": 0.917
+      },
+      "historial": {
+        "n": 11,
+        "hit@1": 0.364,
+        "recall@1": 0.273,
+        "hit@3": 0.545,
+        "recall@3": 0.394,
+        "hit@5": 0.636,
+        "recall@5": 0.424,
+        "hit@10": 0.727,
+        "recall@10": 0.455
+      },
+      "limites": {
+        "n": 11,
+        "hit@1": 0.364,
+        "recall@1": 0.258,
+        "hit@3": 0.545,
+        "recall@3": 0.439,
+        "hit@5": 0.818,
+        "recall@5": 0.545,
+        "hit@10": 0.909,
+        "recall@10": 0.742
+      },
+      "operacion": {
+        "n": 11,
+        "hit@1": 0.636,
+        "recall@1": 0.576,
+        "hit@3": 0.727,
+        "recall@3": 0.697,
+        "hit@5": 0.818,
+        "recall@5": 0.727,
+        "hit@10": 1.0,
+        "recall@10": 0.909
+      },
+      "procedimiento": {
+        "n": 8,
+        "hit@1": 0.625,
+        "recall@1": 0.354,
+        "hit@3": 0.875,
+        "recall@3": 0.688,
+        "hit@5": 1.0,
+        "recall@5": 0.75,
+        "hit@10": 1.0,
+        "recall@10": 0.75
+      },
+      "seguridad": {
+        "n": 4,
+        "hit@1": 0.75,
+        "recall@1": 0.375,
+        "hit@3": 1.0,
+        "recall@3": 0.875,
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      }
     },
-    "diagnostico": {
-      "n": 14,
-      "hit@1": 0.714,
-      "recall@1": 0.405,
-      "hit@3": 1.0,
-      "recall@3": 0.75,
-      "hit@5": 1.0,
-      "recall@5": 0.81,
-      "hit@10": 1.0,
-      "recall@10": 0.94
+    "ms_por_pregunta": 35.3
+  },
+  "denso SIN prefijos": {
+    "total": {
+      "mrr": 0.61,
+      "hit@1": 0.479,
+      "recall@1": 0.324,
+      "distractor@1": 0.0,
+      "hit@3": 0.676,
+      "recall@3": 0.498,
+      "distractor@3": 0.014,
+      "hit@5": 0.775,
+      "recall@5": 0.615,
+      "distractor@5": 0.014,
+      "hit@10": 0.817,
+      "recall@10": 0.707,
+      "distractor@10": 0.014
     },
-    "historial": {
-      "n": 11,
-      "hit@1": 0.273,
-      "recall@1": 0.182,
-      "hit@3": 0.636,
-      "recall@3": 0.424,
-      "hit@5": 0.818,
-      "recall@5": 0.591,
-      "hit@10": 0.818,
-      "recall@10": 0.591
+    "rev_c_antes_que_d": 0,
+    "por_tipo": {
+      "certificacion": {
+        "n": 5,
+        "hit@1": 0.2,
+        "recall@1": 0.1,
+        "hit@3": 0.6,
+        "recall@3": 0.6,
+        "hit@5": 0.8,
+        "recall@5": 0.8,
+        "hit@10": 0.8,
+        "recall@10": 0.8
+      },
+      "contrato": {
+        "n": 7,
+        "hit@1": 0.429,
+        "recall@1": 0.333,
+        "hit@3": 0.714,
+        "recall@3": 0.548,
+        "hit@5": 0.857,
+        "recall@5": 0.69,
+        "hit@10": 1.0,
+        "recall@10": 0.833
+      },
+      "diagnostico": {
+        "n": 14,
+        "hit@1": 0.429,
+        "recall@1": 0.214,
+        "hit@3": 0.714,
+        "recall@3": 0.429,
+        "hit@5": 0.857,
+        "recall@5": 0.595,
+        "hit@10": 0.929,
+        "recall@10": 0.75
+      },
+      "historial": {
+        "n": 11,
+        "hit@1": 0.364,
+        "recall@1": 0.273,
+        "hit@3": 0.455,
+        "recall@3": 0.333,
+        "hit@5": 0.545,
+        "recall@5": 0.364,
+        "hit@10": 0.636,
+        "recall@10": 0.455
+      },
+      "limites": {
+        "n": 11,
+        "hit@1": 0.455,
+        "recall@1": 0.364,
+        "hit@3": 0.727,
+        "recall@3": 0.53,
+        "hit@5": 0.727,
+        "recall@5": 0.561,
+        "hit@10": 0.727,
+        "recall@10": 0.697
+      },
+      "operacion": {
+        "n": 11,
+        "hit@1": 0.545,
+        "recall@1": 0.485,
+        "hit@3": 0.636,
+        "recall@3": 0.576,
+        "hit@5": 0.727,
+        "recall@5": 0.667,
+        "hit@10": 0.727,
+        "recall@10": 0.697
+      },
+      "procedimiento": {
+        "n": 8,
+        "hit@1": 0.625,
+        "recall@1": 0.354,
+        "hit@3": 0.75,
+        "recall@3": 0.458,
+        "hit@5": 0.875,
+        "recall@5": 0.688,
+        "hit@10": 0.875,
+        "recall@10": 0.688
+      },
+      "seguridad": {
+        "n": 4,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 0.75,
+        "hit@5": 1.0,
+        "recall@5": 0.875,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      }
     },
-    "limites": {
-      "n": 11,
-      "hit@1": 0.455,
-      "recall@1": 0.303,
-      "hit@3": 0.727,
-      "recall@3": 0.5,
-      "hit@5": 0.818,
-      "recall@5": 0.591,
-      "hit@10": 0.909,
-      "recall@10": 0.667
+    "ms_por_pregunta": 30.9
+  },
+  "híbrido SIN prefijos": {
+    "total": {
+      "mrr": 0.67,
+      "hit@1": 0.549,
+      "recall@1": 0.373,
+      "distractor@1": 0.0,
+      "hit@3": 0.775,
+      "recall@3": 0.622,
+      "distractor@3": 0.014,
+      "hit@5": 0.859,
+      "recall@5": 0.676,
+      "distractor@5": 0.014,
+      "hit@10": 0.93,
+      "recall@10": 0.765,
+      "distractor@10": 0.014
     },
-    "operacion": {
-      "n": 11,
-      "hit@1": 0.636,
-      "recall@1": 0.576,
-      "hit@3": 0.727,
-      "recall@3": 0.636,
-      "hit@5": 0.727,
-      "recall@5": 0.636,
-      "hit@10": 0.909,
-      "recall@10": 0.818
+    "rev_c_antes_que_d": 0,
+    "por_tipo": {
+      "certificacion": {
+        "n": 5,
+        "hit@1": 0.6,
+        "recall@1": 0.4,
+        "hit@3": 1.0,
+        "recall@3": 0.9,
+        "hit@5": 1.0,
+        "recall@5": 0.9,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      },
+      "contrato": {
+        "n": 7,
+        "hit@1": 0.429,
+        "recall@1": 0.357,
+        "hit@3": 0.571,
+        "recall@3": 0.571,
+        "hit@5": 0.714,
+        "recall@5": 0.619,
+        "hit@10": 0.714,
+        "recall@10": 0.619
+      },
+      "diagnostico": {
+        "n": 14,
+        "hit@1": 0.643,
+        "recall@1": 0.357,
+        "hit@3": 1.0,
+        "recall@3": 0.679,
+        "hit@5": 1.0,
+        "recall@5": 0.75,
+        "hit@10": 1.0,
+        "recall@10": 0.821
+      },
+      "historial": {
+        "n": 11,
+        "hit@1": 0.364,
+        "recall@1": 0.273,
+        "hit@3": 0.636,
+        "recall@3": 0.424,
+        "hit@5": 0.636,
+        "recall@5": 0.424,
+        "hit@10": 0.909,
+        "recall@10": 0.621
+      },
+      "limites": {
+        "n": 11,
+        "hit@1": 0.364,
+        "recall@1": 0.258,
+        "hit@3": 0.545,
+        "recall@3": 0.439,
+        "hit@5": 0.818,
+        "recall@5": 0.545,
+        "hit@10": 0.909,
+        "recall@10": 0.652
+      },
+      "operacion": {
+        "n": 11,
+        "hit@1": 0.636,
+        "recall@1": 0.576,
+        "hit@3": 0.727,
+        "recall@3": 0.697,
+        "hit@5": 0.818,
+        "recall@5": 0.727,
+        "hit@10": 0.909,
+        "recall@10": 0.818
+      },
+      "procedimiento": {
+        "n": 8,
+        "hit@1": 0.625,
+        "recall@1": 0.354,
+        "hit@3": 0.875,
+        "recall@3": 0.625,
+        "hit@5": 1.0,
+        "recall@5": 0.75,
+        "hit@10": 1.0,
+        "recall@10": 0.812
+      },
+      "seguridad": {
+        "n": 4,
+        "hit@1": 1.0,
+        "recall@1": 0.5,
+        "hit@3": 1.0,
+        "recall@3": 1.0,
+        "hit@5": 1.0,
+        "recall@5": 1.0,
+        "hit@10": 1.0,
+        "recall@10": 1.0
+      }
     },
-    "procedimiento": {
-      "n": 8,
-      "hit@1": 0.375,
-      "recall@1": 0.167,
-      "hit@3": 0.75,
-      "recall@3": 0.521,
-      "hit@5": 0.875,
-      "recall@5": 0.688,
-      "hit@10": 1.0,
-      "recall@10": 0.812
-    },
-    "seguridad": {
-      "n": 4,
-      "hit@1": 1.0,
-      "recall@1": 0.5,
-      "hit@3": 1.0,
-      "recall@3": 0.75,
-      "hit@5": 1.0,
-      "recall@5": 1.0,
-      "hit@10": 1.0,
-      "recall@10": 1.0
-    }
+    "ms_por_pregunta": 34.7
   }
 }

@@ -18,6 +18,7 @@ from mcp.server import Server
 
 from ..config import Config
 from ..conocimiento.corpus import cargar
+from ..conocimiento.hibrido import ClienteEmb, RecuperadorHibrido
 from ..conocimiento.recuperador import Recuperador
 from ..integraciones.planta_api import PlantaApi
 from .base import Herramienta
@@ -57,7 +58,10 @@ def _error(mensaje: str) -> types.CallToolResult:
 def herramientas_por_defecto(cfg: Config | None = None) -> dict[str, Herramienta]:
     cfg = cfg or Config.desde_entorno()
     base = Path(__file__).resolve().parents[1] / "datos" / "documentos"
-    return construir(PlantaApi(cfg.planta_url), Recuperador(cargar(base)))
+    lexico = Recuperador(cargar(base))
+    # Híbrido si hay servicio de embeddings; si no responde, cada búsqueda sigue solo con el léxico.
+    recuperador = RecuperadorHibrido(lexico, ClienteEmb(cfg.emb_url)) if cfg.emb_url else lexico
+    return construir(PlantaApi(cfg.planta_url), recuperador)
 
 
 async def _stdio(server: Server) -> None:

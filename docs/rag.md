@@ -30,23 +30,39 @@ Trampas del corpus y cómo se manejan:
   como cualquier otra sección; el código se cita, no se traduce a mano.
 - **Texto libre de campo** en las órdenes: el tokenizador normaliza tildes y recorta a 6 letras.
 
-## Recuperador actual (léxico)
+## Recuperación: léxico, denso e híbrido
 
-BM25 sobre cuerpo + título (el título pesa x3), con los filtros de arriba. Medición con la suite oficial de 71
-preguntas (`python evaluacion/retrieval.py --docs "Context/Clon del REPO"`; resultado en
-`docs/resultados/retrieval.json`):
+- **Léxico:** BM25 sobre cuerpo + título (x3) con los filtros de vigencia y aplicabilidad.
+- **Denso:** `intfloat/multilingual-e5-small` (ONNX, MIT, revisión `614241f6…`, sha256 verificado en el build), servicio
+  `emb` con 0,5 CPU y 1 GB. Se usa como pide su model card: **`passage: ` al indexar y `query: ` al consultar**, mean
+  pooling, vectores normalizados y coseno. Los 701 fragmentos son 710 pasajes (los largos se parten por párrafos a
+  ~1.400 caracteres, con el título delante y la misma cita). **Los embeddings de los pasajes se calculan en el build**
+  y el servicio los carga en la tabla `fragmento_vec` de pgvector al arrancar, con los metadatos de equipo, fabricante,
+  documento, sección, cita, vigente y aplica. No se descarga nada en runtime.
+- **Híbrido:** fusión RRF (k = 60) con el léxico al doble de peso que el denso; lo que no aplica se degrada a la mitad.
+  Si `emb` no responde, la búsqueda sigue solo con el léxico.
 
-| Métrica | BM25 oficial | Recuperador propio |
-|---|---:|---:|
-| MRR | 0,573 | **0,679** |
-| hit@1 | 0,352 | **0,535** |
-| hit@5 | 0,845 | **0,859** |
-| recall@5 | 0,664 | **0,707** |
-| distractor@5 (revisión vieja antes que la relevante) | 0,099 | **0,014** |
-| Rev. C antes que Rev. D (top-5, de 71 preguntas) | 39 | **0** |
+Medición con las 71 preguntas oficiales (`evaluacion/retrieval.py`, resultado en `docs/resultados/retrieval.json`):
 
-La mejora más grande es de vigencia (la Rev. C ya no se cuela); la mejora de recall es modesta. Lo que falta para
-un salto de recall es el componente denso (ver más abajo).
+| Variante | MRR | hit@1 | hit@5 | recall@5 | recall@10 | distractor@5 | Rev. C antes que D | ms/pregunta |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| BM25 oficial (línea base) | 0,573 | 0,352 | 0,845 | 0,664 | 0,772 | 0,099 | 39 | 0,4 |
+| Léxico (propio) | 0,679 | 0,535 | 0,859 | 0,707 | 0,786 | 0,014 | 0 | 0,4 |
+| Denso con prefijos | 0,660 | 0,549 | 0,789 | 0,631 | 0,739 | 0,028 | 0 | 33 |
+| **Híbrido con prefijos** | **0,683** | 0,563 | 0,859 | 0,702 | 0,779 | 0,014 | 0 | 35 |
+| Denso **sin** prefijos | 0,610 | 0,479 | 0,775 | 0,615 | 0,707 | 0,014 | 0 | 31 |
+| Híbrido **sin** prefijos | 0,670 | 0,549 | 0,859 | 0,676 | 0,765 | 0,014 | 0 | 35 |
+
+Lectura:
+
+- Todas las variantes propias superan a la línea base oficial en MRR, hit@1 y recall@5, y ninguna deja pasar la
+  Rev. C antes que la D (39 de 71 en la base). Esa mejora viene sobre todo de los filtros de vigencia.
+- **El denso solo es peor que el léxico** en hit@5 y recall@5; el híbrido lo alcanza, no lo supera con holgura
+  (MRR +0,004, hit@1 +0,03, recall@10 −0,007). Con 71 preguntas, diferencias de ±0,02 son ruido.
+- **Los prefijos importan:** sin ellos el denso baja 0,05 de MRR y 0,10 de hit@1; en el híbrido el efecto es menor
+  (−0,013 de MRR, −0,026 de recall@5).
+- El peso 2:1 se eligió después de mirar 7 configuraciones sobre estas mismas preguntas: el número es algo optimista.
+- Costo: ~35 ms por consulta (embedding de la pregunta + pgvector), contra 0,4 ms del léxico.
 
 ## Tools (Anexo 1.3)
 
@@ -55,7 +71,7 @@ un salto de recall es el componente denso (ver más abajo).
 errores transitorios (red, 5xx, timeout) y un resultado uniforme `ResultadoTool` (`ok`, `datos` o `error`, `intentos`,
 `ms`). Una tool nunca lanza hacia el llamador. Tests en `tests/unit/test_herramientas.py`.
 
-Servidor MCP: `python -m sistema.herramientas.servidor_mcp` (stdio) expone las seis. Probado con el cliente MCP real,
+Servidor MCP: `python -m sistema.herramientas.servidor_mcp` (stdio) expone las seis; `buscar_manuales` usa el híbrido si hay `EMB_URL`. Probado con el cliente MCP real,
 en memoria y por stdio.
 
 ## Memoria
@@ -66,6 +82,4 @@ una pregunta de equipo o de una corrección.
 
 ## Pendiente
 
-- Índice denso en pgvector (`multilingual-e5-small`, `passage: `/`query: `, coseno, ablación sin prefijos) y
-  recuperador híbrido. Necesita un modelo en la imagen y una cuota de CPU propia.
 - Context builder (diseño) para el análisis de la Entrega 2.
