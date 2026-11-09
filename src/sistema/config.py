@@ -16,6 +16,15 @@ def _bool(valor: str | None, defecto: bool) -> bool:
     return valor.strip().lower() in {"1", "true", "si", "sí", "yes", "on"}
 
 
+def _client_id(e: dict[str, str], defecto: str) -> str:
+    """`<proyecto de compose>-agente`: dos stacks del mismo código (pruebas y corrector) no comparten sesión
+    MQTT ni se expulsan entre sí. `MQTT_CLIENT_ID` lo pisa si se define."""
+    if e.get("MQTT_CLIENT_ID"):
+        return e["MQTT_CLIENT_ID"]
+    proyecto = e.get("COMPOSE_PROJECT_NAME", "").strip()
+    return f"{proyecto}-agente" if proyecto else defecto
+
+
 @dataclass(frozen=True)
 class Config:
     # Identidad: aparece en el latido `sistema/estado`.
@@ -59,7 +68,7 @@ class Config:
             sistema=e.get("SISTEMA_NOMBRE", d.sistema),
             mqtt_host=e.get("MQTT_HOST", d.mqtt_host),
             mqtt_puerto=int(e.get("MQTT_PUERTO", d.mqtt_puerto)),
-            mqtt_client_id=e.get("MQTT_CLIENT_ID", d.mqtt_client_id),
+            mqtt_client_id=_client_id(e, d.mqtt_client_id),
             mqtt_sesion_s=int(e.get("MQTT_SESION_S", d.mqtt_sesion_s)),
             planta_url=e.get("PLANTA_URL", d.planta_url).rstrip("/"),
             database_url=e.get("DATABASE_URL", d.database_url),

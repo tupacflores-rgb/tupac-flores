@@ -36,6 +36,8 @@ services:
       <<: *proxy
       SISTEMA_NOMBRE: ${SISTEMA_NOMBRE:-Rolando Flores}
       MQTT_HOST: broker
+      # Nombre del proyecto de compose: define el client_id MQTT (<proyecto>-agente) y evita pisar sesiones.
+      COMPOSE_PROJECT_NAME: ${COMPOSE_PROJECT_NAME:-tupac-flores}
       PLANTA_URL: http://sim:8100
       DATABASE_URL: postgresql://sistema:${POSTGRES_PASSWORD:-sistema}@db:5432/sistema
       ASR_URL: http://asr:8000

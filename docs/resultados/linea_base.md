@@ -104,4 +104,4 @@ Latencia de alerta, 50 disparos S1–S4 con una nota de ~20 s en cola (`evaluaci
 | Carga solo en agente y db, 2 pasadas, 2 plazas | **50/50** | **0** | 10,4 | 15,7 | **18,8** |
 
 Con las 102 voces (`evaluacion/seguridad_voces.py`): 0 falsas alarmas y la nota S1 detectada.
-**No se alcanzó p99 ≤ 15 s** (D18 enmendada). Queda abierto; no se pasó a B1 ni a `base`.
+**Puerta interna D18 (p99 ≤ 15 s) no cumplida: p99 = 18,8 s en el peor caso realista. Requisito de la rúbrica (30 s) cumplido; 50/50 alertas, 0 falsas alarmas.** El usuario aceptó cerrar V2 así el 09/11; no se trocean audios. No se pasó a B1 ni a `base`.
