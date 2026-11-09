@@ -1,0 +1,380 @@
+{
+  "disparos": 50,
+  "con_alerta": 50,
+  "sin_alerta": 0,
+  "falsas_alarmas": 0,
+  "mensajes_invalidos": 0,
+  "saturacion_procesos": 0,
+  "carga_en_contenedores_propios": [
+    "tupac-flores-agente-1",
+    "tupac-flores-db-1",
+    "tupac-flores-emb-1"
+  ],
+  "nota_larga_antes": true,
+  "alerta_s": {
+    "p50": 8.03,
+    "p95": 15.83,
+    "p99": 16.43,
+    "max": 16.43,
+    "media": 9.37
+  },
+  "por_codigo": {
+    "S1": 15.83,
+    "S2": 16.43,
+    "S3": 15.33,
+    "S4": 12.73
+  },
+  "puerta_p99_15s": false,
+  "filas": [
+    {
+      "i": 0,
+      "codigo": "S1",
+      "nota": "NOTA-00035",
+      "alerta_s": 4.52,
+      "aviso_s": null
+    },
+    {
+      "i": 1,
+      "codigo": "S2",
+      "nota": "NOTA-00039",
+      "alerta_s": 4.01,
+      "aviso_s": 4.01
+    },
+    {
+      "i": 2,
+      "codigo": "S3",
+      "nota": "NOTA-00043",
+      "alerta_s": 13.98,
+      "aviso_s": 13.98
+    },
+    {
+      "i": 3,
+      "codigo": "S4",
+      "nota": "NOTA-00047",
+      "alerta_s": 5.52,
+      "aviso_s": 5.52
+    },
+    {
+      "i": 4,
+      "codigo": "S1",
+      "nota": "NOTA-00051",
+      "alerta_s": 5.02,
+      "aviso_s": 5.02
+    },
+    {
+      "i": 5,
+      "codigo": "S3",
+      "nota": "NOTA-00055",
+      "alerta_s": 5.91,
+      "aviso_s": null
+    },
+    {
+      "i": 6,
+      "codigo": "S1",
+      "nota": "NOTA-00059",
+      "alerta_s": 6.49,
+      "aviso_s": 6.49
+    },
+    {
+      "i": 7,
+      "codigo": "S2",
+      "nota": "NOTA-00063",
+      "alerta_s": 16.43,
+      "aviso_s": 16.43
+    },
+    {
+      "i": 8,
+      "codigo": "S3",
+      "nota": "NOTA-00067",
+      "alerta_s": 8.03,
+      "aviso_s": 8.03
+    },
+    {
+      "i": 9,
+      "codigo": "S4",
+      "nota": "NOTA-00071",
+      "alerta_s": 5.02,
+      "aviso_s": 5.02
+    },
+    {
+      "i": 10,
+      "codigo": "S1",
+      "nota": "NOTA-00075",
+      "alerta_s": 9.03,
+      "aviso_s": 9.03
+    },
+    {
+      "i": 11,
+      "codigo": "S3",
+      "nota": "NOTA-00079",
+      "alerta_s": 13.06,
+      "aviso_s": 13.06
+    },
+    {
+      "i": 12,
+      "codigo": "S1",
+      "nota": "NOTA-00083",
+      "alerta_s": 15.83,
+      "aviso_s": 15.83
+    },
+    {
+      "i": 13,
+      "codigo": "S2",
+      "nota": "NOTA-00087",
+      "alerta_s": 7.53,
+      "aviso_s": null
+    },
+    {
+      "i": 14,
+      "codigo": "S3",
+      "nota": "NOTA-00091",
+      "alerta_s": 13.26,
+      "aviso_s": 13.26
+    },
+    {
+      "i": 15,
+      "codigo": "S4",
+      "nota": "NOTA-00095",
+      "alerta_s": 8.03,
+      "aviso_s": 8.03
+    },
+    {
+      "i": 16,
+      "codigo": "S1",
+      "nota": "NOTA-00099",
+      "alerta_s": 12.81,
+      "aviso_s": 12.81
+    },
+    {
+      "i": 17,
+      "codigo": "S3",
+      "nota": "NOTA-00103",
+      "alerta_s": 7.53,
+      "aviso_s": null
+    },
+    {
+      "i": 18,
+      "codigo": "S1",
+      "nota": "NOTA-00107",
+      "alerta_s": 12.75,
+      "aviso_s": 12.75
+    },
+    {
+      "i": 19,
+      "codigo": "S2",
+      "nota": "NOTA-00111",
+      "alerta_s": 15.41,
+      "aviso_s": 15.41
+    },
+    {
+      "i": 20,
+      "codigo": "S3",
+      "nota": "NOTA-00115",
+      "alerta_s": 8.03,
+      "aviso_s": 8.03
+    },
+    {
+      "i": 21,
+      "codigo": "S4",
+      "nota": "NOTA-00119",
+      "alerta_s": 12.73,
+      "aviso_s": 12.73
+    },
+    {
+      "i": 22,
+      "codigo": "S1",
+      "nota": "NOTA-00127",
+      "alerta_s": 5.03,
+      "aviso_s": 5.03
+    },
+    {
+      "i": 23,
+      "codigo": "S3",
+      "nota": "NOTA-00131",
+      "alerta_s": 5.02,
+      "aviso_s": null
+    },
+    {
+      "i": 24,
+      "codigo": "S1",
+      "nota": "NOTA-00135",
+      "alerta_s": 6.03,
+      "aviso_s": 6.03
+    },
+    {
+      "i": 25,
+      "codigo": "S2",
+      "nota": "NOTA-00139",
+      "alerta_s": 4.02,
+      "aviso_s": null
+    },
+    {
+      "i": 26,
+      "codigo": "S3",
+      "nota": "NOTA-00143",
+      "alerta_s": 4.52,
+      "aviso_s": 4.52
+    },
+    {
+      "i": 27,
+      "codigo": "S4",
+      "nota": "NOTA-00147",
+      "alerta_s": 5.02,
+      "aviso_s": null
+    },
+    {
+      "i": 28,
+      "codigo": "S1",
+      "nota": "NOTA-00151",
+      "alerta_s": 4.52,
+      "aviso_s": null
+    },
+    {
+      "i": 29,
+      "codigo": "S3",
+      "nota": "NOTA-00155",
+      "alerta_s": 4.02,
+      "aviso_s": null
+    },
+    {
+      "i": 30,
+      "codigo": "S1",
+      "nota": "NOTA-00159",
+      "alerta_s": 6.53,
+      "aviso_s": 6.53
+    },
+    {
+      "i": 31,
+      "codigo": "S2",
+      "nota": "NOTA-00163",
+      "alerta_s": 4.52,
+      "aviso_s": 4.52
+    },
+    {
+      "i": 32,
+      "codigo": "S3",
+      "nota": "NOTA-00167",
+      "alerta_s": 4.02,
+      "aviso_s": null
+    },
+    {
+      "i": 33,
+      "codigo": "S4",
+      "nota": "NOTA-00171",
+      "alerta_s": 6.86,
+      "aviso_s": null
+    },
+    {
+      "i": 34,
+      "codigo": "S1",
+      "nota": "NOTA-00175",
+      "alerta_s": 6.02,
+      "aviso_s": null
+    },
+    {
+      "i": 35,
+      "codigo": "S3",
+      "nota": "NOTA-00179",
+      "alerta_s": 6.98,
+      "aviso_s": 6.98
+    },
+    {
+      "i": 36,
+      "codigo": "S1",
+      "nota": "NOTA-00183",
+      "alerta_s": 8.53,
+      "aviso_s": 8.53
+    },
+    {
+      "i": 37,
+      "codigo": "S2",
+      "nota": "NOTA-00187",
+      "alerta_s": 12.88,
+      "aviso_s": 12.88
+    },
+    {
+      "i": 38,
+      "codigo": "S3",
+      "nota": "NOTA-00191",
+      "alerta_s": 10.77,
+      "aviso_s": 10.77
+    },
+    {
+      "i": 39,
+      "codigo": "S4",
+      "nota": "NOTA-00195",
+      "alerta_s": 12.73,
+      "aviso_s": null
+    },
+    {
+      "i": 40,
+      "codigo": "S1",
+      "nota": "NOTA-00199",
+      "alerta_s": 10.93,
+      "aviso_s": null
+    },
+    {
+      "i": 41,
+      "codigo": "S3",
+      "nota": "NOTA-00203",
+      "alerta_s": 13.05,
+      "aviso_s": 13.05
+    },
+    {
+      "i": 42,
+      "codigo": "S1",
+      "nota": "NOTA-00207",
+      "alerta_s": 15.51,
+      "aviso_s": 15.51
+    },
+    {
+      "i": 43,
+      "codigo": "S2",
+      "nota": "NOTA-00211",
+      "alerta_s": 15.43,
+      "aviso_s": 15.43
+    },
+    {
+      "i": 44,
+      "codigo": "S3",
+      "nota": "NOTA-00215",
+      "alerta_s": 15.31,
+      "aviso_s": 15.31
+    },
+    {
+      "i": 45,
+      "codigo": "S4",
+      "nota": "NOTA-00219",
+      "alerta_s": 8.03,
+      "aviso_s": 8.03
+    },
+    {
+      "i": 46,
+      "codigo": "S1",
+      "nota": "NOTA-00223",
+      "alerta_s": 13.68,
+      "aviso_s": 13.68
+    },
+    {
+      "i": 47,
+      "codigo": "S3",
+      "nota": "NOTA-00227",
+      "alerta_s": 15.33,
+      "aviso_s": 15.33
+    },
+    {
+      "i": 48,
+      "codigo": "S1",
+      "nota": "NOTA-00231",
+      "alerta_s": 15.77,
+      "aviso_s": 15.77
+    },
+    {
+      "i": 49,
+      "codigo": "S2",
+      "nota": "NOTA-00235",
+      "alerta_s": 16.37,
+      "aviso_s": 16.37
+    }
+  ]
+}
