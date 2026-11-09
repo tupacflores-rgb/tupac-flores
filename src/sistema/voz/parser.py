@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 
-from ..dominio.catalogo import Catalogo, Mencion
+from ..dominio.catalogo import CONTEXTO_DE_EQUIPO, Catalogo, Mencion
 from ..dominio.parte import (
     VARIABLE_DIFERENCIAL,
     VARIABLE_GOTEO,
@@ -66,11 +66,18 @@ def extraer(texto: str, catalogo: Catalogo, fotos: list[str] | tuple[str, ...] =
             "tanque": _tanque,
             "bomba": _bomba,
         }.get(m.tipo, _nada)(m, resto, catalogo, ext)
+        if len(ext.filas) == antes and _parece_un_dato(resto):
+            ext.tramos_sin_filas.append(f"{m.texto}{resto}".strip())
         if pendientes and _dice_foto(resto):
             foto = pendientes.pop(0)
             for fila in ext.filas[antes:]:
                 fila.foto = foto
     return ext
+
+
+def _parece_un_dato(tramo: str) -> bool:
+    """El tramo tiene un número o una palabra de variable/unidad: si no dio filas, no se entendió."""
+    return any(c.isdigit() for c in tramo) or any(p in CONTEXTO_DE_EQUIPO for p in tramo.split())
 
 
 def _dice_foto(tramo: str) -> bool:

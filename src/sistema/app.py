@@ -40,6 +40,7 @@ from .persistencia.base import Base
 from .persistencia.journal import Journal
 from .persistencia.salida import Salida
 from .pipeline import Pipeline
+from .respaldo import RespaldoLLM
 from .sincronizacion import Sincronizacion
 from .supervisor import Supervisor
 from .voz.dialogo import Dialogo, Estado, ts_de
@@ -80,8 +81,25 @@ class Agente:
         self.rango = RangoHistorico(
             lambda tag, variable: [m.get("valor") for m in self.api.historian(tag, variable)]
         )
+        self.respaldo = (
+            RespaldoLLM(
+                config.llm_url,
+                config.llm_modelo,
+                config.llm_timeout_s,
+                config.llm_max_tokens,
+                registro=self.consumo,
+            )
+            if config.llm_url
+            else None
+        )
         self.dialogo = Dialogo(
-            config, self.salida, self.base, lambda: self.catalogo, self.reloj, rango=self.rango
+            config,
+            self.salida,
+            self.base,
+            lambda: self.catalogo,
+            self.reloj,
+            rango=self.rango,
+            respaldo=self.respaldo,
         )
         self.pipeline.posterior = self._nota_procesada
         self.sync = Sincronizacion(self.estado)

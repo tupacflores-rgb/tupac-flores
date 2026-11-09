@@ -85,6 +85,9 @@ class Extraccion:
     filas: list[Fila] = field(default_factory=list)
     equipos_dichos: list[str] = field(default_factory=list)  # TAGs nombrados sin ambigüedad en la nota
     ambiguedades_valor: list[AmbiguedadValor] = field(default_factory=list)
+    # Tramos de la nota (un equipo y lo que se dijo de él) con algo que parecía un dato y que no dieron
+    # filas: son los que el respaldo con LLM puede intentar.
+    tramos_sin_filas: list[str] = field(default_factory=list)
 
     @property
     def equipo_ambiguo(self) -> bool:

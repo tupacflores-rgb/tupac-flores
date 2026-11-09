@@ -66,6 +66,12 @@ class Config:
     # pregunta de equipo, el aviso «guardado» y un margen. El timeout global por nota sigue valiendo.
     max_borradores: int = 5
 
+    # Respaldo con modelo de lenguaje local (Ollama). `llm_url` vacío lo desactiva. Solo respaldo.
+    llm_url: str = "http://llm:11434"
+    llm_modelo: str = "qwen3.5:2b"
+    llm_timeout_s: float = 45.0
+    llm_max_tokens: int = 1500
+
     @property
     def max_mensajes(self) -> int:
         return self.max_borradores + 3
@@ -96,6 +102,10 @@ class Config:
             latido_arranque_max_s=float(e.get("LATIDO_ARRANQUE_MAX_S", d.latido_arranque_max_s)),
             nota_vieja_horas=float(e.get("NOTA_VIEJA_HORAS", d.nota_vieja_horas)),
             confirmacion_estricta=_bool(e.get("CONFIRMACION_ESTRICTA"), d.confirmacion_estricta),
+            llm_url=e.get("LLM_URL", d.llm_url).rstrip("/"),
+            llm_modelo=e.get("LLM_MODELO", d.llm_modelo),
+            llm_timeout_s=float(e.get("LLM_TIMEOUT_S", d.llm_timeout_s)),
+            llm_max_tokens=int(e.get("LLM_MAX_TOKENS", d.llm_max_tokens)),
             max_borradores=int(e.get("MAX_BORRADORES", d.max_borradores)),
             presupuesto_pasos=int(e.get("PRESUPUESTO_PASOS", d.presupuesto_pasos)),
             presupuesto_tokens=int(e.get("PRESUPUESTO_TOKENS", d.presupuesto_tokens)),

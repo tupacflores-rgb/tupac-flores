@@ -23,6 +23,8 @@ dependencies = [
     "mcp==1.30.0",
     "langchain-core==1.7.6",
     "langchain-mcp-adapters==0.3.2",
+    "langchain-ollama==1.1.0",
+    "ollama==0.6.3",
 ]
 
 [project.optional-dependencies]

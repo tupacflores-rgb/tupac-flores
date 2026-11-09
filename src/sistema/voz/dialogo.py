@@ -37,9 +37,10 @@ from ..dominio.parte import (
 from ..dominio.rango import RangoHistorico
 from ..estado import RelojPlanta
 from ..persistencia.salida import Salida
+from ..respaldo import RespaldoLLM, menciona_algo
 from .numeros import formatear
 from .parser import completar_unidades, extraer
-from .respuestas import aplicar, interpretar
+from .respuestas import Interpretacion, aplicar, interpretar
 
 log = logging.getLogger("sistema.dialogo")
 
@@ -88,8 +89,10 @@ class Dialogo:
         reloj: RelojPlanta,
         al_confirmar: Callable[[Estado], None] | None = None,
         rango: RangoHistorico | None = None,
+        respaldo: RespaldoLLM | None = None,
     ):
         self._rango = rango
+        self._respaldo = respaldo
         self._config = config
         self._salida = salida
         self._base = base
@@ -168,7 +171,19 @@ class Dialogo:
             return
         ext = extraer(texto, cat, nota.fotos)
         est.filas, est.ambiguedades_valor = ext.filas, ext.ambiguedades_valor
-        if not ext.filas:
+        self._completar_con_respaldo(est, ext, texto, cat)
+        if not est.filas and menciona_algo(texto, cat):
+            # Nunca una nota que habla de equipos o variables sin respuesta por una falla del parser.
+            log.warning("nota %s: habla de equipos o variables y no se sacaron filas", nota.id)
+            est.estado = EstadoParte.borrador
+            self._enviar(
+                est,
+                "Escuché tu nota pero no pude armar el parte con lo que dijiste. ¿Me la repetís con el "
+                "equipo y el valor, por favor?",
+                espera=True,
+            )
+            return
+        if not est.filas:
             est.estado = EstadoParte.sin_filas
             self._enviar(
                 est,
@@ -181,6 +196,43 @@ class Dialogo:
             self._preguntar_equipo(est, cat)
             return
         self._mostrar_borrador(est, cat)
+
+    def _completar_con_respaldo(self, est: Estado, ext, texto: str, cat: Catalogo) -> None:
+        """Si el parser no sacó filas de una nota que habla de equipos o variables, o dejó tramos sin
+        interpretar, el LLM de respaldo propone filas; pasan por la validación determinista y el operador las
+        confirma."""
+        if self._respaldo is None:
+            return
+        if not est.filas and menciona_algo(texto, cat):
+            res = self._respaldo.extraer(texto, cat, est.nota_id)
+            if res is not None and res.filas:
+                log.info("nota %s: el respaldo LLM aportó %d filas", est.nota_id, len(res.filas))
+                est.filas = res.filas
+            return
+        for tramo in ext.tramos_sin_filas:
+            res = self._respaldo.extraer(tramo, cat, est.nota_id)
+            if res is None:
+                continue
+            tiene = {(f.tag, f.variable) for f in est.filas}
+            nuevas = [f for f in res.filas if (f.tag, f.variable) not in tiene]
+            if nuevas:
+                log.info("nota %s: el respaldo LLM aportó %d filas de un tramo", est.nota_id, len(nuevas))
+                est.filas.extend(nuevas)
+
+    def _respaldar_respuesta(self, est: Estado, it, texto: str, cat: Catalogo):
+        """Respuesta que el intérprete no entiende: el LLM propone el parte corregido. Nunca confirma."""
+        if self._respaldo is None or est.estado != EstadoParte.borrador:
+            return it
+        if not (
+            it.tipo == "desconocido" or (it.tipo == "corrige" and not it.cambios and not it.revisar_todo)
+        ):
+            return it
+        res = self._respaldo.corregir(texto, est.filas, cat, est.nota_id)
+        if res is None or not res.filas:
+            return it
+        log.info("%s: el respaldo LLM interpretó la respuesta del operador", est.nota_id)
+        est.filas, est.ambiguedades_valor = res.filas, []
+        return Interpretacion("corrige")  # sin cambios: se muestra el borrador corregido, no se confirma
 
     def _nota_insegura(
         self, est: Estado, texto: str, d: Deteccion, cat: Catalogo, fotos: list[str] | None = None
@@ -315,6 +367,7 @@ class Dialogo:
             log.info("respuesta %s a un mensaje viejo de %s: se ignora", resp.id, est.nota_id)
             return
         it = interpretar(resp.texto, cat)
+        it = self._respaldar_respuesta(est, it, resp.texto, cat)
         log.info("%s ← %r → %s %s", est.nota_id, resp.texto, it.tipo, it.cambios or "")
         if est.estado == EstadoParte.pregunta_equipo:
             self._responder_equipo(est, it, cat)
