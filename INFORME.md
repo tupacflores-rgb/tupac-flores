@@ -183,11 +183,11 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 - **Puerta interna de 15 s no cumplida** (p99 19,3 s en el peor caso con carga al tope); causa: un trabajo del ASR en curso no
   se interrumpe.
 - **Lista cerrada de modelos:** modelos locales de libre elección según aclaración verbal de Novit; confirmación por escrito pendiente (BL-5).
-- **Fotos:** se asocian a su fila por URL pero el sistema no las descarga.
+- **Fotos:** se descargan a un volumen con sha256 y quedan asociadas a su fila; si la descarga falla queda la URL pendiente y se reintenta. No se analizan (Entrega 2).
 - **Códigos de falla del fabricante → F01–F10:** la tabla `MBP-4 §6.1` se **extrae del corpus indexado** (no está escrita a mano) y la tool `traducir_codigo` (solo lectura, Pydantic estricto, también por MCP) traduce `TX-T07`↔`F09` con sus citas (MBP-4 §6.1/§6.x y el manual vigente). Un código del manual sin correspondencia en la tabla (p. ej. `TX-T09`) se informa sin inventar una.
 - **Context builder:** solo mencionado; falta el documento de diseño.
 - **Notas `VIVO-`:** sin tratamiento ni test específico (una nota sin equipos termina en `sin_filas`).
-- **Evaluación contra `/api/verdad`:** se hace con el corrector oficial y `evaluacion/extraccion.py`; no hay un script propio.
+- **Evaluación contra `/api/verdad`:** `evaluacion/verdad.py` lo lee y reporta aciertos por campo, preguntas y falsos positivos/negativos (`docs/resultados/verdad.md`, sobre la corrida de control: 13 notas, muestra chica); además del corrector oficial y `evaluacion/extraccion.py`.
 - **Respaldo con LLM:** medido solo sobre 30 casos generados (53 % de valor exacto) y sin ejercitarse en el corrector.
 - **WER de `small` contra `turbo`:** solo se midió `small` (102 audios).
 - **Repositorio:** el nombre es `tupac-flores` (D11, `tupacflores-rgb/tupac-flores`); falta subir la rama `entrega-1` (sin push, a pedido).
