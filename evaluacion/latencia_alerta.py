@@ -57,7 +57,7 @@ def liberar(nombres: list[str]) -> None:
         subprocess.run(["docker", "rm", "-f", *nombres], capture_output=True)
 
 
-PROPIOS = ("tupac-flores-agente-1", "tupac-flores-db-1", "tupac-flores-emb-1")
+PROPIOS = ("tupac-flores-agente-1", "tupac-flores-db-1", "tupac-flores-emb-1", "tupac-flores-llm-1")
 
 
 def cargar_propios() -> list[str]:

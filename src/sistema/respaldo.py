@@ -12,14 +12,17 @@ Reglas que no se negocian:
   - Cada llamada pasa por el callback de consumo (pasos, tokens, tiempo) como cualquier paso de la nota.
 """
 
+# ruff: noqa: E501  (el prompt y los ejemplos son texto)
 from __future__ import annotations
 
+import json
 import logging
 import re
 from dataclasses import dataclass
+from typing import Literal
 
 from planta_contrato import FilaParte
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from .control import Presupuesto, SesionNota
 from .dominio.catalogo import Catalogo
@@ -75,21 +78,52 @@ class Resultado:
     descartadas: int  # filas del modelo que no pasaron la validación determinista
 
 
+def esquema_para(cat: Catalogo):
+    """`FilaParte` con el equipo y la variable restringidos a valores válidos del catálogo: la decodificación
+    estructurada no puede producir un tag ni una variable que no existen. Sigue siendo un `FilaParte`."""
+    tags = tuple(cat.equipos)
+    variables = tuple(sorted(set().union(*VARIABLES.values())))
+    fila = create_model(
+        "FilaCatalogo",
+        __base__=FilaParte,
+        tag=(Literal[tags], ...),  # type: ignore[valid-type]
+        variable=(Literal[variables], ...),  # type: ignore[valid-type]
+    )
+    return create_model(
+        "ParteCatalogo",
+        __config__=ConfigDict(extra="forbid"),
+        filas=(list[fila], Field(default_factory=list, max_length=12)),  # type: ignore[valid-type]
+    )
+
+
+EJEMPLOS = (
+    ("La uno está en ciento doce kilos de descarga, el rodamiento me dio sesenta grados con la pistola.",
+     [{"tag": "B-101", "variable": "presion_descarga_local", "valor": 112, "unidad": "kg/cm2", "observacion": None},
+      {"tag": "B-101", "variable": "temperatura_rodamiento_ir", "valor": 60, "unidad": "degC", "observacion": None}]),
+    ("El pulmón está en tres coma nueve metros.",
+     [{"tag": "TK-301", "variable": "nivel", "valor": 3.9, "unidad": "m", "observacion": None}]),
+    ("La tres está parada, en reserva.",
+     [{"tag": "B-103", "variable": "estado", "valor": None, "unidad": None, "observacion": "parada, en reserva"}]),
+    ("El filtro A me dio uno coma tres de diferencial.",
+     [{"tag": "F-201A", "variable": "presion_diferencial", "valor": 1.3, "unidad": "kg/cm2", "observacion": None}]),
+)  # fmt: skip
+
+
 def prompt_sistema(cat: Catalogo) -> str:
-    equipos = "\n".join(f"- {e.tag} ({e.tipo}): {', '.join(e.nombres)}" for e in cat.equipos.values())
+    equipos = "\n".join(f"- {e.tag} ({e.tipo}): {', '.join(e.nombres[:4])}" for e in cat.equipos.values())
+    ejemplos = "\n".join(
+        f"Nota: {texto}\nFilas: {json.dumps(filas, ensure_ascii=False)}" for texto, filas in EJEMPLOS
+    )
     return (
-        "Sos el asistente de una planta de inyección de agua. Recibís la transcripción de una nota de voz "
-        "de recorrida, con errores de reconocimiento (palabras pegadas o cambiadas). Devolvé las filas "
-        "del parte, una por equipo y variable. Usá solo lo que la nota dice; no inventes equipos, "
-        "variables ni números.\n"
-        f"Equipos (tag: nombres informales):\n{equipos}\n"
-        "Variables: presion_descarga_local (bombas; unidad kg/cm2, psi o bar), "
-        "temperatura_rodamiento_ir (degC), "
-        "presion_diferencial (filtros; kg/cm2), nivel (tanque; m). Observaciones sin número "
-        "(valor null): goteo_empaquetadura, estado (p. ej. 'parada, en reserva'), ruido, nivel_aceite_visor, "
-        "estado_correas.\n"
-        "«kilos» son kg/cm2. Si no se dijo la unidad de una presión de bomba, dejá la unidad en null. "
-        "Si no hay nada que reportar, devolvé una lista vacía."
+        "Convertís la transcripción de una nota de voz de una planta de inyección en filas de un parte. La "
+        "transcripción tiene errores de reconocimiento (palabras pegadas o cambiadas): interpretala. Una fila por "
+        "equipo y variable; solo lo que la nota dice; no repitas filas; no inventes números.\n"
+        f"Equipos:\n{equipos}\n"
+        "Variables: presion_descarga_local (bombas; kg/cm2, psi o bar), temperatura_rodamiento_ir (degC), "
+        "presion_diferencial (filtros; kg/cm2), nivel (tanque; m). Sin número (valor null, texto en observacion): "
+        "goteo_empaquetadura, estado, ruido, nivel_aceite_visor, estado_correas. «kilos» son kg/cm2. Si no se "
+        "dijo la unidad de una presión de bomba, unidad null. Sin nada que reportar: filas vacías.\n"
+        f"Ejemplos:\n{ejemplos}"
     )
 
 
@@ -110,7 +144,7 @@ class RespaldoLLM:
 
     # -- modelo ------------------------------------------------------------------------------------------
 
-    def _modelo(self):
+    def _modelo(self, cat: Catalogo | None = None):
         if self._chat is not None:
             return self._chat
         from langchain_ollama import ChatOllama
@@ -121,18 +155,19 @@ class RespaldoLLM:
             temperature=0,
             num_ctx=2048,
             num_thread=1,
-            num_predict=400,
+            num_predict=350,
             reasoning=False,  # think=false
             client_kwargs={"timeout": self.timeout_s},
         )
-        return llm.with_structured_output(ParteLLM, method="json_schema")
+        esquema = esquema_para(cat) if cat is not None else ParteLLM
+        return llm.with_structured_output(esquema, method="json_schema")
 
-    def _invocar(self, mensajes: list, nota_id: str) -> ParteLLM | None:
+    def _invocar(self, mensajes: list, nota_id: str, cat: Catalogo | None = None) -> ParteLLM | None:
         """Una llamada con presupuesto (pasos, tokens, tiempo). Cualquier falla devuelve None: el camino
         determinista sigue."""
         sesion = SesionNota(nota_id, "llm", self._presupuesto, self._registro)
         try:
-            salida = self._modelo().invoke(mensajes, config={"callbacks": [CallbackConsumo(sesion)]})
+            salida = self._modelo(cat).invoke(mensajes, config={"callbacks": [CallbackConsumo(sesion)]})
         except Exception as e:  # sin servicio, timeout, JSON inválido o presupuesto: no se frena la nota
             log.warning("respaldo LLM no disponible para %s: %s", nota_id, e)
             sesion.cerrar()
@@ -140,6 +175,8 @@ class RespaldoLLM:
         sesion.cerrar()
         if isinstance(salida, dict):
             salida = ParteLLM.model_validate(salida)
+        elif not isinstance(salida, ParteLLM):  # el esquema restringido al catálogo -> ParteLLM de FilaParte
+            salida = ParteLLM(filas=[FilaParte(**f.model_dump()) for f in salida.filas])
         return salida
 
     # -- usos --------------------------------------------------------------------------------------------
@@ -147,7 +184,7 @@ class RespaldoLLM:
     def extraer(self, texto: str, cat: Catalogo, nota_id: str = "?") -> Resultado | None:
         """Filas de un texto (o de un tramo) que el parser no interpretó."""
         salida = self._invocar(
-            [("system", prompt_sistema(cat)), ("human", f"Transcripción: {texto}")], nota_id
+            [("system", prompt_sistema(cat)), ("human", f"Nota: {texto}\nFilas:")], nota_id, cat
         )
         if salida is None:
             return None
@@ -169,6 +206,7 @@ class RespaldoLLM:
                 ),
             ],
             nota_id,
+            cat,
         )
         if salida is None:
             return None

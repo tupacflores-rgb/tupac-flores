@@ -20,7 +20,10 @@ for _ in $(seq 1 60); do
 done
 # Precarga del modelo principal: la primera nota real no paga la carga de los pesos.
 if [ -n "${MODELO:-}" ]; then
-  ollama run "$MODELO" --keepalive 24h "Respondé: ok" >/dev/null 2>&1 || echo "llm: no se pudo precargar $MODELO" >&2
+  # Sin razonamiento (think=false): a esta cuota cada token cuesta segundos y la precarga solo carga los pesos.
+  ollama run "$MODELO" --think=false --keepalive 24h "ok" >/dev/null 2>&1 \
+    || ollama run "$MODELO" --keepalive 24h "ok" >/dev/null 2>&1 \
+    || echo "llm: no se pudo precargar $MODELO" >&2
 fi
 echo "llm: listo"
 wait "$PID"
