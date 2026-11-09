@@ -95,6 +95,29 @@ class Base:
             "UPDATE nota SET transcripcion = %s, estado = 'transcripta' WHERE nota_id = %s", (texto, nota_id)
         )
 
+    # -- diálogo -------------------------------------------------------------------------------------
+
+    def guardar_dialogo(self, nota_id: str, estado: dict) -> None:
+        self.ejecutar(
+            "INSERT INTO dialogo (nota_id, estado) VALUES (%s, %s::jsonb) "
+            "ON CONFLICT (nota_id) DO UPDATE SET estado = EXCLUDED.estado, actualizado = now()",
+            (nota_id, json.dumps(estado, ensure_ascii=False, default=str)),
+        )
+
+    def cargar_dialogo(self, nota_id: str) -> dict | None:
+        filas = self.ejecutar("SELECT estado FROM dialogo WHERE nota_id = %s", (nota_id,))
+        return filas[0][0] if filas else None
+
+    def registrar_mensaje(self, mensaje_id: str, nota_id: str) -> None:
+        self.ejecutar(
+            "INSERT INTO mensaje_nota (mensaje_id, nota_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+            (mensaje_id, nota_id),
+        )
+
+    def nota_de_mensaje(self, mensaje_id: str) -> str | None:
+        filas = self.ejecutar("SELECT nota_id FROM mensaje_nota WHERE mensaje_id = %s", (mensaje_id,))
+        return filas[0][0] if filas else None
+
     def registrar_respuesta(self, resp_id: str, mensaje_id: str, ts: datetime, texto: str) -> bool:
         filas = self.ejecutar(
             "INSERT INTO respuesta (id, mensaje_id, ts, texto) VALUES (%s, %s, %s, %s) "

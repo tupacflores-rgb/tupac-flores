@@ -35,6 +35,7 @@ from .persistencia.journal import Journal
 from .persistencia.salida import Salida
 from .pipeline import Pipeline
 from .supervisor import Supervisor
+from .voz.dialogo import Dialogo
 
 log = logging.getLogger("sistema.app")
 
@@ -57,11 +58,12 @@ class Agente:
             self.api, self.asr, self.base.guardar_transcripcion, self.salida, lambda: self.catalogo
         )
 
-        # Ganchos que completan las etapas siguientes (seguridad, voz, diálogo).
+        self.dialogo = Dialogo(config, self.salida, self.base, lambda: self.catalogo, self.reloj)
+        self.pipeline.posterior = self.dialogo.encolar_nota
+
+        # Ganchos de entrada (se reemplazan en los tests).
         self.al_recibir_nota: Callable[[NotaRecorrida], None] = self.pipeline.encolar
-        self.al_recibir_respuesta: Callable[[RespuestaOperador], None] = lambda r: log.info(
-            "respuesta %s", r.id
-        )
+        self.al_recibir_respuesta: Callable[[RespuestaOperador], None] = self.dialogo.encolar_respuesta
         self.componentes_listos: list[Callable[[], bool]] = [self.asr.listo]
         self.recuperadores: list[Callable[[], None]] = []
 
@@ -239,6 +241,7 @@ class Agente:
         self.sup.lanzar("enlace", self._worker_enlace)
         self.sup.lanzar("entrada", self._worker_entrada)
         self.sup.lanzar("pipeline", self.pipeline.correr)
+        self.sup.lanzar("dialogo", self.dialogo.correr)
         self.sup.lanzar("recuperacion", self._worker_recuperacion)
         self.sup.parar.wait()
         self.sup.detener()

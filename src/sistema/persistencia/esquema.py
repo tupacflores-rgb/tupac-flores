@@ -22,6 +22,17 @@ CREATE TABLE IF NOT EXISTS respuesta (
     recibida_en timestamptz NOT NULL DEFAULT now()
 );
 
+-- Estado del diálogo con el operador por nota (sobrevive a un reinicio del agente).
+CREATE TABLE IF NOT EXISTS dialogo (
+    nota_id     text PRIMARY KEY,
+    estado      jsonb NOT NULL,
+    actualizado timestamptz NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS mensaje_nota (
+    mensaje_id text PRIMARY KEY,
+    nota_id    text NOT NULL
+);
+
 -- Cola de salida (intención -> publicación -> marca). Ver persistencia/salida.py.
 CREATE TABLE IF NOT EXISTS salida (
     id        text PRIMARY KEY,

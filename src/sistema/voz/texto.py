@@ -16,7 +16,8 @@ def sin_acentos(t: str) -> str:
 def normalizar(t: str) -> str:
     """Minúsculas, sin acentos ni signos, espacios simples. Los números y decimales conservan `,` y `.`
     cuando están entre dígitos (el parser de números los necesita)."""
-    t = sin_acentos(t)
+    t = sin_acentos(t).replace("°", " grados ")  # "61°" = "sesenta y un grados"
+    t = re.sub(r"(?<=\d)(?=[a-z])", " ", t)  # "1610psi" / "1610p si" -> "1610 psi" / "1610 p si"
     t = re.sub(r"(?<!\d)[.,]|[.,](?!\d)", " ", t)  # signos que no están entre dígitos
     t = re.sub(r"[^a-z0-9.,/%° ]+", " ", t)
     return re.sub(r"\s+", " ", t).strip()
