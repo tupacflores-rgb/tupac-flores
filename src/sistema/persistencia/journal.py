@@ -45,10 +45,21 @@ class Journal:
                     registros.append(r)
             return registros
 
-    def reemplazar(self, restantes: list[dict]) -> None:
-        """Deja solo `restantes` (escritura atómica). Se usa al terminar de importar a la base."""
+    def extraer(self, tipos: set[str]) -> list[dict]:
+        """Saca del journal (de forma atómica respecto de `agregar`) los registros de esos tipos y los
+        devuelve. Si el destino falla, quien los extrajo los vuelve a `agregar`."""
         with self._lock:
-            self.carpeta.mkdir(parents=True, exist_ok=True)
+            if not self.ruta.exists():
+                return []
+            extraidos, restantes = [], []
+            for linea in self.ruta.read_text(encoding="utf-8").splitlines():
+                try:
+                    r = json.loads(linea)
+                except json.JSONDecodeError:
+                    continue  # escritura cortada por un apagón: se descarta
+                (extraidos if r.get("tipo") in tipos else restantes).append(r)
+            if not extraidos:
+                return []
             tmp = self.ruta.with_suffix(".tmp")
             with open(tmp, "w", encoding="utf-8") as f:
                 for r in restantes:
@@ -56,3 +67,4 @@ class Journal:
                 f.flush()
                 os.fsync(f.fileno())
             os.replace(tmp, self.ruta)
+            return extraidos

@@ -30,6 +30,7 @@ from .integraciones.planta_api import PlantaApi
 from .latido import Latido
 from .persistencia.base import Base
 from .persistencia.journal import Journal
+from .persistencia.salida import Salida
 from .supervisor import Supervisor
 
 log = logging.getLogger("sistema.app")
@@ -45,6 +46,7 @@ class Agente:
         self.api = PlantaApi(config.planta_url)
         self.base = Base(config.database_url)
         self.journal = Journal(config.journal_dir)
+        self.salida = Salida(self.base, self.journal, lambda t, m: self.mqtt.publicar(t, m, qos=1))
         self.definicion: dict | None = None
 
         # Ganchos que completan las etapas siguientes (seguridad, voz, diálogo).
@@ -195,30 +197,26 @@ class Agente:
 
     def recuperar_journal_notas(self) -> None:
         """Importa a la base las notas y respuestas que quedaron en el journal con la base caída."""
-        pendientes = self.journal.leer()
-        if not pendientes:
-            return
-        restantes = []
-        for r in pendientes:
+        extraidos = self.journal.extraer({"nota", "respuesta"})
+        for i, r in enumerate(extraidos):
             try:
                 if r["tipo"] == "nota":
                     n = NotaRecorrida.model_validate(r["datos"])
                     self.base.registrar_nota(n.id, n.ts, n.recorrida_id, n.audio_url, n.fotos)
-                elif r["tipo"] == "respuesta":
+                else:
                     x = RespuestaOperador.model_validate(r["datos"])
                     self.base.registrar_respuesta(x.id, x.mensaje_id, x.ts, x.texto)
-                else:
-                    restantes.append(r)  # lo recupera otro componente (p. ej. la cola de salida)
             except Exception:
-                restantes.append(r)
-        if len(restantes) != len(pendientes):
-            self.journal.reemplazar(restantes)
-            log.info("journal: %d registros importados a la base", len(pendientes) - len(restantes))
+                for pendiente in extraidos[i:]:  # la base sigue caída: se reintenta más tarde
+                    self.journal.agregar(pendiente["tipo"], pendiente["datos"])
+                return
+        if extraidos:
+            log.info("journal: %d registros importados a la base", len(extraidos))
 
     # -- ciclo de vida ------------------------------------------------------------------------------
 
     def correr(self) -> None:
-        self.recuperadores.append(self.recuperar_journal_notas)
+        self.recuperadores += [self.recuperar_journal_notas, self.salida.recuperar]
         self.mqtt.arrancar()
         # El latido va primero y en su propio hilo: nada de lo demás puede demorarlo.
         self.sup.lanzar("latido", self.latido.correr)

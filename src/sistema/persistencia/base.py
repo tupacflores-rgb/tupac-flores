@@ -62,6 +62,34 @@ class Base:
         )
         return bool(filas)
 
+    # -- cola de salida (protocolo intención -> publicación -> marca) --------------------------------
+
+    def encolar_salida(self, id_: str, topico: str, payload: dict, timeout_ms: int | None = None) -> bool:
+        """Registra la intención de publicar. Devuelve False si el id ya existía."""
+        filas = self.ejecutar(
+            "INSERT INTO salida (id, topico, payload) VALUES (%s, %s, %s::jsonb) "
+            "ON CONFLICT (id) DO NOTHING RETURNING id",
+            (id_, topico, json.dumps(payload, ensure_ascii=False)),
+            timeout_ms,
+        )
+        return bool(filas)
+
+    def estado_salida(self, id_: str, timeout_ms: int | None = None) -> str | None:
+        filas = self.ejecutar("SELECT estado FROM salida WHERE id = %s", (id_,), timeout_ms)
+        return filas[0][0] if filas else None
+
+    def marcar_publicada(self, id_: str, timeout_ms: int | None = None) -> None:
+        self.ejecutar(
+            "UPDATE salida SET estado = 'publicada', publicado = now() WHERE id = %s", (id_,), timeout_ms
+        )
+
+    def salidas_pendientes(self, limite: int = 50) -> list[tuple[str, str, dict]]:
+        filas = self.ejecutar(
+            "SELECT id, topico, payload FROM salida WHERE estado = 'a_publicar' ORDER BY creado LIMIT %s",
+            (limite,),
+        )
+        return [(i, t, p) for i, t, p in filas]
+
     def registrar_respuesta(self, resp_id: str, mensaje_id: str, ts: datetime, texto: str) -> bool:
         filas = self.ejecutar(
             "INSERT INTO respuesta (id, mensaje_id, ts, texto) VALUES (%s, %s, %s, %s) "
