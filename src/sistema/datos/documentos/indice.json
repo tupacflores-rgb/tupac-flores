@@ -1,0 +1,3834 @@
+{
+  "semilla": 2026,
+  "documentos": [
+    {
+      "id": "TX350-D",
+      "titulo": "Bomba alternativa triplex Trimax TX-350",
+      "subtitulo": "Manual de instalación, operación y mantenimiento",
+      "codigo": "MT-TX350-ES",
+      "revision": "D",
+      "vigente_desde": "2023-03-15",
+      "vigente": true,
+      "reemplaza": "MT-TX350-ES Rev. C (2019-06-01)",
+      "reemplazado_por": null,
+      "tipo": "manual_fabricante",
+      "emisor": "Trimax Industrial S.A.",
+      "equipos": [
+        "B-101",
+        "B-102",
+        "B-103"
+      ],
+      "archivos": {
+        "md": "manuales/TX350-D.md",
+        "pdf": "manuales/TX350-D.pdf"
+      },
+      "paginas": 44,
+      "secciones": [
+        {
+          "id": "TX350-D §1",
+          "numero": "1",
+          "titulo": "Información general y seguridad",
+          "nivel": 1,
+          "clave": "general",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-D §1.1",
+          "numero": "1.1",
+          "titulo": "Alcance de este manual",
+          "nivel": 2,
+          "clave": "alcance",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-D §1.2",
+          "numero": "1.2",
+          "titulo": "Convenciones de advertencias",
+          "nivel": 2,
+          "clave": "convenciones",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-D §1.3",
+          "numero": "1.3",
+          "titulo": "Seguridad general",
+          "nivel": 2,
+          "clave": "seguridad-general",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-D §1.4",
+          "numero": "1.4",
+          "titulo": "Energía almacenada y presión residual",
+          "nivel": 2,
+          "clave": "energia-almacenada",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-D §1.5",
+          "numero": "1.5",
+          "titulo": "Placa de identificación",
+          "nivel": 2,
+          "clave": "placa",
+          "pagina": 8
+        },
+        {
+          "id": "TX350-D §1.6",
+          "numero": "1.6",
+          "titulo": "Garantía",
+          "nivel": 2,
+          "clave": "garantia",
+          "pagina": 8
+        },
+        {
+          "id": "TX350-D §2",
+          "numero": "2",
+          "titulo": "Descripción del equipo",
+          "nivel": 1,
+          "clave": "descripcion",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-D §2.1",
+          "numero": "2.1",
+          "titulo": "La familia TX",
+          "nivel": 2,
+          "clave": "familia",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-D §2.2",
+          "numero": "2.2",
+          "titulo": "Extremo de potencia",
+          "nivel": 2,
+          "clave": "extremo-potencia",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-D §2.3",
+          "numero": "2.3",
+          "titulo": "Extremo hidráulico",
+          "nivel": 2,
+          "clave": "extremo-hidraulico",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-D §2.4",
+          "numero": "2.4",
+          "titulo": "Transmisión por correas y contraeje",
+          "nivel": 2,
+          "clave": "transmision",
+          "pagina": 10
+        },
+        {
+          "id": "TX350-D §2.5",
+          "numero": "2.5",
+          "titulo": "Acople elástico",
+          "nivel": 2,
+          "clave": "acople",
+          "pagina": 10
+        },
+        {
+          "id": "TX350-D §2.6",
+          "numero": "2.6",
+          "titulo": "Instrumentación recomendada",
+          "nivel": 2,
+          "clave": "instrumentacion",
+          "pagina": 10
+        },
+        {
+          "id": "TX350-D §3",
+          "numero": "3",
+          "titulo": "Especificaciones técnicas",
+          "nivel": 1,
+          "clave": "especificaciones",
+          "pagina": 11
+        },
+        {
+          "id": "TX350-D §3.1",
+          "numero": "3.1",
+          "titulo": "Datos técnicos de la TX-350",
+          "nivel": 2,
+          "clave": "datos-tecnicos",
+          "pagina": 11
+        },
+        {
+          "id": "TX350-D §3.2",
+          "numero": "3.2",
+          "titulo": "Límites de operación",
+          "nivel": 2,
+          "clave": "limites",
+          "pagina": 11
+        },
+        {
+          "id": "TX350-D §3.3",
+          "numero": "3.3",
+          "titulo": "Límites de operación de otros modelos de la familia",
+          "nivel": 2,
+          "clave": "limites-otros",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-D §3.4",
+          "numero": "3.4",
+          "titulo": "Curva de desempeño",
+          "nivel": 2,
+          "clave": "curva",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-D §3.5",
+          "numero": "3.5",
+          "titulo": "Prueba de fábrica",
+          "nivel": 2,
+          "clave": "prueba-fabrica",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-D §3.6",
+          "numero": "3.6",
+          "titulo": "Severidad de vibraciones",
+          "nivel": 2,
+          "clave": "vibraciones-iso",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-D §3.7",
+          "numero": "3.7",
+          "titulo": "Pares de apriete",
+          "nivel": 2,
+          "clave": "torques",
+          "pagina": 13
+        },
+        {
+          "id": "TX350-D §3.8",
+          "numero": "3.8",
+          "titulo": "Lubricantes aprobados",
+          "nivel": 2,
+          "clave": "lubricantes",
+          "pagina": 13
+        },
+        {
+          "id": "TX350-D §4",
+          "numero": "4",
+          "titulo": "Instalación",
+          "nivel": 1,
+          "clave": "instalacion",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-D §4.1",
+          "numero": "4.1",
+          "titulo": "Recepción e inspección",
+          "nivel": 2,
+          "clave": "recepcion",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-D §4.2",
+          "numero": "4.2",
+          "titulo": "Izaje",
+          "nivel": 2,
+          "clave": "izaje",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-D §4.3",
+          "numero": "4.3",
+          "titulo": "Fundación y nivelación",
+          "nivel": 2,
+          "clave": "fundacion",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-D §4.4",
+          "numero": "4.4",
+          "titulo": "Cañerías de succión y descarga",
+          "nivel": 2,
+          "clave": "canerias",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-D §4.5",
+          "numero": "4.5",
+          "titulo": "Amortiguador de pulsaciones",
+          "nivel": 2,
+          "clave": "amortiguador",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-D §4.6",
+          "numero": "4.6",
+          "titulo": "Primera puesta en marcha",
+          "nivel": 2,
+          "clave": "primera-marcha",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-D §5",
+          "numero": "5",
+          "titulo": "Operación",
+          "nivel": 1,
+          "clave": "operacion",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-D §5.1",
+          "numero": "5.1",
+          "titulo": "Verificaciones antes del arranque",
+          "nivel": 2,
+          "clave": "verif-arranque",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-D §5.2",
+          "numero": "5.2",
+          "titulo": "Arranque",
+          "nivel": 2,
+          "clave": "arranque",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-D §5.3",
+          "numero": "5.3",
+          "titulo": "Valores típicos en operación normal",
+          "nivel": 2,
+          "clave": "valores-tipicos",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-D §5.4",
+          "numero": "5.4",
+          "titulo": "Parada normal",
+          "nivel": 2,
+          "clave": "parada",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-D §5.5",
+          "numero": "5.5",
+          "titulo": "Parada de emergencia",
+          "nivel": 2,
+          "clave": "parada-emergencia",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-D §5.6",
+          "numero": "5.6",
+          "titulo": "Operación con bomba de reserva",
+          "nivel": 2,
+          "clave": "reserva",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-D §5.7",
+          "numero": "5.7",
+          "titulo": "Operación en clima frío",
+          "nivel": 2,
+          "clave": "clima-frio",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-D §5.8",
+          "numero": "5.8",
+          "titulo": "Operación con agua de baja calidad",
+          "nivel": 2,
+          "clave": "agua-calidad",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-D §6",
+          "numero": "6",
+          "titulo": "Protecciones y enclavamientos",
+          "nivel": 1,
+          "clave": "protecciones",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-D §6.1",
+          "numero": "6.1",
+          "titulo": "Protecciones de la bomba",
+          "nivel": 2,
+          "clave": "tabla-protecciones",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-D §6.2",
+          "numero": "6.2",
+          "titulo": "Rearme después de un disparo",
+          "nivel": 2,
+          "clave": "rearme",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-D §6.3",
+          "numero": "6.3",
+          "titulo": "Arranque automático de la bomba de reserva",
+          "nivel": 2,
+          "clave": "arranque-reserva",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-D §6.4",
+          "numero": "6.4",
+          "titulo": "Cantidad máxima de arranques",
+          "nivel": 2,
+          "clave": "arranques",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-D §6.5",
+          "numero": "6.5",
+          "titulo": "Diagnóstico por ruido y olor",
+          "nivel": 2,
+          "clave": "ruidos",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-D §7",
+          "numero": "7",
+          "titulo": "Mantenimiento preventivo",
+          "nivel": 1,
+          "clave": "preventivo",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-D §7.1",
+          "numero": "7.1",
+          "titulo": "Plan de mantenimiento por horas de marcha",
+          "nivel": 2,
+          "clave": "plan",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-D §7.2",
+          "numero": "7.2",
+          "titulo": "Lubricación del cárter",
+          "nivel": 2,
+          "clave": "lubricacion",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-D §7.3",
+          "numero": "7.3",
+          "titulo": "Análisis de aceite",
+          "nivel": 2,
+          "clave": "analisis-aceite",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-D §7.4",
+          "numero": "7.4",
+          "titulo": "Inspección de correas",
+          "nivel": 2,
+          "clave": "correas",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-D §7.5",
+          "numero": "7.5",
+          "titulo": "Ajuste de la empaquetadura",
+          "nivel": 2,
+          "clave": "ajuste-empaquetadura",
+          "pagina": 20
+        },
+        {
+          "id": "TX350-D §7.6",
+          "numero": "7.6",
+          "titulo": "Registro de mantenimiento",
+          "nivel": 2,
+          "clave": "registro",
+          "pagina": 20
+        },
+        {
+          "id": "TX350-D §8",
+          "numero": "8",
+          "titulo": "Diagnóstico de fallas",
+          "nivel": 1,
+          "clave": "diagnostico",
+          "pagina": 21
+        },
+        {
+          "id": "TX350-D §8.1",
+          "numero": "8.1",
+          "titulo": "Cómo usar este capítulo",
+          "nivel": 2,
+          "clave": "como-usar",
+          "pagina": 21
+        },
+        {
+          "id": "TX350-D §8.2",
+          "numero": "8.2",
+          "titulo": "Tabla de fallas",
+          "nivel": 2,
+          "clave": "tabla-fallas",
+          "pagina": 21
+        },
+        {
+          "id": "TX350-D §8.3",
+          "numero": "8.3",
+          "titulo": "TX-T01 Pérdida por empaquetadura",
+          "nivel": 2,
+          "clave": "falla-TX-T01",
+          "pagina": 22
+        },
+        {
+          "id": "TX350-D §8.4",
+          "numero": "8.4",
+          "titulo": "TX-T02 Válvulas de succión o descarga gastadas",
+          "nivel": 2,
+          "clave": "falla-TX-T02",
+          "pagina": 22
+        },
+        {
+          "id": "TX350-D §8.5",
+          "numero": "8.5",
+          "titulo": "TX-T03 Rodamiento de cigüeñal dañado",
+          "nivel": 2,
+          "clave": "falla-TX-T03",
+          "pagina": 23
+        },
+        {
+          "id": "TX350-D §8.6",
+          "numero": "8.6",
+          "titulo": "TX-T04 Bajo nivel de aceite del cárter",
+          "nivel": 2,
+          "clave": "falla-TX-T04",
+          "pagina": 24
+        },
+        {
+          "id": "TX350-D §8.7",
+          "numero": "8.7",
+          "titulo": "TX-T05 Resbalamiento de correas",
+          "nivel": 2,
+          "clave": "falla-TX-T05",
+          "pagina": 24
+        },
+        {
+          "id": "TX350-D §8.8",
+          "numero": "8.8",
+          "titulo": "TX-T06 Desalineación del acople o elastómero gastado",
+          "nivel": 2,
+          "clave": "falla-TX-T06",
+          "pagina": 25
+        },
+        {
+          "id": "TX350-D §8.9",
+          "numero": "8.9",
+          "titulo": "TX-T07 Cavitación por succión insuficiente",
+          "nivel": 2,
+          "clave": "falla-TX-T07",
+          "pagina": 25
+        },
+        {
+          "id": "TX350-D §8.10",
+          "numero": "8.10",
+          "titulo": "TX-T08 Lectura de instrumento inconsistente",
+          "nivel": 2,
+          "clave": "falla-TX-T08",
+          "pagina": 26
+        },
+        {
+          "id": "TX350-D §8.11",
+          "numero": "8.11",
+          "titulo": "TX-T09 Pérdida con proyección de agua",
+          "nivel": 2,
+          "clave": "falla-TX-T09",
+          "pagina": 26
+        },
+        {
+          "id": "TX350-D §8.12",
+          "numero": "8.12",
+          "titulo": "TX-T10 Sobretemperatura del motor u olor a quemado",
+          "nivel": 2,
+          "clave": "falla-TX-T10",
+          "pagina": 27
+        },
+        {
+          "id": "TX350-D §8.13",
+          "numero": "8.13",
+          "titulo": "TX-T11 Contaminación del aceite con agua",
+          "nivel": 2,
+          "clave": "falla-TX-T11",
+          "pagina": 27
+        },
+        {
+          "id": "TX350-D §8.14",
+          "numero": "8.14",
+          "titulo": "TX-T12 Sobrepresión por descarga restringida",
+          "nivel": 2,
+          "clave": "falla-TX-T12",
+          "pagina": 27
+        },
+        {
+          "id": "TX350-D §8.15",
+          "numero": "8.15",
+          "titulo": "Fallas combinadas",
+          "nivel": 2,
+          "clave": "combinadas",
+          "pagina": 28
+        },
+        {
+          "id": "TX350-D §8.16",
+          "numero": "8.16",
+          "titulo": "Árbol de decisión por vibración alta",
+          "nivel": 2,
+          "clave": "arbol-vibracion",
+          "pagina": 28
+        },
+        {
+          "id": "TX350-D §8.17",
+          "numero": "8.17",
+          "titulo": "Árbol de decisión por caudal bajo",
+          "nivel": 2,
+          "clave": "arbol-caudal",
+          "pagina": 28
+        },
+        {
+          "id": "TX350-D §9",
+          "numero": "9",
+          "titulo": "Procedimientos de mantenimiento",
+          "nivel": 1,
+          "clave": "procedimientos",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-D §9.1",
+          "numero": "9.1",
+          "titulo": "P-01 Bloqueo, aislación y despresurización",
+          "nivel": 2,
+          "clave": "p01",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-D §9.2",
+          "numero": "9.2",
+          "titulo": "P-02 Reemplazo de empaquetadura",
+          "nivel": 2,
+          "clave": "p02",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-D §9.3",
+          "numero": "9.3",
+          "titulo": "P-03 Reemplazo de válvulas de succión y descarga",
+          "nivel": 2,
+          "clave": "p03",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-D §9.4",
+          "numero": "9.4",
+          "titulo": "P-04 Control y reposición de aceite",
+          "nivel": 2,
+          "clave": "p04",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-D §9.5",
+          "numero": "9.5",
+          "titulo": "P-05 Cambio completo de aceite",
+          "nivel": 2,
+          "clave": "p05",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-D §9.6",
+          "numero": "9.6",
+          "titulo": "P-06 Reemplazo y tensado de correas",
+          "nivel": 2,
+          "clave": "p06",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-D §9.7",
+          "numero": "9.7",
+          "titulo": "P-07 Reemplazo de rodamientos del cigüeñal",
+          "nivel": 2,
+          "clave": "p07",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-D §9.8",
+          "numero": "9.8",
+          "titulo": "P-08 Alineación del acople y cambio de elastómero",
+          "nivel": 2,
+          "clave": "p08",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-D §9.9",
+          "numero": "9.9",
+          "titulo": "P-09 Inspección de válvulas",
+          "nivel": 2,
+          "clave": "p09",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-D §9.10",
+          "numero": "9.10",
+          "titulo": "P-10 Verificación y calibración de transmisores",
+          "nivel": 2,
+          "clave": "p10",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-D §9.11",
+          "numero": "9.11",
+          "titulo": "P-11 Medición de vibraciones con colector",
+          "nivel": 2,
+          "clave": "p11",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-D §10",
+          "numero": "10",
+          "titulo": "Repuestos",
+          "nivel": 1,
+          "clave": "repuestos",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-D §10.1",
+          "numero": "10.1",
+          "titulo": "Lista de repuestos",
+          "nivel": 2,
+          "clave": "lista-repuestos",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-D §10.2",
+          "numero": "10.2",
+          "titulo": "Contenido de los kits",
+          "nivel": 2,
+          "clave": "kits",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-D §10.3",
+          "numero": "10.3",
+          "titulo": "Repuestos recomendados para dos años de operación",
+          "nivel": 2,
+          "clave": "repuestos-2-anios",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-D §10.4",
+          "numero": "10.4",
+          "titulo": "Códigos reemplazados",
+          "nivel": 2,
+          "clave": "codigos-reemplazados",
+          "pagina": 33
+        },
+        {
+          "id": "TX350-D §10.5",
+          "numero": "10.5",
+          "titulo": "Cómo pedir repuestos",
+          "nivel": 2,
+          "clave": "pedidos",
+          "pagina": 33
+        },
+        {
+          "id": "TX350-D §11",
+          "numero": "11",
+          "titulo": "Preservación y almacenamiento",
+          "nivel": 1,
+          "clave": "preservacion",
+          "pagina": 34
+        },
+        {
+          "id": "TX350-D §11.1",
+          "numero": "11.1",
+          "titulo": "Almacenamiento corto (hasta 6 meses)",
+          "nivel": 2,
+          "clave": "almac-corto",
+          "pagina": 34
+        },
+        {
+          "id": "TX350-D §11.2",
+          "numero": "11.2",
+          "titulo": "Almacenamiento largo (más de 6 meses)",
+          "nivel": 2,
+          "clave": "almac-largo",
+          "pagina": 34
+        },
+        {
+          "id": "TX350-D §12",
+          "numero": "12",
+          "titulo": "Opcionales",
+          "nivel": 1,
+          "clave": "opcionales",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-D §12.1",
+          "numero": "12.1",
+          "titulo": "Lubricación forzada",
+          "nivel": 2,
+          "clave": "op-lubricacion",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-D §12.2",
+          "numero": "12.2",
+          "titulo": "Accionamiento por motor a gas",
+          "nivel": 2,
+          "clave": "op-gas",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-D §12.3",
+          "numero": "12.3",
+          "titulo": "Extremo hidráulico en acero dúplex",
+          "nivel": 2,
+          "clave": "op-duplex",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-D §12.4",
+          "numero": "12.4",
+          "titulo": "Resistencia de calefacción del cárter",
+          "nivel": 2,
+          "clave": "op-calefaccion",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-D §A",
+          "numero": "A",
+          "titulo": "Formularios",
+          "nivel": 1,
+          "clave": "formularios",
+          "pagina": 36
+        },
+        {
+          "id": "TX350-D §A.1",
+          "numero": "A.1",
+          "titulo": "Registro de puesta en marcha",
+          "nivel": 2,
+          "clave": "form-marcha",
+          "pagina": 37
+        },
+        {
+          "id": "TX350-D §A.2",
+          "numero": "A.2",
+          "titulo": "Lista de control de recorrida",
+          "nivel": 2,
+          "clave": "form-recorrida",
+          "pagina": 38
+        },
+        {
+          "id": "TX350-D §A.3",
+          "numero": "A.3",
+          "titulo": "Registro de intervención",
+          "nivel": 2,
+          "clave": "form-intervencion",
+          "pagina": 39
+        },
+        {
+          "id": "TX350-D §B",
+          "numero": "B",
+          "titulo": "Boletines de servicio",
+          "nivel": 1,
+          "clave": "boletines",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-D §B.1",
+          "numero": "B.1",
+          "titulo": "BS-2016-02 (2016-04-11)",
+          "nivel": 2,
+          "clave": "bs-bs-2016-02",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-D §B.2",
+          "numero": "B.2",
+          "titulo": "BS-2018-05 (2018-08-20)",
+          "nivel": 2,
+          "clave": "bs-bs-2018-05",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-D §B.3",
+          "numero": "B.3",
+          "titulo": "BS-2021-07 (2021-05-03)",
+          "nivel": 2,
+          "clave": "bs-bs-2021-07",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-D §B.4",
+          "numero": "B.4",
+          "titulo": "BS-2022-01 (2022-02-14)",
+          "nivel": 2,
+          "clave": "bs-bs-2022-01",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-D §B.5",
+          "numero": "B.5",
+          "titulo": "BS-2024-02 (2024-03-25)",
+          "nivel": 2,
+          "clave": "bs-bs-2024-02",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-D §C",
+          "numero": "C",
+          "titulo": "Conversión de unidades",
+          "nivel": 1,
+          "clave": "conversiones",
+          "pagina": 41
+        },
+        {
+          "id": "TX350-D §C.1",
+          "numero": "C.1",
+          "titulo": "Presión",
+          "nivel": 2,
+          "clave": "conv-presion",
+          "pagina": 41
+        },
+        {
+          "id": "TX350-D §C.2",
+          "numero": "C.2",
+          "titulo": "Caudal y temperatura",
+          "nivel": 2,
+          "clave": "conv-otras",
+          "pagina": 41
+        },
+        {
+          "id": "TX350-D §D",
+          "numero": "D",
+          "titulo": "Frecuencias características",
+          "nivel": 1,
+          "clave": "frecuencias",
+          "pagina": 42
+        },
+        {
+          "id": "TX350-D §E",
+          "numero": "E",
+          "titulo": "Herramientas especiales",
+          "nivel": 1,
+          "clave": "herramientas",
+          "pagina": 43
+        },
+        {
+          "id": "TX350-D §F",
+          "numero": "F",
+          "titulo": "Glosario",
+          "nivel": 1,
+          "clave": "glosario",
+          "pagina": 44
+        }
+      ]
+    },
+    {
+      "id": "TX350-C",
+      "titulo": "Bomba alternativa triplex Trimax TX-350",
+      "subtitulo": "Manual de instalación, operación y mantenimiento",
+      "codigo": "MT-TX350-ES",
+      "revision": "C",
+      "vigente_desde": "2019-06-01",
+      "vigente": false,
+      "reemplaza": "MT-TX350-ES Rev. B (2015-09-10)",
+      "reemplazado_por": "MT-TX350-ES Rev. D (2023-03-15)",
+      "tipo": "manual_fabricante",
+      "emisor": "Trimax Industrial S.A.",
+      "equipos": [
+        "B-101",
+        "B-102",
+        "B-103"
+      ],
+      "archivos": {
+        "md": "manuales/TX350-C.md",
+        "pdf": "manuales/TX350-C.pdf"
+      },
+      "paginas": 44,
+      "secciones": [
+        {
+          "id": "TX350-C §1",
+          "numero": "1",
+          "titulo": "Información general y seguridad",
+          "nivel": 1,
+          "clave": "general",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-C §1.1",
+          "numero": "1.1",
+          "titulo": "Alcance de este manual",
+          "nivel": 2,
+          "clave": "alcance",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-C §1.2",
+          "numero": "1.2",
+          "titulo": "Convenciones de advertencias",
+          "nivel": 2,
+          "clave": "convenciones",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-C §1.3",
+          "numero": "1.3",
+          "titulo": "Seguridad general",
+          "nivel": 2,
+          "clave": "seguridad-general",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-C §1.4",
+          "numero": "1.4",
+          "titulo": "Energía almacenada y presión residual",
+          "nivel": 2,
+          "clave": "energia-almacenada",
+          "pagina": 7
+        },
+        {
+          "id": "TX350-C §1.5",
+          "numero": "1.5",
+          "titulo": "Placa de identificación",
+          "nivel": 2,
+          "clave": "placa",
+          "pagina": 8
+        },
+        {
+          "id": "TX350-C §1.6",
+          "numero": "1.6",
+          "titulo": "Garantía",
+          "nivel": 2,
+          "clave": "garantia",
+          "pagina": 8
+        },
+        {
+          "id": "TX350-C §2",
+          "numero": "2",
+          "titulo": "Descripción del equipo",
+          "nivel": 1,
+          "clave": "descripcion",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-C §2.1",
+          "numero": "2.1",
+          "titulo": "La familia TX",
+          "nivel": 2,
+          "clave": "familia",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-C §2.2",
+          "numero": "2.2",
+          "titulo": "Extremo de potencia",
+          "nivel": 2,
+          "clave": "extremo-potencia",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-C §2.3",
+          "numero": "2.3",
+          "titulo": "Extremo hidráulico",
+          "nivel": 2,
+          "clave": "extremo-hidraulico",
+          "pagina": 9
+        },
+        {
+          "id": "TX350-C §2.4",
+          "numero": "2.4",
+          "titulo": "Transmisión por correas y contraeje",
+          "nivel": 2,
+          "clave": "transmision",
+          "pagina": 10
+        },
+        {
+          "id": "TX350-C §2.5",
+          "numero": "2.5",
+          "titulo": "Acople elástico",
+          "nivel": 2,
+          "clave": "acople",
+          "pagina": 10
+        },
+        {
+          "id": "TX350-C §2.6",
+          "numero": "2.6",
+          "titulo": "Instrumentación recomendada",
+          "nivel": 2,
+          "clave": "instrumentacion",
+          "pagina": 10
+        },
+        {
+          "id": "TX350-C §3",
+          "numero": "3",
+          "titulo": "Especificaciones técnicas",
+          "nivel": 1,
+          "clave": "especificaciones",
+          "pagina": 11
+        },
+        {
+          "id": "TX350-C §3.1",
+          "numero": "3.1",
+          "titulo": "Datos técnicos de la TX-350",
+          "nivel": 2,
+          "clave": "datos-tecnicos",
+          "pagina": 11
+        },
+        {
+          "id": "TX350-C §3.2",
+          "numero": "3.2",
+          "titulo": "Límites de operación",
+          "nivel": 2,
+          "clave": "limites",
+          "pagina": 11
+        },
+        {
+          "id": "TX350-C §3.3",
+          "numero": "3.3",
+          "titulo": "Límites de operación de otros modelos de la familia",
+          "nivel": 2,
+          "clave": "limites-otros",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-C §3.4",
+          "numero": "3.4",
+          "titulo": "Curva de desempeño",
+          "nivel": 2,
+          "clave": "curva",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-C §3.5",
+          "numero": "3.5",
+          "titulo": "Prueba de fábrica",
+          "nivel": 2,
+          "clave": "prueba-fabrica",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-C §3.6",
+          "numero": "3.6",
+          "titulo": "Severidad de vibraciones",
+          "nivel": 2,
+          "clave": "vibraciones-iso",
+          "pagina": 12
+        },
+        {
+          "id": "TX350-C §3.7",
+          "numero": "3.7",
+          "titulo": "Pares de apriete",
+          "nivel": 2,
+          "clave": "torques",
+          "pagina": 13
+        },
+        {
+          "id": "TX350-C §3.8",
+          "numero": "3.8",
+          "titulo": "Lubricantes aprobados",
+          "nivel": 2,
+          "clave": "lubricantes",
+          "pagina": 13
+        },
+        {
+          "id": "TX350-C §4",
+          "numero": "4",
+          "titulo": "Instalación",
+          "nivel": 1,
+          "clave": "instalacion",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-C §4.1",
+          "numero": "4.1",
+          "titulo": "Recepción e inspección",
+          "nivel": 2,
+          "clave": "recepcion",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-C §4.2",
+          "numero": "4.2",
+          "titulo": "Izaje",
+          "nivel": 2,
+          "clave": "izaje",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-C §4.3",
+          "numero": "4.3",
+          "titulo": "Fundación y nivelación",
+          "nivel": 2,
+          "clave": "fundacion",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-C §4.4",
+          "numero": "4.4",
+          "titulo": "Cañerías de succión y descarga",
+          "nivel": 2,
+          "clave": "canerias",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-C §4.5",
+          "numero": "4.5",
+          "titulo": "Amortiguador de pulsaciones",
+          "nivel": 2,
+          "clave": "amortiguador",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-C §4.6",
+          "numero": "4.6",
+          "titulo": "Primera puesta en marcha",
+          "nivel": 2,
+          "clave": "primera-marcha",
+          "pagina": 14
+        },
+        {
+          "id": "TX350-C §5",
+          "numero": "5",
+          "titulo": "Operación",
+          "nivel": 1,
+          "clave": "operacion",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-C §5.1",
+          "numero": "5.1",
+          "titulo": "Verificaciones antes del arranque",
+          "nivel": 2,
+          "clave": "verif-arranque",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-C §5.2",
+          "numero": "5.2",
+          "titulo": "Arranque",
+          "nivel": 2,
+          "clave": "arranque",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-C §5.3",
+          "numero": "5.3",
+          "titulo": "Valores típicos en operación normal",
+          "nivel": 2,
+          "clave": "valores-tipicos",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-C §5.4",
+          "numero": "5.4",
+          "titulo": "Parada normal",
+          "nivel": 2,
+          "clave": "parada",
+          "pagina": 15
+        },
+        {
+          "id": "TX350-C §5.5",
+          "numero": "5.5",
+          "titulo": "Parada de emergencia",
+          "nivel": 2,
+          "clave": "parada-emergencia",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-C §5.6",
+          "numero": "5.6",
+          "titulo": "Operación con bomba de reserva",
+          "nivel": 2,
+          "clave": "reserva",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-C §5.7",
+          "numero": "5.7",
+          "titulo": "Operación en clima frío",
+          "nivel": 2,
+          "clave": "clima-frio",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-C §5.8",
+          "numero": "5.8",
+          "titulo": "Operación con agua de baja calidad",
+          "nivel": 2,
+          "clave": "agua-calidad",
+          "pagina": 16
+        },
+        {
+          "id": "TX350-C §6",
+          "numero": "6",
+          "titulo": "Protecciones y enclavamientos",
+          "nivel": 1,
+          "clave": "protecciones",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-C §6.1",
+          "numero": "6.1",
+          "titulo": "Protecciones de la bomba",
+          "nivel": 2,
+          "clave": "tabla-protecciones",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-C §6.2",
+          "numero": "6.2",
+          "titulo": "Rearme después de un disparo",
+          "nivel": 2,
+          "clave": "rearme",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-C §6.3",
+          "numero": "6.3",
+          "titulo": "Arranque automático de la bomba de reserva",
+          "nivel": 2,
+          "clave": "arranque-reserva",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-C §6.4",
+          "numero": "6.4",
+          "titulo": "Cantidad máxima de arranques",
+          "nivel": 2,
+          "clave": "arranques",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-C §6.5",
+          "numero": "6.5",
+          "titulo": "Diagnóstico por ruido y olor",
+          "nivel": 2,
+          "clave": "ruidos",
+          "pagina": 17
+        },
+        {
+          "id": "TX350-C §7",
+          "numero": "7",
+          "titulo": "Mantenimiento preventivo",
+          "nivel": 1,
+          "clave": "preventivo",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-C §7.1",
+          "numero": "7.1",
+          "titulo": "Plan de mantenimiento por horas de marcha",
+          "nivel": 2,
+          "clave": "plan",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-C §7.2",
+          "numero": "7.2",
+          "titulo": "Lubricación del cárter",
+          "nivel": 2,
+          "clave": "lubricacion",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-C §7.3",
+          "numero": "7.3",
+          "titulo": "Análisis de aceite",
+          "nivel": 2,
+          "clave": "analisis-aceite",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-C §7.4",
+          "numero": "7.4",
+          "titulo": "Inspección de correas",
+          "nivel": 2,
+          "clave": "correas",
+          "pagina": 19
+        },
+        {
+          "id": "TX350-C §7.5",
+          "numero": "7.5",
+          "titulo": "Ajuste de la empaquetadura",
+          "nivel": 2,
+          "clave": "ajuste-empaquetadura",
+          "pagina": 20
+        },
+        {
+          "id": "TX350-C §7.6",
+          "numero": "7.6",
+          "titulo": "Registro de mantenimiento",
+          "nivel": 2,
+          "clave": "registro",
+          "pagina": 20
+        },
+        {
+          "id": "TX350-C §8",
+          "numero": "8",
+          "titulo": "Diagnóstico de fallas",
+          "nivel": 1,
+          "clave": "diagnostico",
+          "pagina": 21
+        },
+        {
+          "id": "TX350-C §8.1",
+          "numero": "8.1",
+          "titulo": "Cómo usar este capítulo",
+          "nivel": 2,
+          "clave": "como-usar",
+          "pagina": 21
+        },
+        {
+          "id": "TX350-C §8.2",
+          "numero": "8.2",
+          "titulo": "Tabla de fallas",
+          "nivel": 2,
+          "clave": "tabla-fallas",
+          "pagina": 21
+        },
+        {
+          "id": "TX350-C §8.3",
+          "numero": "8.3",
+          "titulo": "TX-T01 Pérdida por empaquetadura",
+          "nivel": 2,
+          "clave": "falla-TX-T01",
+          "pagina": 22
+        },
+        {
+          "id": "TX350-C §8.4",
+          "numero": "8.4",
+          "titulo": "TX-T02 Válvulas de succión o descarga gastadas",
+          "nivel": 2,
+          "clave": "falla-TX-T02",
+          "pagina": 22
+        },
+        {
+          "id": "TX350-C §8.5",
+          "numero": "8.5",
+          "titulo": "TX-T03 Rodamiento de cigüeñal dañado",
+          "nivel": 2,
+          "clave": "falla-TX-T03",
+          "pagina": 23
+        },
+        {
+          "id": "TX350-C §8.6",
+          "numero": "8.6",
+          "titulo": "TX-T04 Bajo nivel de aceite del cárter",
+          "nivel": 2,
+          "clave": "falla-TX-T04",
+          "pagina": 24
+        },
+        {
+          "id": "TX350-C §8.7",
+          "numero": "8.7",
+          "titulo": "TX-T05 Resbalamiento de correas",
+          "nivel": 2,
+          "clave": "falla-TX-T05",
+          "pagina": 24
+        },
+        {
+          "id": "TX350-C §8.8",
+          "numero": "8.8",
+          "titulo": "TX-T06 Desalineación del acople o elastómero gastado",
+          "nivel": 2,
+          "clave": "falla-TX-T06",
+          "pagina": 25
+        },
+        {
+          "id": "TX350-C §8.9",
+          "numero": "8.9",
+          "titulo": "TX-T07 Cavitación por succión insuficiente",
+          "nivel": 2,
+          "clave": "falla-TX-T07",
+          "pagina": 25
+        },
+        {
+          "id": "TX350-C §8.10",
+          "numero": "8.10",
+          "titulo": "TX-T08 Lectura de instrumento inconsistente",
+          "nivel": 2,
+          "clave": "falla-TX-T08",
+          "pagina": 26
+        },
+        {
+          "id": "TX350-C §8.11",
+          "numero": "8.11",
+          "titulo": "TX-T09 Pérdida con proyección de agua",
+          "nivel": 2,
+          "clave": "falla-TX-T09",
+          "pagina": 26
+        },
+        {
+          "id": "TX350-C §8.12",
+          "numero": "8.12",
+          "titulo": "TX-T10 Sobretemperatura del motor u olor a quemado",
+          "nivel": 2,
+          "clave": "falla-TX-T10",
+          "pagina": 27
+        },
+        {
+          "id": "TX350-C §8.13",
+          "numero": "8.13",
+          "titulo": "TX-T11 Contaminación del aceite con agua",
+          "nivel": 2,
+          "clave": "falla-TX-T11",
+          "pagina": 27
+        },
+        {
+          "id": "TX350-C §8.14",
+          "numero": "8.14",
+          "titulo": "TX-T12 Sobrepresión por descarga restringida",
+          "nivel": 2,
+          "clave": "falla-TX-T12",
+          "pagina": 27
+        },
+        {
+          "id": "TX350-C §8.15",
+          "numero": "8.15",
+          "titulo": "Fallas combinadas",
+          "nivel": 2,
+          "clave": "combinadas",
+          "pagina": 28
+        },
+        {
+          "id": "TX350-C §8.16",
+          "numero": "8.16",
+          "titulo": "Árbol de decisión por vibración alta",
+          "nivel": 2,
+          "clave": "arbol-vibracion",
+          "pagina": 28
+        },
+        {
+          "id": "TX350-C §8.17",
+          "numero": "8.17",
+          "titulo": "Árbol de decisión por caudal bajo",
+          "nivel": 2,
+          "clave": "arbol-caudal",
+          "pagina": 28
+        },
+        {
+          "id": "TX350-C §9",
+          "numero": "9",
+          "titulo": "Procedimientos de mantenimiento",
+          "nivel": 1,
+          "clave": "procedimientos",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-C §9.1",
+          "numero": "9.1",
+          "titulo": "P-01 Bloqueo, aislación y despresurización",
+          "nivel": 2,
+          "clave": "p01",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-C §9.2",
+          "numero": "9.2",
+          "titulo": "P-02 Reemplazo de empaquetadura",
+          "nivel": 2,
+          "clave": "p02",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-C §9.3",
+          "numero": "9.3",
+          "titulo": "P-03 Reemplazo de válvulas de succión y descarga",
+          "nivel": 2,
+          "clave": "p03",
+          "pagina": 29
+        },
+        {
+          "id": "TX350-C §9.4",
+          "numero": "9.4",
+          "titulo": "P-04 Control y reposición de aceite",
+          "nivel": 2,
+          "clave": "p04",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-C §9.5",
+          "numero": "9.5",
+          "titulo": "P-05 Cambio completo de aceite",
+          "nivel": 2,
+          "clave": "p05",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-C §9.6",
+          "numero": "9.6",
+          "titulo": "P-06 Reemplazo y tensado de correas",
+          "nivel": 2,
+          "clave": "p06",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-C §9.7",
+          "numero": "9.7",
+          "titulo": "P-07 Reemplazo de rodamientos del cigüeñal",
+          "nivel": 2,
+          "clave": "p07",
+          "pagina": 30
+        },
+        {
+          "id": "TX350-C §9.8",
+          "numero": "9.8",
+          "titulo": "P-08 Alineación del acople y cambio de elastómero",
+          "nivel": 2,
+          "clave": "p08",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-C §9.9",
+          "numero": "9.9",
+          "titulo": "P-09 Inspección de válvulas",
+          "nivel": 2,
+          "clave": "p09",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-C §9.10",
+          "numero": "9.10",
+          "titulo": "P-10 Verificación y calibración de transmisores",
+          "nivel": 2,
+          "clave": "p10",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-C §9.11",
+          "numero": "9.11",
+          "titulo": "P-11 Medición de vibraciones con colector",
+          "nivel": 2,
+          "clave": "p11",
+          "pagina": 31
+        },
+        {
+          "id": "TX350-C §10",
+          "numero": "10",
+          "titulo": "Repuestos",
+          "nivel": 1,
+          "clave": "repuestos",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-C §10.1",
+          "numero": "10.1",
+          "titulo": "Lista de repuestos",
+          "nivel": 2,
+          "clave": "lista-repuestos",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-C §10.2",
+          "numero": "10.2",
+          "titulo": "Contenido de los kits",
+          "nivel": 2,
+          "clave": "kits",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-C §10.3",
+          "numero": "10.3",
+          "titulo": "Repuestos recomendados para dos años de operación",
+          "nivel": 2,
+          "clave": "repuestos-2-anios",
+          "pagina": 32
+        },
+        {
+          "id": "TX350-C §10.4",
+          "numero": "10.4",
+          "titulo": "Cómo pedir repuestos",
+          "nivel": 2,
+          "clave": "pedidos",
+          "pagina": 33
+        },
+        {
+          "id": "TX350-C §11",
+          "numero": "11",
+          "titulo": "Preservación y almacenamiento",
+          "nivel": 1,
+          "clave": "preservacion",
+          "pagina": 34
+        },
+        {
+          "id": "TX350-C §11.1",
+          "numero": "11.1",
+          "titulo": "Almacenamiento corto (hasta 6 meses)",
+          "nivel": 2,
+          "clave": "almac-corto",
+          "pagina": 34
+        },
+        {
+          "id": "TX350-C §11.2",
+          "numero": "11.2",
+          "titulo": "Almacenamiento largo (más de 6 meses)",
+          "nivel": 2,
+          "clave": "almac-largo",
+          "pagina": 34
+        },
+        {
+          "id": "TX350-C §12",
+          "numero": "12",
+          "titulo": "Opcionales",
+          "nivel": 1,
+          "clave": "opcionales",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-C §12.1",
+          "numero": "12.1",
+          "titulo": "Lubricación forzada",
+          "nivel": 2,
+          "clave": "op-lubricacion",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-C §12.2",
+          "numero": "12.2",
+          "titulo": "Accionamiento por motor a gas",
+          "nivel": 2,
+          "clave": "op-gas",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-C §12.3",
+          "numero": "12.3",
+          "titulo": "Extremo hidráulico en acero dúplex",
+          "nivel": 2,
+          "clave": "op-duplex",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-C §12.4",
+          "numero": "12.4",
+          "titulo": "Resistencia de calefacción del cárter",
+          "nivel": 2,
+          "clave": "op-calefaccion",
+          "pagina": 35
+        },
+        {
+          "id": "TX350-C §A",
+          "numero": "A",
+          "titulo": "Formularios",
+          "nivel": 1,
+          "clave": "formularios",
+          "pagina": 36
+        },
+        {
+          "id": "TX350-C §A.1",
+          "numero": "A.1",
+          "titulo": "Registro de puesta en marcha",
+          "nivel": 2,
+          "clave": "form-marcha",
+          "pagina": 37
+        },
+        {
+          "id": "TX350-C §A.2",
+          "numero": "A.2",
+          "titulo": "Lista de control de recorrida",
+          "nivel": 2,
+          "clave": "form-recorrida",
+          "pagina": 38
+        },
+        {
+          "id": "TX350-C §A.3",
+          "numero": "A.3",
+          "titulo": "Registro de intervención",
+          "nivel": 2,
+          "clave": "form-intervencion",
+          "pagina": 39
+        },
+        {
+          "id": "TX350-C §B",
+          "numero": "B",
+          "titulo": "Boletines de servicio",
+          "nivel": 1,
+          "clave": "boletines",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-C §B.1",
+          "numero": "B.1",
+          "titulo": "BS-2016-02 (2016-04-11)",
+          "nivel": 2,
+          "clave": "bs-bs-2016-02",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-C §B.2",
+          "numero": "B.2",
+          "titulo": "BS-2018-05 (2018-08-20)",
+          "nivel": 2,
+          "clave": "bs-bs-2018-05",
+          "pagina": 40
+        },
+        {
+          "id": "TX350-C §C",
+          "numero": "C",
+          "titulo": "Conversión de unidades",
+          "nivel": 1,
+          "clave": "conversiones",
+          "pagina": 41
+        },
+        {
+          "id": "TX350-C §C.1",
+          "numero": "C.1",
+          "titulo": "Presión",
+          "nivel": 2,
+          "clave": "conv-presion",
+          "pagina": 41
+        },
+        {
+          "id": "TX350-C §C.2",
+          "numero": "C.2",
+          "titulo": "Caudal y temperatura",
+          "nivel": 2,
+          "clave": "conv-otras",
+          "pagina": 41
+        },
+        {
+          "id": "TX350-C §D",
+          "numero": "D",
+          "titulo": "Frecuencias características",
+          "nivel": 1,
+          "clave": "frecuencias",
+          "pagina": 42
+        },
+        {
+          "id": "TX350-C §E",
+          "numero": "E",
+          "titulo": "Herramientas especiales",
+          "nivel": 1,
+          "clave": "herramientas",
+          "pagina": 43
+        },
+        {
+          "id": "TX350-C §F",
+          "numero": "F",
+          "titulo": "Glosario",
+          "nivel": 1,
+          "clave": "glosario",
+          "pagina": 44
+        }
+      ]
+    },
+    {
+      "id": "FC48-3",
+      "titulo": "Filtro de cartuchos Filtrapat FC-48",
+      "subtitulo": "Manual de operación y mantenimiento",
+      "codigo": "MOM-FC48",
+      "revision": "3",
+      "vigente_desde": "2022-08-01",
+      "vigente": true,
+      "reemplaza": null,
+      "reemplazado_por": null,
+      "tipo": "manual_fabricante",
+      "emisor": "Filtrapat S.R.L.",
+      "equipos": [
+        "F-201A",
+        "F-201B"
+      ],
+      "archivos": {
+        "md": "manuales/FC48-3.md",
+        "pdf": "manuales/FC48-3.pdf"
+      },
+      "paginas": 42,
+      "secciones": [
+        {
+          "id": "FC48-3 §1",
+          "numero": "1",
+          "titulo": "Información general y seguridad",
+          "nivel": 1,
+          "clave": "general",
+          "pagina": 7
+        },
+        {
+          "id": "FC48-3 §1.1",
+          "numero": "1.1",
+          "titulo": "Alcance",
+          "nivel": 2,
+          "clave": "alcance",
+          "pagina": 7
+        },
+        {
+          "id": "FC48-3 §1.2",
+          "numero": "1.2",
+          "titulo": "Advertencias",
+          "nivel": 2,
+          "clave": "advertencias",
+          "pagina": 7
+        },
+        {
+          "id": "FC48-3 §1.3",
+          "numero": "1.3",
+          "titulo": "Garantía",
+          "nivel": 2,
+          "clave": "garantia",
+          "pagina": 7
+        },
+        {
+          "id": "FC48-3 §2",
+          "numero": "2",
+          "titulo": "Descripción",
+          "nivel": 1,
+          "clave": "descripcion",
+          "pagina": 8
+        },
+        {
+          "id": "FC48-3 §2.1",
+          "numero": "2.1",
+          "titulo": "La familia FC",
+          "nivel": 2,
+          "clave": "familia",
+          "pagina": 8
+        },
+        {
+          "id": "FC48-3 §2.2",
+          "numero": "2.2",
+          "titulo": "Recipiente y tapa",
+          "nivel": 2,
+          "clave": "recipiente",
+          "pagina": 8
+        },
+        {
+          "id": "FC48-3 §2.3",
+          "numero": "2.3",
+          "titulo": "Placa portacartuchos y cartuchos",
+          "nivel": 2,
+          "clave": "cartuchos",
+          "pagina": 8
+        },
+        {
+          "id": "FC48-3 §2.4",
+          "numero": "2.4",
+          "titulo": "Arreglo en serie: primario y secundario",
+          "nivel": 2,
+          "clave": "serie",
+          "pagina": 8
+        },
+        {
+          "id": "FC48-3 §2.5",
+          "numero": "2.5",
+          "titulo": "Bypass",
+          "nivel": 2,
+          "clave": "bypass",
+          "pagina": 8
+        },
+        {
+          "id": "FC48-3 §2.6",
+          "numero": "2.6",
+          "titulo": "Instrumentación",
+          "nivel": 2,
+          "clave": "instrumentacion",
+          "pagina": 9
+        },
+        {
+          "id": "FC48-3 §3",
+          "numero": "3",
+          "titulo": "Especificaciones",
+          "nivel": 1,
+          "clave": "especificaciones",
+          "pagina": 10
+        },
+        {
+          "id": "FC48-3 §3.1",
+          "numero": "3.1",
+          "titulo": "Datos técnicos del FC-48",
+          "nivel": 2,
+          "clave": "datos",
+          "pagina": 10
+        },
+        {
+          "id": "FC48-3 §3.2",
+          "numero": "3.2",
+          "titulo": "Límites de presión diferencial",
+          "nivel": 2,
+          "clave": "limites",
+          "pagina": 10
+        },
+        {
+          "id": "FC48-3 §3.3",
+          "numero": "3.3",
+          "titulo": "Cartuchos",
+          "nivel": 2,
+          "clave": "spec-cartuchos",
+          "pagina": 10
+        },
+        {
+          "id": "FC48-3 §3.4",
+          "numero": "3.4",
+          "titulo": "Compatibilidad química",
+          "nivel": 2,
+          "clave": "compatibilidad",
+          "pagina": 11
+        },
+        {
+          "id": "FC48-3 §4",
+          "numero": "4",
+          "titulo": "Calidad del agua",
+          "nivel": 1,
+          "clave": "calidad",
+          "pagina": 12
+        },
+        {
+          "id": "FC48-3 §4.1",
+          "numero": "4.1",
+          "titulo": "Parámetros que acortan la vida de los cartuchos",
+          "nivel": 2,
+          "clave": "parametros",
+          "pagina": 12
+        },
+        {
+          "id": "FC48-3 §4.2",
+          "numero": "4.2",
+          "titulo": "Colmatación acelerada",
+          "nivel": 2,
+          "clave": "acelerada",
+          "pagina": 12
+        },
+        {
+          "id": "FC48-3 §4.3",
+          "numero": "4.3",
+          "titulo": "Muestreo",
+          "nivel": 2,
+          "clave": "muestreo",
+          "pagina": 12
+        },
+        {
+          "id": "FC48-3 §5",
+          "numero": "5",
+          "titulo": "Instalación",
+          "nivel": 1,
+          "clave": "instalacion",
+          "pagina": 13
+        },
+        {
+          "id": "FC48-3 §5.1",
+          "numero": "5.1",
+          "titulo": "Montaje",
+          "nivel": 2,
+          "clave": "montaje",
+          "pagina": 13
+        },
+        {
+          "id": "FC48-3 §5.2",
+          "numero": "5.2",
+          "titulo": "Prueba hidráulica de obra",
+          "nivel": 2,
+          "clave": "prueba-obra",
+          "pagina": 13
+        },
+        {
+          "id": "FC48-3 §6",
+          "numero": "6",
+          "titulo": "Operación",
+          "nivel": 1,
+          "clave": "operacion",
+          "pagina": 14
+        },
+        {
+          "id": "FC48-3 §6.1",
+          "numero": "6.1",
+          "titulo": "Puesta en servicio",
+          "nivel": 2,
+          "clave": "puesta-servicio",
+          "pagina": 14
+        },
+        {
+          "id": "FC48-3 §6.2",
+          "numero": "6.2",
+          "titulo": "Operación normal",
+          "nivel": 2,
+          "clave": "operacion-normal",
+          "pagina": 14
+        },
+        {
+          "id": "FC48-3 §6.3",
+          "numero": "6.3",
+          "titulo": "Fuera de servicio",
+          "nivel": 2,
+          "clave": "fuera-servicio",
+          "pagina": 14
+        },
+        {
+          "id": "FC48-3 §7",
+          "numero": "7",
+          "titulo": "Monitoreo de la presión diferencial",
+          "nivel": 1,
+          "clave": "monitoreo",
+          "pagina": 15
+        },
+        {
+          "id": "FC48-3 §7.1",
+          "numero": "7.1",
+          "titulo": "La presión diferencial depende del caudal",
+          "nivel": 2,
+          "clave": "dp-caudal",
+          "pagina": 15
+        },
+        {
+          "id": "FC48-3 §7.2",
+          "numero": "7.2",
+          "titulo": "Presión diferencial esperada",
+          "nivel": 2,
+          "clave": "tabla-dp",
+          "pagina": 15
+        },
+        {
+          "id": "FC48-3 §7.3",
+          "numero": "7.3",
+          "titulo": "Tendencia y vida remanente",
+          "nivel": 2,
+          "clave": "tendencia",
+          "pagina": 15
+        },
+        {
+          "id": "FC48-3 §7.4",
+          "numero": "7.4",
+          "titulo": "Caída brusca de la presión diferencial",
+          "nivel": 2,
+          "clave": "caida-brusca",
+          "pagina": 15
+        },
+        {
+          "id": "FC48-3 §8",
+          "numero": "8",
+          "titulo": "Diagnóstico de fallas",
+          "nivel": 1,
+          "clave": "diagnostico",
+          "pagina": 16
+        },
+        {
+          "id": "FC48-3 §8.1",
+          "numero": "8.1",
+          "titulo": "Tabla de fallas",
+          "nivel": 2,
+          "clave": "tabla-fallas",
+          "pagina": 16
+        },
+        {
+          "id": "FC48-3 §8.2",
+          "numero": "8.2",
+          "titulo": "FC-T01 Cartuchos colmatados",
+          "nivel": 2,
+          "clave": "falla-FC-T01",
+          "pagina": 16
+        },
+        {
+          "id": "FC48-3 §8.3",
+          "numero": "8.3",
+          "titulo": "FC-T02 Cartucho roto o mal asentado",
+          "nivel": 2,
+          "clave": "falla-FC-T02",
+          "pagina": 17
+        },
+        {
+          "id": "FC48-3 §8.4",
+          "numero": "8.4",
+          "titulo": "FC-T03 Pérdida por la junta de tapa",
+          "nivel": 2,
+          "clave": "falla-FC-T03",
+          "pagina": 17
+        },
+        {
+          "id": "FC48-3 §8.5",
+          "numero": "8.5",
+          "titulo": "FC-T04 Lectura de presión diferencial inconsistente",
+          "nivel": 2,
+          "clave": "falla-FC-T04",
+          "pagina": 17
+        },
+        {
+          "id": "FC48-3 §8.6",
+          "numero": "8.6",
+          "titulo": "FC-T05 Presión diferencial alta por caudal alto",
+          "nivel": 2,
+          "clave": "falla-FC-T05",
+          "pagina": 18
+        },
+        {
+          "id": "FC48-3 §8.7",
+          "numero": "8.7",
+          "titulo": "FC-T06 Aire en el recipiente",
+          "nivel": 2,
+          "clave": "falla-FC-T06",
+          "pagina": 18
+        },
+        {
+          "id": "FC48-3 §8.8",
+          "numero": "8.8",
+          "titulo": "Efectos aguas abajo",
+          "nivel": 2,
+          "clave": "aguas-abajo",
+          "pagina": 19
+        },
+        {
+          "id": "FC48-3 §9",
+          "numero": "9",
+          "titulo": "Procedimientos",
+          "nivel": 1,
+          "clave": "procedimientos",
+          "pagina": 20
+        },
+        {
+          "id": "FC48-3 §9.1",
+          "numero": "9.1",
+          "titulo": "FP-01 Aislación del filtro",
+          "nivel": 2,
+          "clave": "fp01",
+          "pagina": 20
+        },
+        {
+          "id": "FC48-3 §9.2",
+          "numero": "9.2",
+          "titulo": "FP-02 Cambio de cartuchos",
+          "nivel": 2,
+          "clave": "fp02",
+          "pagina": 20
+        },
+        {
+          "id": "FC48-3 §9.3",
+          "numero": "9.3",
+          "titulo": "FP-03 Cambio de junta de tapa",
+          "nivel": 2,
+          "clave": "fp03",
+          "pagina": 20
+        },
+        {
+          "id": "FC48-3 §9.4",
+          "numero": "9.4",
+          "titulo": "FP-04 Inspección interna",
+          "nivel": 2,
+          "clave": "fp04",
+          "pagina": 20
+        },
+        {
+          "id": "FC48-3 §9.5",
+          "numero": "9.5",
+          "titulo": "FP-05 Verificación del transmisor de presión diferencial",
+          "nivel": 2,
+          "clave": "fp05",
+          "pagina": 21
+        },
+        {
+          "id": "FC48-3 §9.6",
+          "numero": "9.6",
+          "titulo": "FP-06 Disposición de cartuchos usados",
+          "nivel": 2,
+          "clave": "fp06",
+          "pagina": 21
+        },
+        {
+          "id": "FC48-3 §10",
+          "numero": "10",
+          "titulo": "Efecto de los filtros sobre la succión de las bombas",
+          "nivel": 1,
+          "clave": "succion",
+          "pagina": 22
+        },
+        {
+          "id": "FC48-3 §10.1",
+          "numero": "10.1",
+          "titulo": "Presión de succión según la ΔP de los dos filtros",
+          "nivel": 2,
+          "clave": "tabla-succion",
+          "pagina": 22
+        },
+        {
+          "id": "FC48-3 §10.2",
+          "numero": "10.2",
+          "titulo": "Qué mirar cuando las bombas cavitan",
+          "nivel": 2,
+          "clave": "cavitan",
+          "pagina": 22
+        },
+        {
+          "id": "FC48-3 §11",
+          "numero": "11",
+          "titulo": "Transporte y recepción",
+          "nivel": 1,
+          "clave": "transporte",
+          "pagina": 23
+        },
+        {
+          "id": "FC48-3 §11.1",
+          "numero": "11.1",
+          "titulo": "Transporte",
+          "nivel": 2,
+          "clave": "transp",
+          "pagina": 23
+        },
+        {
+          "id": "FC48-3 §11.2",
+          "numero": "11.2",
+          "titulo": "Recepción",
+          "nivel": 2,
+          "clave": "recep",
+          "pagina": 23
+        },
+        {
+          "id": "FC48-3 §12",
+          "numero": "12",
+          "titulo": "Capacitación",
+          "nivel": 1,
+          "clave": "capacitacion",
+          "pagina": 24
+        },
+        {
+          "id": "FC48-3 §13",
+          "numero": "13",
+          "titulo": "Plan de mantenimiento",
+          "nivel": 1,
+          "clave": "plan",
+          "pagina": 25
+        },
+        {
+          "id": "FC48-3 §13.1",
+          "numero": "13.1",
+          "titulo": "Tareas por frecuencia",
+          "nivel": 2,
+          "clave": "plan-tabla",
+          "pagina": 25
+        },
+        {
+          "id": "FC48-3 §13.2",
+          "numero": "13.2",
+          "titulo": "Cambio de cartuchos en invierno",
+          "nivel": 2,
+          "clave": "invierno",
+          "pagina": 25
+        },
+        {
+          "id": "FC48-3 §13.3",
+          "numero": "13.3",
+          "titulo": "Coordinación con las bombas",
+          "nivel": 2,
+          "clave": "coordinacion",
+          "pagina": 25
+        },
+        {
+          "id": "FC48-3 §13.4",
+          "numero": "13.4",
+          "titulo": "Revestimiento interno",
+          "nivel": 2,
+          "clave": "revestimiento",
+          "pagina": 25
+        },
+        {
+          "id": "FC48-3 §14",
+          "numero": "14",
+          "titulo": "Repuestos",
+          "nivel": 1,
+          "clave": "repuestos",
+          "pagina": 26
+        },
+        {
+          "id": "FC48-3 §14.1",
+          "numero": "14.1",
+          "titulo": "Lista de repuestos",
+          "nivel": 2,
+          "clave": "lista-repuestos",
+          "pagina": 26
+        },
+        {
+          "id": "FC48-3 §14.2",
+          "numero": "14.2",
+          "titulo": "Stock recomendado",
+          "nivel": 2,
+          "clave": "stock",
+          "pagina": 26
+        },
+        {
+          "id": "FC48-3 §15",
+          "numero": "15",
+          "titulo": "Almacenamiento de cartuchos",
+          "nivel": 1,
+          "clave": "almacenamiento",
+          "pagina": 27
+        },
+        {
+          "id": "FC48-3 §16",
+          "numero": "16",
+          "titulo": "Opcionales",
+          "nivel": 1,
+          "clave": "opcionales",
+          "pagina": 28
+        },
+        {
+          "id": "FC48-3 §16.1",
+          "numero": "16.1",
+          "titulo": "FC-48-AR con retrolavado automático",
+          "nivel": 2,
+          "clave": "op-ar",
+          "pagina": 28
+        },
+        {
+          "id": "FC48-3 §16.2",
+          "numero": "16.2",
+          "titulo": "Cartuchos plisados de alta capacidad",
+          "nivel": 2,
+          "clave": "op-plisados",
+          "pagina": 28
+        },
+        {
+          "id": "FC48-3 §16.3",
+          "numero": "16.3",
+          "titulo": "Indicador visual de presión diferencial",
+          "nivel": 2,
+          "clave": "op-indicador",
+          "pagina": 28
+        },
+        {
+          "id": "FC48-3 §17",
+          "numero": "17",
+          "titulo": "Experiencia de campo",
+          "nivel": 1,
+          "clave": "casos",
+          "pagina": 29
+        },
+        {
+          "id": "FC48-3 §17.1",
+          "numero": "17.1",
+          "titulo": "Caso 1: válvulas de bombas que duraban dos semanas",
+          "nivel": 2,
+          "clave": "caso-1",
+          "pagina": 29
+        },
+        {
+          "id": "FC48-3 §17.2",
+          "numero": "17.2",
+          "titulo": "Caso 2: cavitación en una sola bomba",
+          "nivel": 2,
+          "clave": "caso-2",
+          "pagina": 29
+        },
+        {
+          "id": "FC48-3 §17.3",
+          "numero": "17.3",
+          "titulo": "Caso 3: primario que se colmataba en una semana",
+          "nivel": 2,
+          "clave": "caso-3",
+          "pagina": 29
+        },
+        {
+          "id": "FC48-3 §17.4",
+          "numero": "17.4",
+          "titulo": "Caso 4: transmisor congelado en julio",
+          "nivel": 2,
+          "clave": "caso-4",
+          "pagina": 29
+        },
+        {
+          "id": "FC48-3 §18",
+          "numero": "18",
+          "titulo": "Preguntas frecuentes",
+          "nivel": 1,
+          "clave": "faq",
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.1",
+          "numero": "18.1",
+          "titulo": "¿Puedo cambiar solo los cartuchos más sucios?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.2",
+          "numero": "18.2",
+          "titulo": "¿Puedo lavar los cartuchos y volver a usarlos?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.3",
+          "numero": "18.3",
+          "titulo": "¿Por qué la ΔP baja de noche?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.4",
+          "numero": "18.4",
+          "titulo": "¿Qué pasa si dejo el filtro en bypass todo el día?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.5",
+          "numero": "18.5",
+          "titulo": "¿Cada cuánto cambio la junta de tapa?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.6",
+          "numero": "18.6",
+          "titulo": "¿Sirven los cartuchos de otra marca?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.7",
+          "numero": "18.7",
+          "titulo": "¿La ΔP alta puede dañar las bombas?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.8",
+          "numero": "18.8",
+          "titulo": "¿Una ΔP muy baja es buena?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.9",
+          "numero": "18.9",
+          "titulo": "¿Cuántos cartuchos tengo que tener en stock?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §18.10",
+          "numero": "18.10",
+          "titulo": "¿Qué hago con los cartuchos usados?",
+          "nivel": 2,
+          "clave": null,
+          "pagina": 30
+        },
+        {
+          "id": "FC48-3 §A",
+          "numero": "A",
+          "titulo": "Formularios",
+          "nivel": 1,
+          "clave": "formularios",
+          "pagina": 31
+        },
+        {
+          "id": "FC48-3 §A.1",
+          "numero": "A.1",
+          "titulo": "Registro de cambio de cartuchos",
+          "nivel": 2,
+          "clave": "form-cambio",
+          "pagina": 32
+        },
+        {
+          "id": "FC48-3 §A.2",
+          "numero": "A.2",
+          "titulo": "Planilla de tendencia de presión diferencial",
+          "nivel": 2,
+          "clave": "form-tendencia",
+          "pagina": 33
+        },
+        {
+          "id": "FC48-3 §A.3",
+          "numero": "A.3",
+          "titulo": "Lista de verificación de apertura segura",
+          "nivel": 2,
+          "clave": "form-apertura",
+          "pagina": 34
+        },
+        {
+          "id": "FC48-3 §A.4",
+          "numero": "A.4",
+          "titulo": "Registro de inspección anual",
+          "nivel": 2,
+          "clave": "form-anual",
+          "pagina": 35
+        },
+        {
+          "id": "FC48-3 §B",
+          "numero": "B",
+          "titulo": "Hojas de datos de los filtros de PIA-3",
+          "nivel": 1,
+          "clave": "hojas-datos",
+          "pagina": 36
+        },
+        {
+          "id": "FC48-3 §B.1",
+          "numero": "B.1",
+          "titulo": "Hoja de datos F-201A",
+          "nivel": 2,
+          "clave": "hd-F-201A",
+          "pagina": 36
+        },
+        {
+          "id": "FC48-3 §B.2",
+          "numero": "B.2",
+          "titulo": "Hoja de datos F-201B",
+          "nivel": 2,
+          "clave": "hd-F-201B",
+          "pagina": 36
+        },
+        {
+          "id": "FC48-3 §C",
+          "numero": "C",
+          "titulo": "Pintura exterior",
+          "nivel": 1,
+          "clave": "pintura",
+          "pagina": 37
+        },
+        {
+          "id": "FC48-3 §C.1",
+          "numero": "C.1",
+          "titulo": "Registro de muestras de agua",
+          "nivel": 2,
+          "clave": "form-muestras",
+          "pagina": 38
+        },
+        {
+          "id": "FC48-3 §D",
+          "numero": "D",
+          "titulo": "Curvas típicas de colmatación",
+          "nivel": 1,
+          "clave": "curvas",
+          "pagina": 39
+        },
+        {
+          "id": "FC48-3 §E",
+          "numero": "E",
+          "titulo": "Conexiones del recipiente",
+          "nivel": 1,
+          "clave": "conexiones",
+          "pagina": 40
+        },
+        {
+          "id": "FC48-3 §F",
+          "numero": "F",
+          "titulo": "Hoja de seguridad del cartucho",
+          "nivel": 1,
+          "clave": "seguridad-cartucho",
+          "pagina": 41
+        },
+        {
+          "id": "FC48-3 §G",
+          "numero": "G",
+          "titulo": "Glosario",
+          "nivel": 1,
+          "clave": "glosario",
+          "pagina": 42
+        }
+      ]
+    },
+    {
+      "id": "MBP-4",
+      "titulo": "Manual de buenas prácticas de operación y mantenimiento",
+      "subtitulo": "Plantas de inyección de agua del yacimiento Cerro Dragón Sur",
+      "codigo": "MBP-OPM-INY",
+      "revision": "4",
+      "vigente_desde": "2025-07-01",
+      "vigente": true,
+      "reemplaza": "MBP-OPM-INY Rev. 3 (2023-04-10)",
+      "reemplazado_por": null,
+      "tipo": "manual_operadora",
+      "emisor": "Gerencia de Operaciones · Yacimiento Cerro Dragón Sur",
+      "equipos": [
+        "B-101",
+        "B-102",
+        "B-103",
+        "F-201A",
+        "F-201B",
+        "TK-301",
+        "FT-401"
+      ],
+      "archivos": {
+        "md": "manuales/MBP-4.md",
+        "pdf": "manuales/MBP-4.pdf"
+      },
+      "paginas": 42,
+      "secciones": [
+        {
+          "id": "MBP-4 §1",
+          "numero": "1",
+          "titulo": "Objeto y alcance",
+          "nivel": 1,
+          "clave": "objeto",
+          "pagina": 7
+        },
+        {
+          "id": "MBP-4 §1.1",
+          "numero": "1.1",
+          "titulo": "Plantas alcanzadas",
+          "nivel": 2,
+          "clave": "plantas",
+          "pagina": 7
+        },
+        {
+          "id": "MBP-4 §1.2",
+          "numero": "1.2",
+          "titulo": "Documentos de referencia",
+          "nivel": 2,
+          "clave": "referencias",
+          "pagina": 7
+        },
+        {
+          "id": "MBP-4 §2",
+          "numero": "2",
+          "titulo": "Descripción de la planta PIA-3",
+          "nivel": 1,
+          "clave": "pia3",
+          "pagina": 8
+        },
+        {
+          "id": "MBP-4 §2.1",
+          "numero": "2.1",
+          "titulo": "Proceso",
+          "nivel": 2,
+          "clave": "proceso",
+          "pagina": 8
+        },
+        {
+          "id": "MBP-4 §2.2",
+          "numero": "2.2",
+          "titulo": "Equipos y nombres",
+          "nivel": 2,
+          "clave": "equipos",
+          "pagina": 8
+        },
+        {
+          "id": "MBP-4 §2.3",
+          "numero": "2.3",
+          "titulo": "Manómetros locales de las bombas",
+          "nivel": 2,
+          "clave": "manometros",
+          "pagina": 8
+        },
+        {
+          "id": "MBP-4 §2.4",
+          "numero": "2.4",
+          "titulo": "Roles iniciales de las bombas",
+          "nivel": 2,
+          "clave": "roles-bombas",
+          "pagina": 8
+        },
+        {
+          "id": "MBP-4 §2.5",
+          "numero": "2.5",
+          "titulo": "Lecturas de recorrida",
+          "nivel": 2,
+          "clave": "lecturas-locales",
+          "pagina": 8
+        },
+        {
+          "id": "MBP-4 §3",
+          "numero": "3",
+          "titulo": "Roles y responsabilidades",
+          "nivel": 1,
+          "clave": "roles",
+          "pagina": 9
+        },
+        {
+          "id": "MBP-4 §3.1",
+          "numero": "3.1",
+          "titulo": "Quién hace qué",
+          "nivel": 2,
+          "clave": "quien",
+          "pagina": 9
+        },
+        {
+          "id": "MBP-4 §3.2",
+          "numero": "3.2",
+          "titulo": "Escalamiento",
+          "nivel": 2,
+          "clave": "escalamiento",
+          "pagina": 9
+        },
+        {
+          "id": "MBP-4 §4",
+          "numero": "4",
+          "titulo": "Turnos, recorridas y registro",
+          "nivel": 1,
+          "clave": "recorridas",
+          "pagina": 10
+        },
+        {
+          "id": "MBP-4 §4.1",
+          "numero": "4.1",
+          "titulo": "Turnos",
+          "nivel": 2,
+          "clave": "turnos",
+          "pagina": 10
+        },
+        {
+          "id": "MBP-4 §4.2",
+          "numero": "4.2",
+          "titulo": "Horario de recorridas",
+          "nivel": 2,
+          "clave": "horario",
+          "pagina": 10
+        },
+        {
+          "id": "MBP-4 §4.3",
+          "numero": "4.3",
+          "titulo": "Parte de recorrida por voz",
+          "nivel": 2,
+          "clave": "parte-voz",
+          "pagina": 10
+        },
+        {
+          "id": "MBP-4 §4.4",
+          "numero": "4.4",
+          "titulo": "Planilla de papel del turno",
+          "nivel": 2,
+          "clave": "planilla",
+          "pagina": 10
+        },
+        {
+          "id": "MBP-4 §4.5",
+          "numero": "4.5",
+          "titulo": "Errores frecuentes de registro",
+          "nivel": 2,
+          "clave": "errores-registro",
+          "pagina": 11
+        },
+        {
+          "id": "MBP-4 §5",
+          "numero": "5",
+          "titulo": "Límites de operación de PIA-3",
+          "nivel": 1,
+          "clave": "limites",
+          "pagina": 12
+        },
+        {
+          "id": "MBP-4 §5.1",
+          "numero": "5.1",
+          "titulo": "Límites de los sensores conectados",
+          "nivel": 2,
+          "clave": "tabla-limites",
+          "pagina": 12
+        },
+        {
+          "id": "MBP-4 §5.2",
+          "numero": "5.2",
+          "titulo": "Protecciones",
+          "nivel": 2,
+          "clave": "protecciones",
+          "pagina": 12
+        },
+        {
+          "id": "MBP-4 §5.3",
+          "numero": "5.3",
+          "titulo": "Límites de otras plantas",
+          "nivel": 2,
+          "clave": "limites-otras",
+          "pagina": 12
+        },
+        {
+          "id": "MBP-4 §6",
+          "numero": "6",
+          "titulo": "Catálogo de fallas de equipo",
+          "nivel": 1,
+          "clave": "catalogo",
+          "pagina": 13
+        },
+        {
+          "id": "MBP-4 §6.1",
+          "numero": "6.1",
+          "titulo": "Resumen del catálogo",
+          "nivel": 2,
+          "clave": "resumen-catalogo",
+          "pagina": 13
+        },
+        {
+          "id": "MBP-4 §6.2",
+          "numero": "6.2",
+          "titulo": "Matriz de firmas",
+          "nivel": 2,
+          "clave": "matriz-firmas",
+          "pagina": 13
+        },
+        {
+          "id": "MBP-4 §6.3",
+          "numero": "6.3",
+          "titulo": "F01 Pérdida por empaquetadura",
+          "nivel": 2,
+          "clave": "falla-F01",
+          "pagina": 14
+        },
+        {
+          "id": "MBP-4 §6.4",
+          "numero": "6.4",
+          "titulo": "F02 Válvulas de succión/descarga gastadas",
+          "nivel": 2,
+          "clave": "falla-F02",
+          "pagina": 14
+        },
+        {
+          "id": "MBP-4 §6.5",
+          "numero": "6.5",
+          "titulo": "F03 Rodamiento de cigüeñal dañado",
+          "nivel": 2,
+          "clave": "falla-F03",
+          "pagina": 14
+        },
+        {
+          "id": "MBP-4 §6.6",
+          "numero": "6.6",
+          "titulo": "F04 Bajo nivel de aceite del cárter",
+          "nivel": 2,
+          "clave": "falla-F04",
+          "pagina": 15
+        },
+        {
+          "id": "MBP-4 §6.7",
+          "numero": "6.7",
+          "titulo": "F05 Correas flojas o gastadas",
+          "nivel": 2,
+          "clave": "falla-F05",
+          "pagina": 15
+        },
+        {
+          "id": "MBP-4 §6.8",
+          "numero": "6.8",
+          "titulo": "F06 Acople desalineado / elastómero gastado",
+          "nivel": 2,
+          "clave": "falla-F06",
+          "pagina": 15
+        },
+        {
+          "id": "MBP-4 §6.9",
+          "numero": "6.9",
+          "titulo": "F07 Cartuchos colmatados",
+          "nivel": 2,
+          "clave": "falla-F07",
+          "pagina": 16
+        },
+        {
+          "id": "MBP-4 §6.10",
+          "numero": "6.10",
+          "titulo": "F08 Cartucho roto (agua sin filtrar)",
+          "nivel": 2,
+          "clave": "falla-F08",
+          "pagina": 16
+        },
+        {
+          "id": "MBP-4 §6.11",
+          "numero": "6.11",
+          "titulo": "F09 Cavitación por baja succión",
+          "nivel": 2,
+          "clave": "falla-F09",
+          "pagina": 16
+        },
+        {
+          "id": "MBP-4 §6.12",
+          "numero": "6.12",
+          "titulo": "F10 Sensor congelado o con deriva",
+          "nivel": 2,
+          "clave": "falla-F10",
+          "pagina": 17
+        },
+        {
+          "id": "MBP-4 §6.13",
+          "numero": "6.13",
+          "titulo": "Cómo se combinan las fallas",
+          "nivel": 2,
+          "clave": "combinaciones",
+          "pagina": 17
+        },
+        {
+          "id": "MBP-4 §6.14",
+          "numero": "6.14",
+          "titulo": "El historial cambia la causa probable",
+          "nivel": 2,
+          "clave": "historial-causa",
+          "pagina": 17
+        },
+        {
+          "id": "MBP-4 §7",
+          "numero": "7",
+          "titulo": "Guía de diagnóstico por síntoma",
+          "nivel": 1,
+          "clave": "guia-sintomas",
+          "pagina": 18
+        },
+        {
+          "id": "MBP-4 §7.1",
+          "numero": "7.1",
+          "titulo": "Vibración alta en una bomba",
+          "nivel": 2,
+          "clave": "sintoma-vib",
+          "pagina": 18
+        },
+        {
+          "id": "MBP-4 §7.2",
+          "numero": "7.2",
+          "titulo": "Temperatura de aceite alta",
+          "nivel": 2,
+          "clave": "sintoma-temp",
+          "pagina": 18
+        },
+        {
+          "id": "MBP-4 §7.3",
+          "numero": "7.3",
+          "titulo": "Caudal de inyección bajo",
+          "nivel": 2,
+          "clave": "sintoma-caudal",
+          "pagina": 18
+        },
+        {
+          "id": "MBP-4 §7.4",
+          "numero": "7.4",
+          "titulo": "Presión de succión baja",
+          "nivel": 2,
+          "clave": "sintoma-succion",
+          "pagina": 18
+        },
+        {
+          "id": "MBP-4 §7.5",
+          "numero": "7.5",
+          "titulo": "Presión diferencial de filtro alta",
+          "nivel": 2,
+          "clave": "sintoma-dp-alta",
+          "pagina": 19
+        },
+        {
+          "id": "MBP-4 §7.6",
+          "numero": "7.6",
+          "titulo": "Presión diferencial de filtro baja",
+          "nivel": 2,
+          "clave": "sintoma-dp-baja",
+          "pagina": 19
+        },
+        {
+          "id": "MBP-4 §7.7",
+          "numero": "7.7",
+          "titulo": "Goteo o pérdida en una bomba",
+          "nivel": 2,
+          "clave": "sintoma-goteo",
+          "pagina": 19
+        },
+        {
+          "id": "MBP-4 §8",
+          "numero": "8",
+          "titulo": "Operación en invierno",
+          "nivel": 1,
+          "clave": "invierno",
+          "pagina": 20
+        },
+        {
+          "id": "MBP-4 §8.1",
+          "numero": "8.1",
+          "titulo": "Calefaccionado de líneas de impulso",
+          "nivel": 2,
+          "clave": "calefaccionado",
+          "pagina": 20
+        },
+        {
+          "id": "MBP-4 §8.2",
+          "numero": "8.2",
+          "titulo": "Bombas paradas con helada",
+          "nivel": 2,
+          "clave": "paradas-helada",
+          "pagina": 20
+        },
+        {
+          "id": "MBP-4 §8.3",
+          "numero": "8.3",
+          "titulo": "Stock y caminos",
+          "nivel": 2,
+          "clave": "stock-invierno",
+          "pagina": 20
+        },
+        {
+          "id": "MBP-4 §9",
+          "numero": "9",
+          "titulo": "Medio ambiente",
+          "nivel": 1,
+          "clave": "ambiente",
+          "pagina": 21
+        },
+        {
+          "id": "MBP-4 §9.1",
+          "numero": "9.1",
+          "titulo": "Derrames",
+          "nivel": 2,
+          "clave": "derrames",
+          "pagina": 21
+        },
+        {
+          "id": "MBP-4 §9.2",
+          "numero": "9.2",
+          "titulo": "Residuos",
+          "nivel": 2,
+          "clave": "residuos",
+          "pagina": 21
+        },
+        {
+          "id": "MBP-4 §10",
+          "numero": "10",
+          "titulo": "Condiciones inseguras",
+          "nivel": 1,
+          "clave": "seguridad",
+          "pagina": 22
+        },
+        {
+          "id": "MBP-4 §10.1",
+          "numero": "10.1",
+          "titulo": "Resumen",
+          "nivel": 2,
+          "clave": "resumen-seguridad",
+          "pagina": 22
+        },
+        {
+          "id": "MBP-4 §10.2",
+          "numero": "10.2",
+          "titulo": "S1 Pérdida con proyección de agua a presión",
+          "nivel": 2,
+          "clave": "seg-S1",
+          "pagina": 22
+        },
+        {
+          "id": "MBP-4 §10.3",
+          "numero": "10.3",
+          "titulo": "S2 Olor a gas",
+          "nivel": 2,
+          "clave": "seg-S2",
+          "pagina": 22
+        },
+        {
+          "id": "MBP-4 §10.4",
+          "numero": "10.4",
+          "titulo": "S3 Humo u olor a quemado en un motor",
+          "nivel": 2,
+          "clave": "seg-S3",
+          "pagina": 22
+        },
+        {
+          "id": "MBP-4 §10.5",
+          "numero": "10.5",
+          "titulo": "S4 Persona lesionada",
+          "nivel": 2,
+          "clave": "seg-S4",
+          "pagina": 23
+        },
+        {
+          "id": "MBP-4 §10.6",
+          "numero": "10.6",
+          "titulo": "Lo que no es una condición insegura",
+          "nivel": 2,
+          "clave": "no-insegura",
+          "pagina": 23
+        },
+        {
+          "id": "MBP-4 §11",
+          "numero": "11",
+          "titulo": "Condiciones de planta",
+          "nivel": 1,
+          "clave": "condiciones-planta",
+          "pagina": 24
+        },
+        {
+          "id": "MBP-4 §11.1",
+          "numero": "11.1",
+          "titulo": "P1 Corte de enlace",
+          "nivel": 2,
+          "clave": "p1",
+          "pagina": 24
+        },
+        {
+          "id": "MBP-4 §11.2",
+          "numero": "11.2",
+          "titulo": "P2 Corte de energía",
+          "nivel": 2,
+          "clave": "p2",
+          "pagina": 24
+        },
+        {
+          "id": "MBP-4 §11.3",
+          "numero": "11.3",
+          "titulo": "P3 Bomba de reserva no disponible",
+          "nivel": 2,
+          "clave": "p3",
+          "pagina": 24
+        },
+        {
+          "id": "MBP-4 §12",
+          "numero": "12",
+          "titulo": "Gestión de órdenes de trabajo",
+          "nivel": 1,
+          "clave": "ordenes",
+          "pagina": 25
+        },
+        {
+          "id": "MBP-4 §12.1",
+          "numero": "12.1",
+          "titulo": "Estados de una orden",
+          "nivel": 2,
+          "clave": "estados",
+          "pagina": 25
+        },
+        {
+          "id": "MBP-4 §12.2",
+          "numero": "12.2",
+          "titulo": "Contenido mínimo de una orden",
+          "nivel": 2,
+          "clave": "contenido-orden",
+          "pagina": 25
+        },
+        {
+          "id": "MBP-4 §12.3",
+          "numero": "12.3",
+          "titulo": "Reglas de aprobación automática",
+          "nivel": 2,
+          "clave": "reglas",
+          "pagina": 25
+        },
+        {
+          "id": "MBP-4 §12.4",
+          "numero": "12.4",
+          "titulo": "Ejemplos de aplicación",
+          "nivel": 2,
+          "clave": "ejemplos-reglas",
+          "pagina": 26
+        },
+        {
+          "id": "MBP-4 §12.5",
+          "numero": "12.5",
+          "titulo": "Nota de cierre",
+          "nivel": 2,
+          "clave": "cierre",
+          "pagina": 26
+        },
+        {
+          "id": "MBP-4 §13",
+          "numero": "13",
+          "titulo": "Tareas del plan de mantenimiento",
+          "nivel": 1,
+          "clave": "tareas",
+          "pagina": 27
+        },
+        {
+          "id": "MBP-4 §13.1",
+          "numero": "13.1",
+          "titulo": "Tareas estándar",
+          "nivel": 2,
+          "clave": "tareas-estandar",
+          "pagina": 27
+        },
+        {
+          "id": "MBP-4 §13.2",
+          "numero": "13.2",
+          "titulo": "Tareas no estándar",
+          "nivel": 2,
+          "clave": "tareas-no-estandar",
+          "pagina": 27
+        },
+        {
+          "id": "MBP-4 §13.3",
+          "numero": "13.3",
+          "titulo": "Correspondencia con los procedimientos de los fabricantes",
+          "nivel": 2,
+          "clave": "corresp-procedimientos",
+          "pagina": 27
+        },
+        {
+          "id": "MBP-4 §13.4",
+          "numero": "13.4",
+          "titulo": "T-B-EMP Cambio de empaquetadura",
+          "nivel": 2,
+          "clave": "tarea-T-B-EMP",
+          "pagina": 28
+        },
+        {
+          "id": "MBP-4 §13.5",
+          "numero": "13.5",
+          "titulo": "T-B-VAL Cambio de válvulas de succión y descarga",
+          "nivel": 2,
+          "clave": "tarea-T-B-VAL",
+          "pagina": 28
+        },
+        {
+          "id": "MBP-4 §13.6",
+          "numero": "13.6",
+          "titulo": "T-B-ACE Reposición de aceite del cárter",
+          "nivel": 2,
+          "clave": "tarea-T-B-ACE",
+          "pagina": 28
+        },
+        {
+          "id": "MBP-4 §13.7",
+          "numero": "13.7",
+          "titulo": "T-B-COR Cambio de correas",
+          "nivel": 2,
+          "clave": "tarea-T-B-COR",
+          "pagina": 28
+        },
+        {
+          "id": "MBP-4 §13.8",
+          "numero": "13.8",
+          "titulo": "T-F-CAR Cambio de cartuchos",
+          "nivel": 2,
+          "clave": "tarea-T-F-CAR",
+          "pagina": 28
+        },
+        {
+          "id": "MBP-4 §13.9",
+          "numero": "13.9",
+          "titulo": "T-I-CAL Calibración de instrumento",
+          "nivel": 2,
+          "clave": "tarea-T-I-CAL",
+          "pagina": 28
+        },
+        {
+          "id": "MBP-4 §13.10",
+          "numero": "13.10",
+          "titulo": "Plan preventivo anual de PIA-3",
+          "nivel": 2,
+          "clave": "plan-anual",
+          "pagina": 29
+        },
+        {
+          "id": "MBP-4 §14",
+          "numero": "14",
+          "titulo": "Repuestos y stock",
+          "nivel": 1,
+          "clave": "stock",
+          "pagina": 30
+        },
+        {
+          "id": "MBP-4 §14.1",
+          "numero": "14.1",
+          "titulo": "Almacenes",
+          "nivel": 2,
+          "clave": "almacenes",
+          "pagina": 30
+        },
+        {
+          "id": "MBP-4 §14.2",
+          "numero": "14.2",
+          "titulo": "Lista de repuestos y stock de referencia",
+          "nivel": 2,
+          "clave": "tabla-stock",
+          "pagina": 30
+        },
+        {
+          "id": "MBP-4 §14.3",
+          "numero": "14.3",
+          "titulo": "Lista de materiales por equipo",
+          "nivel": 2,
+          "clave": "lista-materiales",
+          "pagina": 30
+        },
+        {
+          "id": "MBP-4 §14.4",
+          "numero": "14.4",
+          "titulo": "Reposición",
+          "nivel": 2,
+          "clave": "reposicion",
+          "pagina": 30
+        },
+        {
+          "id": "MBP-4 §15",
+          "numero": "15",
+          "titulo": "Contratistas y certificación",
+          "nivel": 1,
+          "clave": "contratistas",
+          "pagina": 31
+        },
+        {
+          "id": "MBP-4 §15.1",
+          "numero": "15.1",
+          "titulo": "Servipat",
+          "nivel": 2,
+          "clave": "servipat",
+          "pagina": 31
+        },
+        {
+          "id": "MBP-4 §15.2",
+          "numero": "15.2",
+          "titulo": "Certificación de un trabajo de contratista",
+          "nivel": 2,
+          "clave": "certificacion",
+          "pagina": 31
+        },
+        {
+          "id": "MBP-4 §15.3",
+          "numero": "15.3",
+          "titulo": "Diferencias habituales",
+          "nivel": 2,
+          "clave": "diferencias",
+          "pagina": 31
+        },
+        {
+          "id": "MBP-4 §15.4",
+          "numero": "15.4",
+          "titulo": "El habilita",
+          "nivel": 2,
+          "clave": "habilita",
+          "pagina": 31
+        },
+        {
+          "id": "MBP-4 §16",
+          "numero": "16",
+          "titulo": "Seguridad en el trabajo",
+          "nivel": 1,
+          "clave": "seguridad-trabajo",
+          "pagina": 32
+        },
+        {
+          "id": "MBP-4 §16.1",
+          "numero": "16.1",
+          "titulo": "Permiso de trabajo",
+          "nivel": 2,
+          "clave": "permiso",
+          "pagina": 32
+        },
+        {
+          "id": "MBP-4 §16.2",
+          "numero": "16.2",
+          "titulo": "Bloqueo y etiquetado",
+          "nivel": 2,
+          "clave": "loto",
+          "pagina": 32
+        },
+        {
+          "id": "MBP-4 §16.3",
+          "numero": "16.3",
+          "titulo": "Elementos de protección personal",
+          "nivel": 2,
+          "clave": "epp",
+          "pagina": 32
+        },
+        {
+          "id": "MBP-4 §16.4",
+          "numero": "16.4",
+          "titulo": "Viento",
+          "nivel": 2,
+          "clave": "viento",
+          "pagina": 32
+        },
+        {
+          "id": "MBP-4 §17",
+          "numero": "17",
+          "titulo": "Secciones de otras plantas",
+          "nivel": 1,
+          "clave": "otras-plantas",
+          "pagina": 33
+        },
+        {
+          "id": "MBP-4 §17.1",
+          "numero": "17.1",
+          "titulo": "PIA-1: bombas centrífugas multietapa",
+          "nivel": 2,
+          "clave": "pia1",
+          "pagina": 33
+        },
+        {
+          "id": "MBP-4 §17.2",
+          "numero": "17.2",
+          "titulo": "PIA-1: filtros de arena",
+          "nivel": 2,
+          "clave": "pia1-arena",
+          "pagina": 33
+        },
+        {
+          "id": "MBP-4 §17.3",
+          "numero": "17.3",
+          "titulo": "PIA-2: inyección de polímero",
+          "nivel": 2,
+          "clave": "pia2",
+          "pagina": 33
+        },
+        {
+          "id": "MBP-4 §18",
+          "numero": "18",
+          "titulo": "Inducción del personal nuevo",
+          "nivel": 1,
+          "clave": "induccion",
+          "pagina": 34
+        },
+        {
+          "id": "MBP-4 §19",
+          "numero": "19",
+          "titulo": "Registro del historial",
+          "nivel": 1,
+          "clave": "registro",
+          "pagina": 35
+        },
+        {
+          "id": "MBP-4 §19.1",
+          "numero": "19.1",
+          "titulo": "Cómo se escribe una orden en el historial",
+          "nivel": 2,
+          "clave": "como-escribir",
+          "pagina": 35
+        },
+        {
+          "id": "MBP-4 §A",
+          "numero": "A",
+          "titulo": "Glosario",
+          "nivel": 1,
+          "clave": "glosario",
+          "pagina": 36
+        },
+        {
+          "id": "MBP-4 §B",
+          "numero": "B",
+          "titulo": "Conversión de presiones por bomba",
+          "nivel": 1,
+          "clave": "conversiones",
+          "pagina": 37
+        },
+        {
+          "id": "MBP-4 §C",
+          "numero": "C",
+          "titulo": "Formularios",
+          "nivel": 1,
+          "clave": "formularios",
+          "pagina": 38
+        },
+        {
+          "id": "MBP-4 §C.1",
+          "numero": "C.1",
+          "titulo": "Planilla de recorrida",
+          "nivel": 2,
+          "clave": "form-planilla",
+          "pagina": 39
+        },
+        {
+          "id": "MBP-4 §C.2",
+          "numero": "C.2",
+          "titulo": "Permiso de trabajo",
+          "nivel": 2,
+          "clave": "form-permiso",
+          "pagina": 40
+        },
+        {
+          "id": "MBP-4 §C.3",
+          "numero": "C.3",
+          "titulo": "Registro de relevo de turno",
+          "nivel": 2,
+          "clave": "form-relevo",
+          "pagina": 41
+        },
+        {
+          "id": "MBP-4 §D",
+          "numero": "D",
+          "titulo": "Contactos",
+          "nivel": 1,
+          "clave": "contactos",
+          "pagina": 42
+        }
+      ]
+    },
+    {
+      "id": "CT-SVP-2025",
+      "titulo": "Contrato de servicios de mantenimiento mecánico",
+      "subtitulo": "Servipat S.A. · Plantas de inyección del yacimiento Cerro Dragón Sur",
+      "codigo": "CT-SVP-2025",
+      "revision": "Anexo II, 1.ª revisión",
+      "vigente_desde": "2025-01-01",
+      "vigente": true,
+      "reemplaza": "CT-SVP-2022 (vigente hasta 2024-12-31)",
+      "reemplazado_por": null,
+      "tipo": "contrato",
+      "emisor": "Gerencia de Contratos · Yacimiento Cerro Dragón Sur",
+      "equipos": [
+        "B-101",
+        "B-102",
+        "B-103"
+      ],
+      "archivos": {
+        "md": "contrato/CT-SVP-2025.md",
+        "pdf": "contrato/CT-SVP-2025.pdf"
+      },
+      "paginas": 8,
+      "secciones": [
+        {
+          "id": "CT-SVP-2025 §1",
+          "numero": "1",
+          "titulo": "Objeto, plazo y alcance",
+          "nivel": 1,
+          "clave": "objeto",
+          "pagina": 5
+        },
+        {
+          "id": "CT-SVP-2025 §1.1",
+          "numero": "1.1",
+          "titulo": "Objeto",
+          "nivel": 2,
+          "clave": "objeto-contrato",
+          "pagina": 5
+        },
+        {
+          "id": "CT-SVP-2025 §1.2",
+          "numero": "1.2",
+          "titulo": "Plazo",
+          "nivel": 2,
+          "clave": "plazo",
+          "pagina": 5
+        },
+        {
+          "id": "CT-SVP-2025 §1.3",
+          "numero": "1.3",
+          "titulo": "Alcance en PIA-3",
+          "nivel": 2,
+          "clave": "alcance",
+          "pagina": 5
+        },
+        {
+          "id": "CT-SVP-2025 §1.4",
+          "numero": "1.4",
+          "titulo": "Repuestos",
+          "nivel": 2,
+          "clave": "repuestos",
+          "pagina": 5
+        },
+        {
+          "id": "CT-SVP-2025 §2",
+          "numero": "2",
+          "titulo": "Lista de precios (Anexo II)",
+          "nivel": 1,
+          "clave": "precios",
+          "pagina": 6
+        },
+        {
+          "id": "CT-SVP-2025 §2.1",
+          "numero": "2.1",
+          "titulo": "Precios vigentes 2025-2026",
+          "nivel": 2,
+          "clave": "precios-vigentes",
+          "pagina": 6
+        },
+        {
+          "id": "CT-SVP-2025 §2.2",
+          "numero": "2.2",
+          "titulo": "Condiciones de los precios cerrados",
+          "nivel": 2,
+          "clave": "precio-cerrado",
+          "pagina": 6
+        },
+        {
+          "id": "CT-SVP-2025 §2.3",
+          "numero": "2.3",
+          "titulo": "Horas extra",
+          "nivel": 2,
+          "clave": "horas-extra",
+          "pagina": 6
+        },
+        {
+          "id": "CT-SVP-2025 §2.4",
+          "numero": "2.4",
+          "titulo": "Costo total de una orden de contratista",
+          "nivel": 2,
+          "clave": "costo-total",
+          "pagina": 6
+        },
+        {
+          "id": "CT-SVP-2025 §2.5",
+          "numero": "2.5",
+          "titulo": "Precios del contrato anterior CT-SVP-2022",
+          "nivel": 2,
+          "clave": "precios-anteriores",
+          "pagina": 6
+        },
+        {
+          "id": "CT-SVP-2025 §3",
+          "numero": "3",
+          "titulo": "Certificación (Anexo IV)",
+          "nivel": 1,
+          "clave": "certificacion",
+          "pagina": 8
+        },
+        {
+          "id": "CT-SVP-2025 §3.1",
+          "numero": "3.1",
+          "titulo": "Documentos",
+          "nivel": 2,
+          "clave": "documentos",
+          "pagina": 8
+        },
+        {
+          "id": "CT-SVP-2025 §3.2",
+          "numero": "3.2",
+          "titulo": "Cálculo del monto",
+          "nivel": 2,
+          "clave": "monto",
+          "pagina": 8
+        },
+        {
+          "id": "CT-SVP-2025 §3.3",
+          "numero": "3.3",
+          "titulo": "Diferencias y observaciones",
+          "nivel": 2,
+          "clave": "diferencias",
+          "pagina": 8
+        },
+        {
+          "id": "CT-SVP-2025 §3.4",
+          "numero": "3.4",
+          "titulo": "Habilita",
+          "nivel": 2,
+          "clave": "habilita",
+          "pagina": 8
+        },
+        {
+          "id": "CT-SVP-2025 §3.5",
+          "numero": "3.5",
+          "titulo": "Plazos",
+          "nivel": 2,
+          "clave": "plazos",
+          "pagina": 8
+        }
+      ]
+    },
+    {
+      "id": "CERT-EJ",
+      "titulo": "Certificación de trabajos de contratista",
+      "subtitulo": "Cierres de ejemplo de Servipat en PIA-3",
+      "codigo": "CERT-EJ-PIA3",
+      "revision": "1",
+      "vigente_desde": "2026-09-30",
+      "vigente": true,
+      "reemplaza": null,
+      "reemplazado_por": null,
+      "tipo": "contrato",
+      "emisor": "Gerencia de Contratos · Yacimiento Cerro Dragón Sur",
+      "equipos": [
+        "B-101",
+        "B-102",
+        "B-103"
+      ],
+      "archivos": {
+        "md": "contrato/CERT-EJ.md",
+        "pdf": "contrato/CERT-EJ.pdf"
+      },
+      "paginas": 10,
+      "secciones": [
+        {
+          "id": "CERT-EJ §1",
+          "numero": "1",
+          "titulo": "Cómo leer los casos",
+          "nivel": 1,
+          "clave": "como-leer",
+          "pagina": 4
+        },
+        {
+          "id": "CERT-EJ §2",
+          "numero": "2",
+          "titulo": "Casos",
+          "nivel": 1,
+          "clave": "casos",
+          "pagina": 5
+        },
+        {
+          "id": "CERT-EJ §2.1",
+          "numero": "2.1",
+          "titulo": "Orden OT-24-0010 (I-VIB, B-101)",
+          "nivel": 2,
+          "clave": "cierre-OT-24-0010",
+          "pagina": 5
+        },
+        {
+          "id": "CERT-EJ §2.2",
+          "numero": "2.2",
+          "titulo": "Orden OT-24-0015 (T-B-ROD, B-101)",
+          "nivel": 2,
+          "clave": "cierre-OT-24-0015",
+          "pagina": 5
+        },
+        {
+          "id": "CERT-EJ §2.3",
+          "numero": "2.3",
+          "titulo": "Orden OT-25-0004 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-25-0004",
+          "pagina": 6
+        },
+        {
+          "id": "CERT-EJ §2.4",
+          "numero": "2.4",
+          "titulo": "Orden OT-25-0026 (T-B-ALI, B-101)",
+          "nivel": 2,
+          "clave": "cierre-OT-25-0026",
+          "pagina": 6
+        },
+        {
+          "id": "CERT-EJ §2.5",
+          "numero": "2.5",
+          "titulo": "Orden OT-25-0036 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-25-0036",
+          "pagina": 7
+        },
+        {
+          "id": "CERT-EJ §2.6",
+          "numero": "2.6",
+          "titulo": "Orden OT-25-0046 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-25-0046",
+          "pagina": 7
+        },
+        {
+          "id": "CERT-EJ §2.7",
+          "numero": "2.7",
+          "titulo": "Orden OT-25-0079 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-25-0079",
+          "pagina": 8
+        },
+        {
+          "id": "CERT-EJ §2.8",
+          "numero": "2.8",
+          "titulo": "Orden OT-25-0110 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-25-0110",
+          "pagina": 8
+        },
+        {
+          "id": "CERT-EJ §2.9",
+          "numero": "2.9",
+          "titulo": "Orden OT-25-0119 (T-B-ALI, B-101)",
+          "nivel": 2,
+          "clave": "cierre-OT-25-0119",
+          "pagina": 9
+        },
+        {
+          "id": "CERT-EJ §2.10",
+          "numero": "2.10",
+          "titulo": "Orden OT-26-0021 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-26-0021",
+          "pagina": 9
+        },
+        {
+          "id": "CERT-EJ §2.11",
+          "numero": "2.11",
+          "titulo": "Orden OT-26-0032 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-26-0032",
+          "pagina": 10
+        },
+        {
+          "id": "CERT-EJ §2.12",
+          "numero": "2.12",
+          "titulo": "Orden OT-26-0061 (I-VIB, PLANTA)",
+          "nivel": 2,
+          "clave": "cierre-OT-26-0061",
+          "pagina": 10
+        }
+      ]
+    },
+    {
+      "id": "historial",
+      "titulo": "Historial de órdenes de trabajo de PIA-3",
+      "tipo": "historial",
+      "desde": "2024-10-03",
+      "hasta": "2026-10-06",
+      "ordenes": 243,
+      "archivos": {
+        "json": "historial/ordenes.json",
+        "csv": "historial/ordenes.csv"
+      }
+    }
+  ]
+}

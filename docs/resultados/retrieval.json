@@ -1,0 +1,126 @@
+{
+  "bm25_oficial": {
+    "mrr": 0.573,
+    "hit@1": 0.352,
+    "recall@1": 0.251,
+    "distractor@1": 0.056,
+    "hit@3": 0.775,
+    "recall@3": 0.601,
+    "distractor@3": 0.085,
+    "hit@5": 0.845,
+    "recall@5": 0.664,
+    "distractor@5": 0.099,
+    "hit@10": 0.93,
+    "recall@10": 0.772,
+    "distractor@10": 0.099
+  },
+  "propio": {
+    "mrr": 0.679,
+    "hit@1": 0.535,
+    "recall@1": 0.352,
+    "distractor@1": 0.0,
+    "hit@3": 0.803,
+    "recall@3": 0.615,
+    "distractor@3": 0.014,
+    "hit@5": 0.859,
+    "recall@5": 0.707,
+    "distractor@5": 0.014,
+    "hit@10": 0.915,
+    "recall@10": 0.786,
+    "distractor@10": 0.014
+  },
+  "rev_c_antes_que_d": {
+    "BM25 oficial": 39,
+    "propio": 0
+  },
+  "por_tipo": {
+    "certificacion": {
+      "n": 5,
+      "hit@1": 0.2,
+      "recall@1": 0.1,
+      "hit@3": 1.0,
+      "recall@3": 0.9,
+      "hit@5": 1.0,
+      "recall@5": 1.0,
+      "hit@10": 1.0,
+      "recall@10": 1.0
+    },
+    "contrato": {
+      "n": 7,
+      "hit@1": 0.714,
+      "recall@1": 0.548,
+      "hit@3": 0.714,
+      "recall@3": 0.619,
+      "hit@5": 0.714,
+      "recall@5": 0.619,
+      "hit@10": 0.714,
+      "recall@10": 0.619
+    },
+    "diagnostico": {
+      "n": 14,
+      "hit@1": 0.714,
+      "recall@1": 0.405,
+      "hit@3": 1.0,
+      "recall@3": 0.75,
+      "hit@5": 1.0,
+      "recall@5": 0.81,
+      "hit@10": 1.0,
+      "recall@10": 0.94
+    },
+    "historial": {
+      "n": 11,
+      "hit@1": 0.273,
+      "recall@1": 0.182,
+      "hit@3": 0.636,
+      "recall@3": 0.424,
+      "hit@5": 0.818,
+      "recall@5": 0.591,
+      "hit@10": 0.818,
+      "recall@10": 0.591
+    },
+    "limites": {
+      "n": 11,
+      "hit@1": 0.455,
+      "recall@1": 0.303,
+      "hit@3": 0.727,
+      "recall@3": 0.5,
+      "hit@5": 0.818,
+      "recall@5": 0.591,
+      "hit@10": 0.909,
+      "recall@10": 0.667
+    },
+    "operacion": {
+      "n": 11,
+      "hit@1": 0.636,
+      "recall@1": 0.576,
+      "hit@3": 0.727,
+      "recall@3": 0.636,
+      "hit@5": 0.727,
+      "recall@5": 0.636,
+      "hit@10": 0.909,
+      "recall@10": 0.818
+    },
+    "procedimiento": {
+      "n": 8,
+      "hit@1": 0.375,
+      "recall@1": 0.167,
+      "hit@3": 0.75,
+      "recall@3": 0.521,
+      "hit@5": 0.875,
+      "recall@5": 0.688,
+      "hit@10": 1.0,
+      "recall@10": 0.812
+    },
+    "seguridad": {
+      "n": 4,
+      "hit@1": 1.0,
+      "recall@1": 0.5,
+      "hit@3": 1.0,
+      "recall@3": 0.75,
+      "hit@5": 1.0,
+      "recall@5": 1.0,
+      "hit@10": 1.0,
+      "recall@10": 1.0
+    }
+  }
+}
