@@ -1,0 +1,46 @@
+# --- Material de trabajo y datos oficiales: NUNCA al repositorio -------------------------------
+# Copia local de la planta oficial, rúbrica, plan maestro y notas (Plan Maestro §14, D10).
+/Context/
+/context/
+/Claude outputs/
+
+# --- Configuración local de Claude Code --------------------------------------------------------
+.claude/settings.local.json
+
+# --- Secretos y entorno local -------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Modelos, corridas y artefactos -------------------------------------------------------------
+/modelos/
+*.gguf
+*.safetensors
+*.onnx
+*.bin
+corridas/
+/evaluacion/corridas/
+muestra-*.wav
+muestras-voz/
+
+# --- Python ---------------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+build/
+dist/
+
+# --- Sistema operativo / editores -----------------------------------------------------------------
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
