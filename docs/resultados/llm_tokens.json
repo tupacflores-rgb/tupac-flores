@@ -1,0 +1,128 @@
+[
+ {
+  "modelo": "qwen3.5:2b-q4_K_M",
+  "casos": 5,
+  "json_valido": 1.0,
+  "filas_esperadas": 11,
+  "equipo_variable": 0.818,
+  "valor_exacto": 0.727,
+  "unidad": 0.818,
+  "precision": 0.9,
+  "descartadas_por_validacion": 1,
+  "latencia_s": {
+   "p50": 28.1,
+   "p95": 48.4,
+   "max": 48.4
+  },
+  "ram_pico_mib": null,
+  "tokens_por_llamada": {
+   "llamadas": 5,
+   "entrada": {
+    "media": 699,
+    "min": 680,
+    "max": 715
+   },
+   "salida": {
+    "media": 116,
+    "min": 42,
+    "max": 280
+   },
+   "total": 4078
+  },
+  "por_variante": {
+   "dedescarga": {
+    "casos": 1,
+    "valor_exacto": 0.33
+   },
+   "frito": {
+    "casos": 1,
+    "valor_exacto": 0.5
+   },
+   "limpio": {
+    "casos": 1,
+    "valor_exacto": 1.0
+   },
+   "sin_tildes_ni_comas": {
+    "casos": 2,
+    "valor_exacto": 1.0
+   }
+  },
+  "filas": [
+   {
+    "id": "NOTA-00002",
+    "variante": "frito",
+    "valido": true,
+    "s": 28.062572652997915,
+    "n_esp": 2,
+    "encontrados": 1,
+    "valores": 1,
+    "unidades": 1,
+    "devueltas": 1,
+    "verdaderas": 1,
+    "descartadas": 1,
+    "tokens_in": 708,
+    "tokens_out": 92
+   },
+   {
+    "id": "NOTA-00003",
+    "variante": "dedescarga",
+    "valido": true,
+    "s": 29.91950217500198,
+    "n_esp": 3,
+    "encontrados": 2,
+    "valores": 1,
+    "unidades": 2,
+    "devueltas": 2,
+    "verdaderas": 2,
+    "descartadas": 0,
+    "tokens_in": 710,
+    "tokens_out": 125
+   },
+   {
+    "id": "NOTA-00004",
+    "variante": "limpio",
+    "valido": true,
+    "s": 19.72015920800186,
+    "n_esp": 1,
+    "encontrados": 1,
+    "valores": 1,
+    "unidades": 1,
+    "devueltas": 1,
+    "verdaderas": 1,
+    "descartadas": 0,
+    "tokens_in": 684,
+    "tokens_out": 42
+   },
+   {
+    "id": "NOTA-00005",
+    "variante": "sin_tildes_ni_comas",
+    "valido": true,
+    "s": 19.598118870999315,
+    "n_esp": 1,
+    "encontrados": 1,
+    "valores": 1,
+    "unidades": 1,
+    "devueltas": 1,
+    "verdaderas": 1,
+    "descartadas": 0,
+    "tokens_in": 680,
+    "tokens_out": 42
+   },
+   {
+    "id": "NOTA-00102",
+    "variante": "sin_tildes_ni_comas",
+    "valido": true,
+    "s": 48.40037893599947,
+    "n_esp": 4,
+    "encontrados": 4,
+    "valores": 4,
+    "unidades": 4,
+    "devueltas": 5,
+    "verdaderas": 4,
+    "descartadas": 0,
+    "tokens_in": 715,
+    "tokens_out": 280
+   }
+  ]
+ }
+]

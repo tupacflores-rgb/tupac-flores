@@ -29,6 +29,23 @@ La imagen del servicio lleva **solo este modelo**. Los pesos se bajan en el buil
 verifica contra el sha256 real del archivo; `arranque.sh` vuelve a verificar las capas contra `manifest.json` antes de
 levantar Ollama. No se descarga nada al arrancar.
 
+## Tokens por llamada (5 casos, cuota real)
+
+Medido con el mismo callback de consumo que usa el sistema (`evaluacion/llm_bench.py`, primeros 5 casos de
+`llm_casos.py`, `qwen3.5:2b-q4_K_M` a 0,75 CPU / 2,5 GB; datos en `docs/resultados/llm_tokens.json`):
+
+| Caso | Variante | Prompt | Salida | Total | Tiempo |
+|---|---|---:|---:|---:|---:|
+| NOTA-00002 | frito | 708 | 92 | 800 | 28,1 s |
+| NOTA-00003 | dedescarga | 710 | 125 | 835 | 29,9 s |
+| NOTA-00004 | limpio | 684 | 42 | 726 | 19,7 s |
+| NOTA-00005 | sin tildes ni comas | 680 | 42 | 722 | 19,6 s |
+| NOTA-00102 | sin tildes ni comas | 715 | 280 | 995 | 48,4 s |
+| **Media** | | **699** | **116** | **816** | |
+
+El prompt es casi constante (catálogo + variables + 4 ejemplos); la salida depende de cuántas filas devuelve. La
+muestra es de solo 5 llamadas. En las corridas del corrector el respaldo no se llamó (0 tokens).
+
 ## Benchmark (30 casos, cuota real)
 
 Condiciones: cuota real del servicio (`--cpus 0.75 --memory 2560m`), un modelo cargado a la vez, una llamada de

@@ -52,8 +52,30 @@ def ram_pico(contenedor: str, parar: threading.Event, salida: list[float]) -> No
         parar.wait(1.0)
 
 
+def tokens_por_llamada(filas: list[dict]) -> dict:
+    """Entrada y salida por llamada (callback de consumo del sistema), sobre las llamadas que informaron uso."""
+    con = [f for f in filas if "tokens_in" in f]
+    if not con:
+        return {"llamadas": 0}
+    ent = [f["tokens_in"] for f in con]
+    sal = [f["tokens_out"] for f in con]
+    return {
+        "llamadas": len(con),
+        "entrada": {"media": round(statistics.mean(ent)), "min": min(ent), "max": max(ent)},
+        "salida": {"media": round(statistics.mean(sal)), "min": min(sal), "max": max(sal)},
+        "total": sum(ent) + sum(sal),
+    }
+
+
 def evaluar(modelo: str, url: str, casos: list[dict], contenedor: str | None, timeout_s: float) -> dict:
-    llm = RespaldoLLM(url, modelo, timeout_s=timeout_s, max_tokens=100_000)
+    consumos: dict[str, object] = {}  # tokens por llamada, del mismo callback que usa el sistema
+    llm = RespaldoLLM(
+        url,
+        modelo,
+        timeout_s=timeout_s,
+        max_tokens=100_000,
+        registro=lambda c: consumos.__setitem__(c.nota_id, c),
+    )
     llm.extraer("La uno está en ciento doce kilos de descarga.", CAT, "calentamiento")  # carga el modelo
     memoria: list[float] = []
     parar = threading.Event()
@@ -65,9 +87,18 @@ def evaluar(modelo: str, url: str, casos: list[dict], contenedor: str | None, ti
         r = llm.extraer(c["texto_asr"], CAT, c["id"])
         seg = time.monotonic() - t0
         esperado = c["esperado"]
+        uso = consumos.get(c["id"])
+        tokens = {"tokens_in": uso.tokens_in, "tokens_out": uso.tokens_out} if uso else {}
         if r is None:
             filas.append(
-                {"id": c["id"], "variante": c["variante"], "valido": False, "s": seg, "n_esp": len(esperado)}
+                {
+                    "id": c["id"],
+                    "variante": c["variante"],
+                    "valido": False,
+                    "s": seg,
+                    "n_esp": len(esperado),
+                    **tokens,
+                }
             )
             continue
         sal = {(f.tag, f.variable): f for f in r.filas}
@@ -86,7 +117,7 @@ def evaluar(modelo: str, url: str, casos: list[dict], contenedor: str | None, ti
             {
                 "id": c["id"], "variante": c["variante"], "valido": True, "s": seg, "n_esp": len(esperado),
                 "encontrados": encontrados, "valores": valores, "unidades": unidades,
-                "devueltas": len(sal), "verdaderas": verdaderas, "descartadas": r.descartadas,
+                "devueltas": len(sal), "verdaderas": verdaderas, "descartadas": r.descartadas, **tokens,
             }
         )  # fmt: skip
     parar.set()
@@ -103,6 +134,7 @@ def evaluar(modelo: str, url: str, casos: list[dict], contenedor: str | None, ti
         "descartadas_por_validacion": sum(f["descartadas"] for f in ok),
         "latencia_s": {"p50": round(statistics.median(lat), 1), "p95": round(pct(lat, 0.95), 1), "max": round(max(lat), 1)},
         "ram_pico_mib": round(max(memoria)) if memoria else None,
+        "tokens_por_llamada": tokens_por_llamada(filas),
         "por_variante": {},
         "filas": filas,
     }  # fmt: skip

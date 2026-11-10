@@ -1,6 +1,6 @@
 # Parte del sistema contra la verdad de campo
 
-Origen: `evaluacion\corridas\e1-55a6fe4-190600` · escenarios: fuga-sin-enlace, martes-tranquilo
+Origen: `evaluacion\corridas\e1-ee74bde-193605` · escenarios: fuga-sin-enlace, martes-tranquilo
 
 Notas evaluadas: 13 (13 con parte esperado; las `VIVO-` no entran).
 
@@ -37,9 +37,9 @@ Falsos negativos (filas esperadas que no están): 0 · falsos positivos (filas q
 
 | Hito | Notas | Mediana | Media | Máx |
 |---|---|---|---|---|
-| hasta el primer borrador | 13 | 8.97 | 9.81 | 18.6 |
-| hasta la confirmación (evento del parte) | 10 | 13.6 | 14.98 | 26.07 |
-| hasta la alerta de seguridad (S1–S4) | 1 | 4.52 | 4.52 | 4.52 |
+| hasta el primer borrador | 13 | 9.96 | 9.21 | 14.59 |
+| hasta la confirmación (evento del parte) | 10 | 14.62 | 14.47 | 21.04 |
+| hasta la alerta de seguridad (S1–S4) | 1 | 4.53 | 4.53 | 4.53 |
 
 La confirmación incluye el tiempo que tarda el operador virtual en contestar.
 
@@ -47,7 +47,8 @@ La confirmación incluye el tiempo que tarda el operador virtual en contestar.
 
 - Nube: **USD 0.00**. Todos los modelos son locales (sin llamadas a servicios pagos).
 - Tokens por tarea:
-  - sin export de la tabla `consumo` para esta corrida (ver `--consumo`). El ASR y los embeddings no usan tokens de LLM; solo el respaldo LLM los consume.
+  - `completa`: 13 llamadas · 0 tokens de entrada · 0 de salida · 94.4 s
+  - `seguridad`: 13 llamadas · 0 tokens de entrada · 0 de salida · 75.3 s
 
 Respuestas del operador virtual: 13 · confirmaron el borrador: 10 · con problemas señalados: 0
 

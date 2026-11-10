@@ -113,21 +113,21 @@
   "latencia": {
    "borrador_s": {
     "n": 13,
-    "p50": 8.97,
-    "max": 18.6,
-    "media": 9.81
+    "p50": 9.96,
+    "max": 14.59,
+    "media": 9.21
    },
    "confirmacion_s": {
     "n": 10,
-    "p50": 13.6,
-    "max": 26.07,
-    "media": 14.98
+    "p50": 14.62,
+    "max": 21.04,
+    "media": 14.47
    },
    "alerta_s": {
     "n": 1,
-    "p50": 4.52,
-    "max": 4.52,
-    "media": 4.52
+    "p50": 4.53,
+    "max": 4.53,
+    "media": 4.53
    }
   },
   "costo_usd_nube": 0.0,
@@ -138,7 +138,20 @@
    "falsos_positivos": []
   }
  },
- "consumo": {},
+ "consumo": {
+  "seguridad": {
+   "llamadas": 13,
+   "tokens_in": 0,
+   "tokens_out": 0,
+   "ms": 75297
+  },
+  "completa": {
+   "llamadas": 13,
+   "tokens_in": 0,
+   "tokens_out": 0,
+   "ms": 94427
+  }
+ },
  "escenarios": [
   {
    "escenario": "fuga-sin-enlace",
@@ -199,9 +212,9 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 10.61,
+      "borrador_s": 10.71,
       "confirmacion_s": null,
-      "alerta_s": 4.52
+      "alerta_s": 4.53
      }
     },
     {
@@ -260,7 +273,7 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 8.84,
+      "borrador_s": 12.62,
       "confirmacion_s": null,
       "alerta_s": null
      }
@@ -321,8 +334,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 4.52,
-      "confirmacion_s": 11.32,
+      "borrador_s": 9.96,
+      "confirmacion_s": 15.31,
       "alerta_s": null
      }
     },
@@ -382,8 +395,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 8.06,
-      "confirmacion_s": 10.57,
+      "borrador_s": 4.52,
+      "confirmacion_s": 11.8,
       "alerta_s": null
      }
     }
@@ -453,8 +466,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 9.24,
-      "confirmacion_s": 19.62,
+      "borrador_s": 8.73,
+      "confirmacion_s": 21.04,
       "alerta_s": null
      }
     },
@@ -514,8 +527,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 13.9,
-      "confirmacion_s": 17.1,
+      "borrador_s": 13.23,
+      "confirmacion_s": 16.8,
       "alerta_s": null
      }
     },
@@ -575,8 +588,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 7.29,
-      "confirmacion_s": 13.19,
+      "borrador_s": 4.02,
+      "confirmacion_s": 9.3,
       "alerta_s": null
      }
     },
@@ -636,7 +649,7 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 17.13,
+      "borrador_s": 14.59,
       "confirmacion_s": null,
       "alerta_s": null
      }
@@ -697,8 +710,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 5.74,
-      "confirmacion_s": 14.01,
+      "borrador_s": 10.34,
+      "confirmacion_s": 18.3,
       "alerta_s": null
      }
     },
@@ -758,8 +771,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 9.08,
-      "confirmacion_s": 12.07,
+      "borrador_s": 8.15,
+      "confirmacion_s": 10.54,
       "alerta_s": null
      }
     },
@@ -819,8 +832,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 8.97,
-      "confirmacion_s": 15.64,
+      "borrador_s": 4.52,
+      "confirmacion_s": 11.36,
       "alerta_s": null
      }
     },
@@ -880,8 +893,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 18.6,
-      "confirmacion_s": 26.07,
+      "borrador_s": 7.75,
+      "confirmacion_s": 16.32,
       "alerta_s": null
      }
     },
@@ -941,8 +954,8 @@
      },
      "vacia": false,
      "latencia": {
-      "borrador_s": 5.52,
-      "confirmacion_s": 10.2,
+      "borrador_s": 10.59,
+      "confirmacion_s": 13.93,
       "alerta_s": null
      }
     }

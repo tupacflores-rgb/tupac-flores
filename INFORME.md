@@ -85,11 +85,11 @@ La puerta original (RTF p99 ≤ 0,7) no se cumple con este modelo: el costo fijo
 
 | Tarea | Tokens | Cómo se midió |
 |---|---:|---|
-| Transcripción (ASR) | No usa tokens de LLM; cuesta tiempo: 4,39 s fijos + 0,132 s por segundo de audio | Regresión sobre 104 transcripciones con la CPU saturada |
-| Embeddings (consulta RAG) | ≤ 512 tokens del tokenizador por consulta (preguntas de una frase: pocas decenas); 710 pasajes indexados una sola vez en el build | `emb/nucleo.py` (truncado a 512) |
+| Transcripción (ASR) | No usa tokens de LLM; cuesta tiempo: 4,39 s fijos + 0,132 s por segundo de audio. En la corrida de control: 26 pasadas (13 rápidas de seguridad + 13 completas) sobre 13 notas = **119,5 s de audio**; las pasadas rápidas sumaron 52,2 s de ASR | Regresión sobre 104 transcripciones con la CPU saturada; logs del agente de la corrida `e1-ee74bde-193605` |
+| Embeddings (consulta RAG) | Sin tokens de LLM. **0 consultas** en la corrida de control (el flujo del parte no consulta manuales); los 710 pasajes se indexan una sola vez en el build. Tope por consulta: 512 tokens del tokenizador | Logs de `emb` de la corrida; `emb/nucleo.py` (truncado a 512) |
 | Parser, diálogo, seguridad, eventos | 0 (reglas) | — |
-| Respaldo con LLM (por llamada) | **≈ 690 de entrada + 50–90 de salida = 730–780** | `usage_metadata` de `ChatOllama` en el stack del clon limpio (prompt con catálogo y 4 ejemplos) |
-| **Por nota en las corridas del corrector** | **0** | El respaldo no se llamó ni una vez en las 4 corridas finales de V7 |
+| Respaldo con LLM (por llamada) | **entrada 680–715 (media 699) + salida 42–280 (media 116) = 816 de media**; 5 llamadas, 4.078 tokens en total | Benchmark de 5 casos con la cuota real (0,75 CPU), callback de consumo del sistema; `docs/resultados/llm.md` y `llm_tokens.json`. La salida mínima de 42 es una respuesta sin filas; la máxima, una nota con varias |
+| **Por nota en las corridas del corrector** | **0** | Corrida de control (martes-tranquilo + fuga-sin-enlace, 88,8): la tabla `consumo` tiene 26 filas, todas de los carriles `seguridad` y `completa` con 0 tokens, y ninguna del carril `llm` (exportada con `verdad.py --consumo`, `docs/resultados/verdad.md`). Tampoco se llamó en las 4 corridas finales de V7 |
 
 El presupuesto por llamada es de 2.500 tokens y por nota de 12 pasos y 120 s (`control/presupuesto.py`); el consumo de cada
 nota (pasos, tokens, milisegundos, cortes) queda en la tabla `consumo`.
