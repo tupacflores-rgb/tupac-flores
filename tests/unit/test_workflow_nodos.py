@@ -1,10 +1,13 @@
 from pathlib import Path
 
+import pytest
+
 from sistema.conocimiento.corpus import cargar
 from sistema.conocimiento.recuperador import Recuperador
 from sistema.herramientas.catalogo import cargar_materiales
 from sistema.workflow.grafo import (
     AnalisisEscalado,
+    _tareas_basicas,
     construir_grafo,
     validar_citas,
     validar_repuestos,
@@ -13,6 +16,19 @@ from sistema.workflow.reglas import OrdenBorrador, RepuestoOrden
 
 RAIZ = Path(__file__).resolve().parents[2]
 DOCUMENTOS = RAIZ / "src" / "sistema" / "datos" / "documentos"
+
+
+@pytest.mark.parametrize(
+    ("resumen", "equipo", "tarea"),
+    [
+        ("B-102: vibración elevada", "B-102", "I-VIB"),
+        ("B-102: vibración y pulsación en descarga", "B-102", "T-B-VAL"),
+        ("B-102: golpeteo metálico rítmico", "B-102", "T-B-VAL"),
+        ("B-101: vibración y temperatura alta del rodamiento", "B-101", "T-B-ROD"),
+    ],
+)
+def test_analisis_basico_asocia_sintomas_de_bomba_con_tareas(resumen, equipo, tarea):
+    assert _tareas_basicas(resumen, equipo) == [tarea]
 
 
 def test_camino_feliz_desde_escalado_hasta_evaluacion_en_memoria():
