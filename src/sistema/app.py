@@ -186,7 +186,12 @@ class Agente:
         if parar.is_set():
             return
 
-        with grafo_con_postgres(self.config.database_url) as grafo:
+        with grafo_con_postgres(
+            self.config.database_url,
+            salida=self.salida,
+            cliente_asr=self.asr,
+            descargar_audio=self.api.descargar,
+        ) as grafo:
             with self._workflow_lock:
                 self._workflow = grafo
                 self._workflow_listo.set()
