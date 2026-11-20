@@ -53,6 +53,26 @@ def _cierre(orden_id: str, empresa: str = "propio") -> dict:
     ).model_dump(mode="json")
 
 
+def test_orden_aprobada_por_reglas_publica_motivo_nulo_y_tipos_nativos():
+    salida = SalidaCapturadora()
+    grafo = construir_grafo(checkpointer=MemorySaver(), salida=salida)
+    orden_id = "OT-EV-N-1-B-101"
+    config, _ = _iniciar(
+        grafo,
+        resumen="B-101: goteo de empaquetadura en la bomba",
+        reserva_disponible=True,
+        thread_id=orden_id,
+    )
+
+    orden = next(modelo for _, topico, modelo in salida.mensajes if topico == Topicos.ORDENES)
+    payload = json.loads(orden.model_dump_json())
+
+    assert grafo.get_state(config).values["orden_sistema"]["estado"] == "Aprobada"
+    assert payload["motivo"] is None
+    assert type(payload["detiene_equipo"]) is bool
+    assert type(payload["reduce_inyeccion"]) is bool
+
+
 def test_planificador_reanuda_orden_pendiente_y_supervisor_cierra():
     grafo = construir_grafo(checkpointer=MemorySaver())
     orden_id = "OT-EV-N-1-B-101"
@@ -105,6 +125,7 @@ def test_inspector_reanuda_y_certifica_orden_de_contratista():
     assert final["decision_inspector"] == "certificar"
     assert final["orden_sistema"]["estado"] == "Certificada"
     assert final["orden_sistema"]["monto_habilita_usd"] == 320.0
+    assert type(final["orden_sistema"]["monto_habilita_usd"]) is float
     assert grafo.get_state(config).next == ()
 
 
