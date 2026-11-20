@@ -144,6 +144,7 @@ AnalizadorEscalado = Callable[
 ]
 DescargarAudio = Callable[[str], bytes]
 MAX_REINTENTOS_REVISION = 2
+TAREA_NO_ESTANDAR = "NO-ESTANDAR"
 _FILA_PRECIO = re.compile(
     r"SVP-\d+\s*\|[^|]*\((?P<tarea>[A-Z]-[A-Z0-9-]+)\)\s*\|[^|]*\|"
     r"\s*USD\s*(?P<precio>[\d.,]+)",
@@ -259,7 +260,7 @@ def _tareas_basicas(texto: str, equipo: str) -> list[str]:
         return ["I-VIB"]
     if equipo.startswith("F-") and any(palabra in texto for palabra in ("filtro", "cartucho")):
         return ["T-F-CAR"]
-    return []
+    return [TAREA_NO_ESTANDAR]
 
 
 def _analisis_basico(
@@ -351,6 +352,15 @@ def _nodo_redactar_orden(materiales: dict) -> Callable[[WorkflowState], dict[str
             ]
             if not candidatas:
                 candidatas = [tarea for tarea in no_estandar if tarea["codigo"] == codigo]
+            if not candidatas and codigo == TAREA_NO_ESTANDAR:
+                candidatas = [
+                    {
+                        "codigo": TAREA_NO_ESTANDAR,
+                        "detiene": False,
+                        "ejecutor": "propio",
+                        "repuestos": [],
+                    }
+                ]
             if len(candidatas) != 1:
                 raise ValueError(f"La tarea {codigo} no existe o no aplica al equipo {equipo}")
             tareas.append(candidatas[0])
@@ -755,7 +765,7 @@ def _nodo_guardar_pendiente(salida: Salida | None) -> Callable[[WorkflowState], 
 
 def _nodo_publicar_orden(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
     def publicar(state: WorkflowState) -> dict[str, object]:
-        orden = _orden_sistema_desde_borrador(state, EstadoOrden.aprobada)
+        orden = _orden_sistema_desde_borrador(state, EstadoOrden.aprobada, motivo=None)
         emitida = _emitir_estado_orden(salida, orden, "aprobada")
         return {"orden_sistema": orden.model_dump(mode="json"), "orden_emitida": emitida}
 
