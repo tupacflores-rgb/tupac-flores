@@ -136,7 +136,8 @@ services:
   db:
     <<: *planta
     build:
-      context: docker/db
+      context: .
+      dockerfile: docker/db/Dockerfile
     environment:
       POSTGRES_USER: sistema
       POSTGRES_DB: sistema

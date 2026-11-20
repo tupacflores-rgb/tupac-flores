@@ -1,2 +1,3 @@
--- Se ejecuta una sola vez, al crear el volumen. El esquema de la aplicación lo aplica el agente al arrancar.
+-- Se ejecuta al crear el volumen. Python reutiliza el mismo esquema en cada arranque del agente.
 CREATE EXTENSION IF NOT EXISTS vector;
+\ir /docker-entrypoint-initdb.d/10-esquema.inc
