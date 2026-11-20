@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
+import json
+import logging
+import re
 import unicodedata
-from collections.abc import Callable, Generator
+from collections import Counter
+from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
+from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Literal, TypedDict
 
@@ -13,7 +19,15 @@ from langgraph.checkpoint.postgres import PostgresSaver
 from langgraph.graph import END, START, StateGraph
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import interrupt
-from planta_contrato import NotaCierre
+from planta_contrato import (
+    EstadoOrden,
+    NotaCierre,
+    OrdenSistema,
+    Topicos,
+)
+from planta_contrato import (
+    Repuesto as RepuestoSistema,
+)
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..conocimiento.corpus import cargar as cargar_corpus
@@ -25,7 +39,12 @@ from ..herramientas.catalogo import (
     Inventario,
     cargar_materiales,
 )
+from ..integraciones.asr import ClienteAsr
+from ..persistencia.salida import Salida
+from ..voz.numeros import numero_antes_de
 from .reglas import EvaluacionAprobacion, OrdenBorrador, RepuestoOrden, evaluar_aprobacion
+
+log = logging.getLogger("sistema.workflow")
 
 
 class WorkflowState(TypedDict, total=False):
@@ -49,8 +68,13 @@ class WorkflowState(TypedDict, total=False):
     decision_supervisor: Literal["cerrar"]
     ejecutor: Literal["propio", "contratista"]
     cierre: dict[str, object]
+    cierre_validado: dict[str, object]
     diferencias_cierre: list[dict[str, object]]
     decision_inspector: Literal["observar", "certificar"]
+    orden_sistema: dict[str, object]
+    orden_emitida: bool
+    monto_habilita_usd: float
+    numero_habilita: str
     habilita: dict[str, object]
 
 
@@ -80,10 +104,104 @@ class ResultadoRevision(BaseModel):
     repuestos_validos: list[str] = Field(default_factory=list)
 
 
+class RepuestoCierre(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    codigo: str
+    cantidad: int | None = Field(default=None, gt=0)
+
+
+class CierreValidado(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    orden_id: str
+    tecnico: str
+    empresa: str
+    transcripcion: str
+    tareas_realizadas: list[str] = Field(default_factory=list)
+    repuestos_usados: list[RepuestoCierre] = Field(default_factory=list)
+    advertencias: list[str] = Field(default_factory=list)
+
+
+class DiferenciaCierre(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    tipo: Literal[
+        "tarea_faltante",
+        "tarea_no_aprobada",
+        "repuesto_faltante",
+        "repuesto_no_aprobado",
+        "cantidad_no_verificable",
+    ]
+    codigo: str
+    cantidad_aprobada: int | None = None
+    cantidad_reportada: int | None = None
+
+
 AnalizadorEscalado = Callable[
     [dict[str, object], list[dict[str, object]]], AnalisisEscalado | dict[str, object]
 ]
+DescargarAudio = Callable[[str], bytes]
 MAX_REINTENTOS_REVISION = 2
+_FILA_PRECIO = re.compile(
+    r"SVP-\d+\s*\|[^|]*\((?P<tarea>[A-Z]-[A-Z0-9-]+)\)\s*\|[^|]*\|"
+    r"\s*USD\s*(?P<precio>[\d.,]+)",
+    re.IGNORECASE,
+)
+
+
+def cargar_precios_contrato(ruta: Path | None = None) -> dict[str, Decimal]:
+    """Lee los precios vigentes del fragmento contractual incluido en el paquete."""
+    ruta = ruta or Path(__file__).resolve().parents[1] / "datos" / "documentos" / "fragmentos.jsonl"
+    coincidencias: list[str] = []
+    with ruta.open(encoding="utf-8") as archivo:
+        for linea in archivo:
+            fragmento = json.loads(linea)
+            if fragmento.get("titulo") == "Precios vigentes 2025-2026":
+                texto = fragmento.get("texto")
+                if not isinstance(texto, str):
+                    raise ValueError("El fragmento de precios vigentes no contiene texto")
+                coincidencias.append(texto)
+    if len(coincidencias) != 1:
+        raise ValueError(f"Se esperaba un fragmento de precios vigentes; se encontraron {len(coincidencias)}")
+
+    precios: dict[str, Decimal] = {}
+    for linea in coincidencias[0].splitlines():
+        match = _FILA_PRECIO.search(linea)
+        if match is None:
+            continue
+        codigo = match.group("tarea").upper()
+        importe = match.group("precio").replace(".", "").replace(",", ".")
+        try:
+            precio = Decimal(importe)
+        except InvalidOperation as exc:
+            raise ValueError(f"Precio contractual inválido para {codigo}: {importe}") from exc
+        if not precio.is_finite() or precio < 0:
+            raise ValueError(f"Precio contractual inválido para {codigo}: {importe}")
+        if codigo in precios:
+            raise ValueError(f"Precio contractual duplicado para {codigo}")
+        precios[codigo] = precio
+    if not precios:
+        raise ValueError("El fragmento de precios vigentes no contiene tareas con precio")
+    return precios
+
+
+def calcular_monto_habilita(
+    orden: OrdenSistema,
+    cierre: CierreValidado,
+    precios_contrato: Mapping[str, Decimal],
+) -> Decimal:
+    """Suma los precios contractuales de las tareas aprobadas; no usa importes dictados en el cierre."""
+    if orden.id != cierre.orden_id:
+        raise ValueError("El cierre no corresponde a la orden certificada")
+    total = Decimal("0")
+    for tarea in orden.tareas:
+        precio = precios_contrato.get(tarea)
+        if precio is None:
+            raise ValueError(f"No hay precio contractual vigente para la tarea aprobada {tarea}")
+        total += precio
+    return total
 
 
 def validar_citas(citas: list[str], evidencia_rag: list[dict[str, object]]) -> list[str]:
@@ -383,6 +501,285 @@ def _nodo_esperar_cierre(state: WorkflowState) -> dict[str, object]:
     return {"cierre": cierre.model_dump(mode="json")}
 
 
+def _cantidad_cierre_antes_de(texto: str, inicio: int) -> int | None:
+    prefijo = texto[max(0, inicio - 100) : inicio]
+    tramo = re.split(r"[,;]", prefijo)[-1]
+    numero = numero_antes_de(tramo.split(), decimal=False)
+    if numero is None or not numero.valor.is_integer() or numero.valor <= 0:
+        return None
+    return int(numero.valor)
+
+
+def _extraer_cierre(
+    nota: NotaCierre,
+    transcripcion: str,
+    catalogo_tareas: dict[str, object],
+    inventario: dict[str, object],
+    advertencias: list[str],
+) -> CierreValidado:
+    texto = _normalizar(transcripcion)
+    tareas_reportadas: set[str] = set()
+    for clave in ("estandar", "no_estandar"):
+        tareas = catalogo_tareas.get(clave)
+        if not isinstance(tareas, list) or any(not isinstance(tarea, dict) for tarea in tareas):
+            raise ValueError(f"catalogo_tareas['{clave}'] debe ser una lista de tareas")
+        for tarea in tareas:
+            codigo, nombre = tarea.get("codigo"), tarea.get("nombre")
+            if not isinstance(codigo, str) or not isinstance(nombre, str):
+                raise ValueError(f"Cada tarea de catalogo_tareas['{clave}'] requiere codigo y nombre")
+            if _normalizar(nombre) in texto or _normalizar(codigo) in texto:
+                tareas_reportadas.add(codigo)
+
+    filas_repuestos = inventario.get("repuestos")
+    if not isinstance(filas_repuestos, list) or any(not isinstance(fila, dict) for fila in filas_repuestos):
+        raise ValueError("inventario debe contener la lista de repuestos")
+
+    repuestos_reportados: dict[str, RepuestoCierre] = {}
+    codigos_tareas = tareas_reportadas.copy()
+    for fila in filas_repuestos:
+        codigo, nombre = fila.get("codigo"), fila.get("nombre")
+        if not isinstance(codigo, str) or not isinstance(nombre, str):
+            raise ValueError("Cada repuesto del inventario requiere codigo y nombre")
+        nombre_corto = nombre.split(" (", maxsplit=1)[0]
+        inicio = texto.find(_normalizar(nombre_corto))
+        if inicio < 0:
+            inicio = texto.find(_normalizar(codigo))
+        if inicio >= 0:
+            repuestos_reportados[codigo] = RepuestoCierre(
+                codigo=codigo,
+                cantidad=_cantidad_cierre_antes_de(texto, inicio),
+            )
+
+    for match in re.finditer(r"\b([A-Z0-9]{2,4}(?:-[A-Z0-9]+){2,})\b", transcripcion, re.IGNORECASE):
+        codigo = match.group(1).upper()
+        prefijo = codigo.split("-", maxsplit=1)[0]
+        if prefijo in {"OT", "EV", "T", "I"} or codigo in codigos_tareas:
+            continue
+        if codigo not in repuestos_reportados:
+            repuestos_reportados[codigo] = RepuestoCierre(
+                codigo=codigo,
+                cantidad=_cantidad_cierre_antes_de(_normalizar(transcripcion), match.start()),
+            )
+
+    return CierreValidado(
+        id=nota.id,
+        orden_id=nota.orden_id,
+        tecnico=nota.tecnico,
+        empresa=nota.empresa,
+        transcripcion=transcripcion,
+        tareas_realizadas=sorted(tareas_reportadas),
+        repuestos_usados=list(repuestos_reportados.values()),
+        advertencias=advertencias,
+    )
+
+
+def _nodo_interpretar_cierre(
+    cliente_asr: ClienteAsr | None,
+    descargar_audio: DescargarAudio | None,
+) -> Callable[[WorkflowState], dict[str, object]]:
+    def interpretar(state: WorkflowState) -> dict[str, object]:
+        nota = NotaCierre.model_validate(state.get("cierre"))
+        transcripcion = ""
+        advertencias: list[str] = []
+        if nota.audio_url:
+            if cliente_asr is None or descargar_audio is None:
+                raise RuntimeError(
+                    "interpretar_cierre requiere cliente_asr y descargar_audio "
+                    "para procesar NotaCierre.audio_url"
+                )
+            audio = descargar_audio(nota.audio_url)
+            if not audio:
+                raise ValueError(f"El audio del cierre {nota.id} está vacío")
+            transcripcion = cliente_asr.transcribir(audio).texto
+            if not transcripcion.strip():
+                advertencias.append(f"El ASR no produjo texto para el cierre {nota.id}.")
+        else:
+            advertencias.append(
+                "NotaCierre no contiene audio_url; no se pudieron extraer tareas ni repuestos."
+            )
+
+        catalogo_tareas = state.get("catalogo_tareas")
+        inventario = state.get("inventario")
+        if not isinstance(catalogo_tareas, dict) or not isinstance(inventario, dict):
+            raise ValueError("El estado requiere catalogo_tareas e inventario para interpretar el cierre")
+        cierre = _extraer_cierre(nota, transcripcion, catalogo_tareas, inventario, advertencias)
+        return {"cierre_validado": cierre.model_dump(mode="json")}
+
+    return interpretar
+
+
+def _diferencias_cierre(orden: OrdenSistema, cierre: CierreValidado) -> list[DiferenciaCierre]:
+    tareas_aprobadas = Counter(orden.tareas)
+    tareas_reportadas = Counter(cierre.tareas_realizadas)
+    diferencias: list[DiferenciaCierre] = []
+    for codigo in sorted(tareas_aprobadas.keys() | tareas_reportadas.keys()):
+        aprobada = tareas_aprobadas[codigo]
+        reportada = tareas_reportadas[codigo]
+        if aprobada > reportada:
+            diferencias.append(
+                DiferenciaCierre(
+                    tipo="tarea_faltante",
+                    codigo=codigo,
+                    cantidad_aprobada=aprobada,
+                    cantidad_reportada=reportada,
+                )
+            )
+        elif reportada > aprobada:
+            diferencias.append(
+                DiferenciaCierre(
+                    tipo="tarea_no_aprobada",
+                    codigo=codigo,
+                    cantidad_aprobada=aprobada,
+                    cantidad_reportada=reportada,
+                )
+            )
+
+    cantidades_aprobadas: Counter[str] = Counter()
+    for repuesto in orden.repuestos:
+        if not repuesto.cantidad.is_integer() or repuesto.cantidad <= 0:
+            raise ValueError(f"Cantidad aprobada inválida para el repuesto {repuesto.codigo}")
+        cantidades_aprobadas[repuesto.codigo] += int(repuesto.cantidad)
+    cantidades_reportadas: Counter[str] = Counter()
+    cantidades_desconocidas: set[str] = set()
+    for repuesto in cierre.repuestos_usados:
+        if repuesto.cantidad is None:
+            cantidades_desconocidas.add(repuesto.codigo)
+        else:
+            cantidades_reportadas[repuesto.codigo] += repuesto.cantidad
+
+    codigos_repuestos = cantidades_aprobadas.keys() | cantidades_reportadas.keys() | cantidades_desconocidas
+    for codigo in sorted(codigos_repuestos):
+        aprobada = cantidades_aprobadas[codigo]
+        if codigo in cantidades_desconocidas:
+            diferencias.append(
+                DiferenciaCierre(
+                    tipo="cantidad_no_verificable",
+                    codigo=codigo,
+                    cantidad_aprobada=aprobada,
+                )
+            )
+            continue
+        reportada = cantidades_reportadas[codigo]
+        if aprobada > reportada:
+            diferencias.append(
+                DiferenciaCierre(
+                    tipo="repuesto_faltante",
+                    codigo=codigo,
+                    cantidad_aprobada=aprobada,
+                    cantidad_reportada=reportada,
+                )
+            )
+        elif reportada > aprobada:
+            diferencias.append(
+                DiferenciaCierre(
+                    tipo="repuesto_no_aprobado",
+                    codigo=codigo,
+                    cantidad_aprobada=aprobada,
+                    cantidad_reportada=reportada,
+                )
+            )
+    return diferencias
+
+
+def _nodo_comparar_cierre(state: WorkflowState) -> dict[str, object]:
+    orden = OrdenSistema.model_validate(state.get("orden_sistema"))
+    cierre = CierreValidado.model_validate(state.get("cierre_validado"))
+    if orden.id != cierre.orden_id:
+        raise ValueError("El cierre no corresponde a la OrdenSistema aprobada")
+    diferencias = _diferencias_cierre(orden, cierre)
+    return {"diferencias_cierre": [diferencia.model_dump(mode="python") for diferencia in diferencias]}
+
+
+def _nodo_publicar_orden(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def publicar(state: WorkflowState) -> dict[str, object]:
+        orden_borrador = OrdenBorrador.model_validate(state.get("orden"))
+        evento = _evento_dict(state.get("evento"))
+        equipo = evento.get("equipo")
+        if not isinstance(equipo, str) or not equipo:
+            raise ValueError("publicar_orden requiere el equipo del evento")
+        orden_sistema = OrdenSistema(
+            id=orden_borrador.orden_id,
+            ts=datetime.now(UTC),
+            estado=EstadoOrden.aprobada,
+            equipo=equipo,
+            evento_ids=orden_borrador.evento_ids,
+            tareas=orden_borrador.tareas,
+            detiene_equipo=orden_borrador.detiene_equipo,
+            reduce_inyeccion=orden_borrador.reduce_inyeccion,
+            ejecutor="propio" if orden_borrador.ejecutor == "propio" else "Servipat",
+            repuestos=[
+                RepuestoSistema(codigo=repuesto.codigo, cantidad=float(repuesto.cantidad))
+                for repuesto in orden_borrador.repuestos
+            ],
+        )
+        if salida is None:
+            log.warning("publicar_orden no emite %s: no se inyectó Salida", orden_sistema.id)
+            emitida = False
+        else:
+            emitida = salida.emitir(
+                f"{orden_sistema.id}:aprobada",
+                Topicos.ORDENES,
+                orden_sistema,
+            )
+            if not emitida:
+                log.warning("OrdenSistema %s quedó pendiente en la cola de salida", orden_sistema.id)
+        return {
+            "orden_sistema": orden_sistema.model_dump(mode="json"),
+            "orden_emitida": emitida,
+        }
+
+    return publicar
+
+
+def _nodo_calcular_habilita(
+    precios_contrato: Mapping[str, Decimal],
+) -> Callable[[WorkflowState], dict[str, object]]:
+    def calcular(state: WorkflowState) -> dict[str, object]:
+        orden = OrdenSistema.model_validate(state.get("orden_sistema"))
+        cierre = CierreValidado.model_validate(state.get("cierre_validado"))
+        monto = calcular_monto_habilita(orden, cierre, precios_contrato)
+        return {"monto_habilita_usd": float(monto)}
+
+    return calcular
+
+
+def _nodo_emitir_habilita(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def emitir(state: WorkflowState) -> dict[str, object]:
+        orden = OrdenSistema.model_validate(state.get("orden_sistema"))
+        monto = state.get("monto_habilita_usd")
+        if isinstance(monto, bool) or not isinstance(monto, (float, int)) or monto < 0:
+            raise ValueError("emitir_habilita requiere un monto no negativo")
+        numero = f"HAB-{orden.id}"
+        datos = orden.model_dump(mode="python")
+        datos.update(
+            {
+                "estado": EstadoOrden.certificada,
+                "habilita": numero,
+                "monto_habilita_usd": float(monto),
+                "ts": datetime.now(UTC),
+            }
+        )
+        certificada = OrdenSistema.model_validate(datos)
+        if salida is None:
+            log.warning("emitir_habilita no emite %s: no se inyectó Salida", certificada.id)
+        else:
+            emitida = salida.emitir(
+                f"{certificada.id}:certificada",
+                Topicos.ORDENES,
+                certificada,
+            )
+            if not emitida:
+                log.warning("Habilita %s quedó pendiente en la cola de salida", numero)
+        payload = certificada.model_dump(mode="json")
+        return {
+            "orden_sistema": payload,
+            "numero_habilita": numero,
+            "habilita": payload,
+        }
+
+    return emitir
+
+
 def _stub(nombre: str) -> Callable[[WorkflowState], dict[str, object]]:
     def nodo(_: WorkflowState) -> dict[str, object]:
         print(nombre)
@@ -441,12 +838,17 @@ def _ruta_decision_inspector(state: WorkflowState) -> str:
 
 def construir_grafo(
     checkpointer: BaseCheckpointSaver | None = None,
+    salida: Salida | None = None,
+    cliente_asr: ClienteAsr | None = None,
     *,
+    descargar_audio: DescargarAudio | None = None,
+    precios_contrato: Mapping[str, Decimal] | None = None,
     materiales: dict | None = None,
     recuperador: Recuperador | None = None,
     analizador: AnalizadorEscalado | None = None,
 ) -> CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState]:
     materiales = cargar_materiales() if materiales is None else materiales
+    precios_contrato = cargar_precios_contrato() if precios_contrato is None else precios_contrato
     if recuperador is None:
         directorio_corpus = Path(__file__).resolve().parents[1] / "datos" / "documentos"
         recuperador = Recuperador(cargar_corpus(directorio_corpus))
@@ -458,13 +860,8 @@ def construir_grafo(
         "guardar_aprobada",
         "guardar_pendiente",
         "guardar_rechazo",
-        "publicar_orden",
-        "interpretar_cierre",
-        "comparar_cierre",
         "cerrar_orden",
         "guardar_observada",
-        "calcular_habilita",
-        "emitir_habilita",
     )
     for nombre in nodos_stub:
         builder.add_node(nombre, _stub(nombre))
@@ -473,6 +870,11 @@ def construir_grafo(
     builder.add_node("redactar_orden", _nodo_redactar_orden(materiales))
     builder.add_node("revisar_orden", _nodo_revisar_orden(materiales))
     builder.add_node("evaluar_aprobacion", _nodo_evaluar_aprobacion)
+    builder.add_node("publicar_orden", _nodo_publicar_orden(salida))
+    builder.add_node("interpretar_cierre", _nodo_interpretar_cierre(cliente_asr, descargar_audio))
+    builder.add_node("comparar_cierre", _nodo_comparar_cierre)
+    builder.add_node("calcular_habilita", _nodo_calcular_habilita(precios_contrato))
+    builder.add_node("emitir_habilita", _nodo_emitir_habilita(salida))
     builder.add_node("esperar_decision", _nodo_esperar_decision)
     builder.add_node("esperar_cierre", _nodo_esperar_cierre)
     builder.add_node("esperar_nuevo_cierre", _nodo_esperar_cierre)
@@ -547,8 +949,19 @@ def construir_grafo(
 @contextmanager
 def grafo_con_postgres(
     database_url: str,
+    salida: Salida | None = None,
+    cliente_asr: ClienteAsr | None = None,
+    *,
+    descargar_audio: DescargarAudio | None = None,
+    precios_contrato: Mapping[str, Decimal] | None = None,
 ) -> Generator[CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState], None, None]:
     """Abre el saver, prepara sus tablas y mantiene vivo el grafo compilado."""
     with PostgresSaver.from_conn_string(database_url) as checkpointer:
         checkpointer.setup()
-        yield construir_grafo(checkpointer)
+        yield construir_grafo(
+            checkpointer,
+            salida,
+            cliente_asr,
+            descargar_audio=descargar_audio,
+            precios_contrato=precios_contrato,
+        )
