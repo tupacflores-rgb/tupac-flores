@@ -17,6 +17,8 @@ from .esquema import ESQUEMA
 
 log = logging.getLogger("sistema.db")
 
+TABLAS_REQUERIDAS = frozenset({"nota", "respuesta", "dialogo", "mensaje_nota", "consumo", "foto", "salida"})
+
 
 class Base:
     def __init__(self, url: str):
@@ -36,12 +38,25 @@ class Base:
             cur = con.execute(sql, params)
             return cur.fetchall() if cur.description else []
 
+    def setup(self) -> None:
+        """Aplica y verifica el esquema antes de habilitar los workers de la aplicación."""
+        with self.conectar() as con:
+            con.execute(ESQUEMA, prepare=False)
+            filas = con.execute(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = current_schema() AND table_name = ANY(%s)",
+                (sorted(TABLAS_REQUERIDAS),),
+            ).fetchall()
+        existentes = {nombre for (nombre,) in filas}
+        faltantes = TABLAS_REQUERIDAS - existentes
+        if faltantes:
+            raise RuntimeError(f"El esquema de PostgreSQL quedó incompleto: {', '.join(sorted(faltantes))}")
+
     def iniciar(self, parar: threading.Event, reintento_s: float = 1.0) -> None:
         """Aplica el esquema. Reintenta hasta que la base responda (puede arrancar después del agente)."""
         while not parar.is_set():
             try:
-                with self.conectar() as con:
-                    con.execute(ESQUEMA)
+                self.setup()
                 self.lista.set()
                 log.info("base lista")
                 return
