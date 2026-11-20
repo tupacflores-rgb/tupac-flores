@@ -244,16 +244,19 @@ def _normalizar(texto: str) -> str:
 def _tareas_basicas(texto: str, equipo: str) -> list[str]:
     texto = _normalizar(texto)
     if equipo.startswith("B-"):
+        if "f03" in texto or any(palabra in texto for palabra in ("rodamiento", "cigueñal", "cojinete")):
+            return ["T-B-ROD"]
         if any(palabra in texto for palabra in ("empaquetadura", "goteo", "fuga", "reten")):
             return ["T-B-EMP"]
-        if "valv" in texto:
+        if "f02" in texto or any(palabra in texto for palabra in ("valv", "golpete", "pulsac", "martilleo")):
             return ["T-B-VAL"]
         if "correa" in texto:
             return ["T-B-COR"]
+        if any(palabra in texto for palabra in ("vibracion", "vibra", "vibrometr")):
+            return ["I-VIB"]
         if "aceite" in texto:
             return ["T-B-ACE"]
-        if "vibracion" in texto:
-            return ["I-VIB"]
+        return ["I-VIB"]
     if equipo.startswith("F-") and any(palabra in texto for palabra in ("filtro", "cartucho")):
         return ["T-F-CAR"]
     return []
@@ -690,45 +693,134 @@ def _nodo_comparar_cierre(state: WorkflowState) -> dict[str, object]:
     return {"diferencias_cierre": [diferencia.model_dump(mode="python") for diferencia in diferencias]}
 
 
+def _orden_sistema_desde_borrador(
+    state: WorkflowState,
+    estado: EstadoOrden,
+    motivo: str | None = None,
+) -> OrdenSistema:
+    orden_borrador = OrdenBorrador.model_validate(state.get("orden"))
+    evento = _evento_dict(state.get("evento"))
+    equipo = evento.get("equipo")
+    if not isinstance(equipo, str) or not equipo:
+        raise ValueError("El Evento Escalado requiere equipo para publicar la orden")
+    return OrdenSistema(
+        id=orden_borrador.orden_id,
+        ts=datetime.now(UTC),
+        estado=estado,
+        equipo=equipo,
+        evento_ids=orden_borrador.evento_ids,
+        tareas=orden_borrador.tareas,
+        detiene_equipo=orden_borrador.detiene_equipo,
+        reduce_inyeccion=orden_borrador.reduce_inyeccion,
+        ejecutor="propio" if orden_borrador.ejecutor == "propio" else "Servipat",
+        repuestos=[
+            RepuestoSistema(codigo=repuesto.codigo, cantidad=float(repuesto.cantidad))
+            for repuesto in orden_borrador.repuestos
+        ],
+        motivo=motivo,
+    )
+
+
+def _orden_con_estado(
+    orden: OrdenSistema,
+    estado: EstadoOrden,
+    motivo: str | None = None,
+) -> OrdenSistema:
+    datos = orden.model_dump(mode="python")
+    datos.update({"estado": estado, "motivo": motivo, "ts": datetime.now(UTC)})
+    return OrdenSistema.model_validate(datos)
+
+
+def _emitir_estado_orden(salida: Salida | None, orden: OrdenSistema, clave: str) -> bool:
+    if salida is None:
+        log.warning("No se emite la orden %s (%s): no se inyectó Salida", orden.id, clave)
+        return False
+    emitida = salida.emitir(f"{orden.id}:{clave}", Topicos.ORDENES, orden)
+    if not emitida:
+        log.warning("OrdenSistema %s (%s) quedó pendiente en la cola de salida", orden.id, clave)
+    return emitida
+
+
+def _nodo_guardar_pendiente(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def guardar(state: WorkflowState) -> dict[str, object]:
+        motivo = state.get("motivo_pendiente")
+        if not isinstance(motivo, str) or not motivo:
+            raise ValueError("guardar_pendiente requiere motivo_pendiente")
+        orden = _orden_sistema_desde_borrador(state, EstadoOrden.pendiente, motivo)
+        emitida = _emitir_estado_orden(salida, orden, "pendiente")
+        return {"orden_sistema": orden.model_dump(mode="json"), "orden_emitida": emitida}
+
+    return guardar
+
+
 def _nodo_publicar_orden(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
     def publicar(state: WorkflowState) -> dict[str, object]:
-        orden_borrador = OrdenBorrador.model_validate(state.get("orden"))
-        evento = _evento_dict(state.get("evento"))
-        equipo = evento.get("equipo")
-        if not isinstance(equipo, str) or not equipo:
-            raise ValueError("publicar_orden requiere el equipo del evento")
-        orden_sistema = OrdenSistema(
-            id=orden_borrador.orden_id,
-            ts=datetime.now(UTC),
-            estado=EstadoOrden.aprobada,
-            equipo=equipo,
-            evento_ids=orden_borrador.evento_ids,
-            tareas=orden_borrador.tareas,
-            detiene_equipo=orden_borrador.detiene_equipo,
-            reduce_inyeccion=orden_borrador.reduce_inyeccion,
-            ejecutor="propio" if orden_borrador.ejecutor == "propio" else "Servipat",
-            repuestos=[
-                RepuestoSistema(codigo=repuesto.codigo, cantidad=float(repuesto.cantidad))
-                for repuesto in orden_borrador.repuestos
-            ],
-        )
-        if salida is None:
-            log.warning("publicar_orden no emite %s: no se inyectó Salida", orden_sistema.id)
-            emitida = False
-        else:
-            emitida = salida.emitir(
-                f"{orden_sistema.id}:aprobada",
-                Topicos.ORDENES,
-                orden_sistema,
-            )
-            if not emitida:
-                log.warning("OrdenSistema %s quedó pendiente en la cola de salida", orden_sistema.id)
-        return {
-            "orden_sistema": orden_sistema.model_dump(mode="json"),
-            "orden_emitida": emitida,
-        }
+        orden = _orden_sistema_desde_borrador(state, EstadoOrden.aprobada)
+        emitida = _emitir_estado_orden(salida, orden, "aprobada")
+        return {"orden_sistema": orden.model_dump(mode="json"), "orden_emitida": emitida}
 
     return publicar
+
+
+def _nodo_guardar_rechazo(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def guardar(state: WorkflowState) -> dict[str, object]:
+        if state.get("decision_planificador") != "rechazada":
+            raise ValueError("guardar_rechazo requiere decision_planificador rechazada")
+        orden = OrdenSistema.model_validate(state.get("orden_sistema"))
+        motivo = state.get("motivo_pendiente")
+        motivo_rechazo = (
+            f"Rechazada por el planificador: {motivo}"
+            if isinstance(motivo, str)
+            else ("Rechazada por el planificador.")
+        )
+        rechazada = _orden_con_estado(orden, EstadoOrden.rechazada, motivo_rechazo)
+        emitida = _emitir_estado_orden(salida, rechazada, "rechazada")
+        return {"orden_sistema": rechazada.model_dump(mode="json"), "orden_emitida": emitida}
+
+    return guardar
+
+
+def _nodo_marcar_ejecutada(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def marcar(state: WorkflowState) -> dict[str, object]:
+        orden = OrdenSistema.model_validate(state.get("orden_sistema"))
+        cierre = NotaCierre.model_validate(state.get("cierre"))
+        if cierre.orden_id != orden.id:
+            raise ValueError("El cierre no corresponde a la OrdenSistema aprobada")
+        ejecutada = _orden_con_estado(orden, EstadoOrden.ejecutada)
+        emitida = _emitir_estado_orden(salida, ejecutada, f"ejecutada:{cierre.id}")
+        return {"orden_sistema": ejecutada.model_dump(mode="json"), "orden_emitida": emitida}
+
+    return marcar
+
+
+def _nodo_cerrar_orden(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def cerrar(state: WorkflowState) -> dict[str, object]:
+        if state.get("decision_supervisor") != "cerrar":
+            raise ValueError("cerrar_orden requiere decision_supervisor cerrar")
+        orden = OrdenSistema.model_validate(state.get("orden_sistema"))
+        cierre = NotaCierre.model_validate(state.get("cierre"))
+        cerrada = _orden_con_estado(orden, EstadoOrden.cerrada)
+        emitida = _emitir_estado_orden(salida, cerrada, f"cerrada:{cierre.id}")
+        return {"orden_sistema": cerrada.model_dump(mode="json"), "orden_emitida": emitida}
+
+    return cerrar
+
+
+def _nodo_guardar_observada(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def guardar(state: WorkflowState) -> dict[str, object]:
+        if state.get("decision_inspector") != "observar":
+            raise ValueError("guardar_observada requiere decision_inspector observar")
+        orden = OrdenSistema.model_validate(state.get("orden_sistema"))
+        cierre = CierreValidado.model_validate(state.get("cierre_validado"))
+        diferencias = [DiferenciaCierre.model_validate(item) for item in state.get("diferencias_cierre", [])]
+        motivo = "; ".join(f"{item.tipo}: {item.codigo}" for item in diferencias)
+        if not motivo:
+            motivo = "Observación solicitada por el inspector."
+        observada = _orden_con_estado(orden, EstadoOrden.observada, motivo)
+        emitida = _emitir_estado_orden(salida, observada, f"observada:{cierre.id}")
+        return {"orden_sistema": observada.model_dump(mode="json"), "orden_emitida": emitida}
+
+    return guardar
 
 
 def _nodo_calcular_habilita(
@@ -858,10 +950,6 @@ def construir_grafo(
         "analizar_fotos",
         "rechazar_orden",
         "guardar_aprobada",
-        "guardar_pendiente",
-        "guardar_rechazo",
-        "cerrar_orden",
-        "guardar_observada",
     )
     for nombre in nodos_stub:
         builder.add_node(nombre, _stub(nombre))
@@ -870,11 +958,16 @@ def construir_grafo(
     builder.add_node("redactar_orden", _nodo_redactar_orden(materiales))
     builder.add_node("revisar_orden", _nodo_revisar_orden(materiales))
     builder.add_node("evaluar_aprobacion", _nodo_evaluar_aprobacion)
+    builder.add_node("guardar_pendiente", _nodo_guardar_pendiente(salida))
+    builder.add_node("guardar_rechazo", _nodo_guardar_rechazo(salida))
     builder.add_node("publicar_orden", _nodo_publicar_orden(salida))
+    builder.add_node("marcar_ejecutada", _nodo_marcar_ejecutada(salida))
     builder.add_node("interpretar_cierre", _nodo_interpretar_cierre(cliente_asr, descargar_audio))
     builder.add_node("comparar_cierre", _nodo_comparar_cierre)
     builder.add_node("calcular_habilita", _nodo_calcular_habilita(precios_contrato))
     builder.add_node("emitir_habilita", _nodo_emitir_habilita(salida))
+    builder.add_node("cerrar_orden", _nodo_cerrar_orden(salida))
+    builder.add_node("guardar_observada", _nodo_guardar_observada(salida))
     builder.add_node("esperar_decision", _nodo_esperar_decision)
     builder.add_node("esperar_cierre", _nodo_esperar_cierre)
     builder.add_node("esperar_nuevo_cierre", _nodo_esperar_cierre)
@@ -917,8 +1010,9 @@ def construir_grafo(
     builder.add_edge("guardar_rechazo", END)
 
     builder.add_edge("publicar_orden", "esperar_cierre")
-    builder.add_edge("esperar_cierre", "interpretar_cierre")
-    builder.add_edge("esperar_nuevo_cierre", "interpretar_cierre")
+    builder.add_edge("esperar_cierre", "marcar_ejecutada")
+    builder.add_edge("esperar_nuevo_cierre", "marcar_ejecutada")
+    builder.add_edge("marcar_ejecutada", "interpretar_cierre")
     builder.add_edge("interpretar_cierre", "comparar_cierre")
     builder.add_conditional_edges(
         "comparar_cierre",
