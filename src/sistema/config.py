@@ -44,6 +44,7 @@ class Config:
     emb_url: str = "http://emb:8000"  # búsqueda densa (pgvector); vacío = solo léxico
     journal_dir: str = "/var/lib/sistema/journal"
     fotos_dir: str = "/var/lib/sistema/fotos"  # volumen: las fotos se descargan acá, con su sha256
+    nvidia_vision_url: str = ""
 
     # Enlace: se sondea con un CONNECT a través del proxy. Caído = el proxy corta sin responder.
     enlace_proxy: str = "enlace:3128"
@@ -98,6 +99,7 @@ class Config:
             emb_url=e.get("EMB_URL", d.emb_url).rstrip("/"),
             journal_dir=e.get("JOURNAL_DIR", d.journal_dir),
             fotos_dir=e.get("FOTOS_DIR", d.fotos_dir),
+            nvidia_vision_url=e.get("NVIDIA_VISION_URL", d.nvidia_vision_url).strip(),
             enlace_proxy=e.get("ENLACE_PROXY", d.enlace_proxy),
             enlace_destino=e.get("ENLACE_DESTINO", d.enlace_destino),
             latido_s=float(e.get("LATIDO_S", d.latido_s)),
