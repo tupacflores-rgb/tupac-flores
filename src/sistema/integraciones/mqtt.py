@@ -21,6 +21,11 @@ from planta_contrato import Topicos
 from pydantic import BaseModel
 
 from ..config import Config
+from ..workflow.topicos import (
+    TOPICO_DECISION_INSPECTOR,
+    TOPICO_DECISION_PLANIFICADOR,
+    TOPICO_DECISION_SUPERVISOR,
+)
 
 log = logging.getLogger("sistema.mqtt")
 
@@ -28,6 +33,9 @@ SUSCRIPCIONES: list[tuple[str, int]] = [
     (Topicos.RECORRIDAS, 1),
     (Topicos.RESPUESTAS, 1),
     (Topicos.CIERRES, 1),
+    (TOPICO_DECISION_PLANIFICADOR, 1),
+    (TOPICO_DECISION_SUPERVISOR, 1),
+    (TOPICO_DECISION_INSPECTOR, 1),
     ("planta/sensores/#", 0),
 ]
 

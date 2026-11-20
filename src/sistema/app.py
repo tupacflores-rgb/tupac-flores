@@ -20,7 +20,9 @@ import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
-from planta_contrato import NotaRecorrida, RespuestaOperador, Topicos
+from langgraph.graph.state import CompiledStateGraph
+from langgraph.types import Command
+from planta_contrato import EventoSistema, NotaCierre, NotaRecorrida, RespuestaOperador, TipoEvento, Topicos
 from pydantic import ValidationError
 
 from .config import Config
@@ -45,6 +47,13 @@ from .respaldo import RespaldoLLM
 from .sincronizacion import Sincronizacion
 from .supervisor import Supervisor
 from .voz.dialogo import Dialogo, Estado, ts_de
+from .workflow.decisiones import Decision, DecisionInspector, DecisionPlanificador, DecisionSupervisor
+from .workflow.grafo import WorkflowState, grafo_con_postgres
+from .workflow.topicos import (
+    TOPICO_DECISION_INSPECTOR,
+    TOPICO_DECISION_PLANIFICADOR,
+    TOPICO_DECISION_SUPERVISOR,
+)
 
 log = logging.getLogger("sistema.app")
 
@@ -53,6 +62,9 @@ class Agente:
     def __init__(self, config: Config):
         self.config = config
         self.sup = Supervisor()
+        self._workflow: CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState] | None = None
+        self._workflow_listo = threading.Event()
+        self._workflow_lock = threading.RLock()
         self.estado = EstadoCompartido()
         self.reloj = RelojPlanta()
         self.mqtt = ClienteMqtt(config)
@@ -148,6 +160,8 @@ class Agente:
         )
         if eventos:
             self.salida.emitir_lote([(e.id, Topicos.EVENTOS, e) for e in eventos])
+            for evento in eventos:
+                self._iniciar_workflow(evento)
         self.sync.registrar(est.nota_id)
 
     # -- estado de arranque -------------------------------------------------------------------------
@@ -165,6 +179,23 @@ class Agente:
     def _worker_base(self, parar: threading.Event) -> None:
         self.base.iniciar(parar)
         parar.wait()
+
+    def _worker_workflow(self, parar: threading.Event) -> None:
+        while not parar.is_set() and not self.base.lista.wait(0.5):
+            pass
+        if parar.is_set():
+            return
+
+        with grafo_con_postgres(self.config.database_url) as grafo:
+            with self._workflow_lock:
+                self._workflow = grafo
+                self._workflow_listo.set()
+            try:
+                parar.wait()
+            finally:
+                with self._workflow_lock:
+                    self._workflow = None
+                    self._workflow_listo.clear()
 
     def _worker_reloj(self, parar: threading.Event) -> None:
         while not parar.is_set():
@@ -235,7 +266,136 @@ class Agente:
         elif e.topico == Topicos.RESPUESTAS:
             self._recibir_respuesta(datos)
         elif e.topico == Topicos.CIERRES:
-            log.info("cierre recibido (fuera del alcance de la Entrega 1): %s", datos.get("id"))
+            self._recibir_cierre(datos)
+        elif e.topico == TOPICO_DECISION_PLANIFICADOR:
+            self._recibir_decision(datos, DecisionPlanificador, "esperar_decision")
+        elif e.topico == TOPICO_DECISION_SUPERVISOR:
+            self._recibir_decision(datos, DecisionSupervisor, "esperar_supervisor")
+        elif e.topico == TOPICO_DECISION_INSPECTOR:
+            self._recibir_decision(datos, DecisionInspector, "esperar_inspector")
+
+    def _esperar_workflow(self) -> CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState]:
+        while not self._workflow_listo.wait(0.5):
+            if self.sup.parar.is_set():
+                raise RuntimeError("La aplicación se está deteniendo; el workflow no está disponible")
+        with self._workflow_lock:
+            if self._workflow is None:
+                raise RuntimeError("El workflow dejó de estar disponible")
+            return self._workflow
+
+    def _reserva_disponible(self, equipo: str | None) -> bool:
+        if self.definicion is None:
+            log.warning("no se pudo verificar la reserva: falta la definición de planta")
+            return False
+        reservas = [
+            item
+            for item in self.definicion.get("equipos", [])
+            if item.get("tipo") == "bomba"
+            and any("reserva" in nombre.casefold() for nombre in item.get("nombres", []))
+        ]
+        if len(reservas) != 1 or reservas[0].get("tag") == equipo:
+            log.warning("no se pudo confirmar una bomba de reserva disponible para %s", equipo)
+            return False
+        try:
+            bombas = self.api.estado().get("bombas")
+        except Exception:
+            log.exception("no se pudo consultar la disponibilidad de la bomba de reserva")
+            return False
+        tag_reserva = reservas[0].get("tag")
+        bomba = (
+            next(
+                (item for item in bombas if isinstance(item, dict) and item.get("tag") == tag_reserva),
+                None,
+            )
+            if isinstance(bombas, list)
+            else None
+        )
+        if not isinstance(bomba, dict) or not isinstance(bomba.get("estado"), str):
+            log.warning("la API no informó el estado de la bomba de reserva %s", tag_reserva)
+            return False
+        return bomba["estado"] == "parada"
+
+    def _iniciar_workflow(self, evento: EventoSistema) -> None:
+        if evento.tipo != TipoEvento.escalado:
+            return
+        orden_id = f"OT-{evento.id}"
+        config = {"configurable": {"thread_id": orden_id}}
+        reserva_disponible = self._reserva_disponible(evento.equipo)
+        grafo = self._esperar_workflow()
+        with self._workflow_lock:
+            estado = grafo.get_state(config)
+            if estado.metadata is not None:
+                log.info("workflow %s ya iniciado; se ignora el Escalado duplicado", orden_id)
+                return
+            grafo.invoke(
+                {
+                    "evento": evento.model_dump(mode="json"),
+                    "correlation_id": orden_id,
+                    "reserva_disponible": reserva_disponible,
+                },
+                config=config,
+            )
+
+    def _reanudar_workflow(
+        self,
+        orden_id: str,
+        respuesta: dict[str, object],
+        nodo_esperado: str | tuple[str, ...],
+    ) -> None:
+        config = {"configurable": {"thread_id": orden_id}}
+        grafo = self._esperar_workflow()
+        with self._workflow_lock:
+            estado = grafo.get_state(config)
+            if estado.metadata is None:
+                log.warning("se descarta decisión para la orden %s: thread_id inexistente", orden_id)
+                return
+            if not estado.next:
+                log.info("se descarta decisión para la orden %s: el workflow ya terminó", orden_id)
+                return
+            nodos_esperados = (nodo_esperado,) if isinstance(nodo_esperado, str) else nodo_esperado
+            if not any(nodo in estado.next for nodo in nodos_esperados):
+                log.warning(
+                    "se descarta mensaje para la orden %s: espera %s, estado actual %s",
+                    orden_id,
+                    nodos_esperados,
+                    estado.next,
+                )
+                return
+            grafo.invoke(Command(resume=respuesta), config=config)
+
+    def _recibir_decision(
+        self,
+        datos: dict,
+        modelo: type[Decision],
+        nodo_esperado: str,
+    ) -> None:
+        try:
+            decision = modelo.model_validate(datos)
+        except ValidationError as error:
+            log.error("decisión inválida para %s: %s", nodo_esperado, error.errors(include_url=False))
+            return
+        self._reanudar_workflow(
+            decision.orden_id,
+            {"decision": decision.decision},
+            nodo_esperado,
+        )
+
+    def _recibir_cierre(self, datos: dict) -> None:
+        try:
+            cierre = NotaCierre.model_validate(datos)
+        except ValidationError as error:
+            log.error("NotaCierre inválido: %s", error.errors(include_url=False))
+            return
+        self._reanudar_workflow(
+            cierre.orden_id,
+            cierre.model_dump(mode="json"),
+            ("esperar_cierre", "esperar_nuevo_cierre"),
+        )
+
+    def _emitir_evento(self, evento: EventoSistema) -> bool:
+        publicado = self.salida.emitir(evento.id, Topicos.EVENTOS, evento)
+        self._iniciar_workflow(evento)
+        return publicado
 
     def _precalentar_rango(self) -> None:
         """Trae el rango histórico (45 días) de lo que se dicta en campo, sin frenar el arranque."""
@@ -268,7 +428,7 @@ class Agente:
                 self._detector_sensores = DetectorSostenido.desde_definicion(
                     self.definicion,
                     self._estado_de_equipo,
-                    lambda ev: self.salida.emitir(ev.id, Topicos.EVENTOS, ev),
+                    self._emitir_evento,
                     tendencia=self.tendencia.describir,
                 )
             self._detector_sensores.procesar(json.loads(e.payload))
@@ -356,6 +516,7 @@ class Agente:
         # El latido va primero y en su propio hilo: nada de lo demás puede demorarlo.
         self.sup.lanzar("latido", self.latido.correr)
         self.sup.lanzar("base", self._worker_base)
+        self.sup.lanzar("workflow", self._worker_workflow)
         self.sup.lanzar("reloj", self._worker_reloj)
         self.sup.lanzar("enlace", self._worker_enlace)
         self.sup.lanzar("entrada", self._worker_entrada)
