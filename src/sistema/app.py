@@ -65,6 +65,7 @@ class Agente:
         self._workflow: CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState] | None = None
         self._workflow_listo = threading.Event()
         self._workflow_lock = threading.RLock()
+        self._workflow_jobs: queue.Queue[EventoSistema] = queue.Queue()
         self.estado = EstadoCompartido()
         self.reloj = RelojPlanta()
         self.mqtt = ClienteMqtt(config)
@@ -161,7 +162,7 @@ class Agente:
         if eventos:
             self.salida.emitir_lote([(e.id, Topicos.EVENTOS, e) for e in eventos])
             for evento in eventos:
-                self._iniciar_workflow(evento)
+                self._encolar_workflow(evento)
         self.sync.registrar(est.nota_id)
 
     # -- estado de arranque -------------------------------------------------------------------------
@@ -196,7 +197,17 @@ class Agente:
                 self._workflow = grafo
                 self._workflow_listo.set()
             try:
-                parar.wait()
+                while not parar.is_set() or not self._workflow_jobs.empty():
+                    try:
+                        evento = self._workflow_jobs.get(timeout=0.5)
+                    except queue.Empty:
+                        continue
+                    try:
+                        self._iniciar_workflow(evento)
+                    except Exception:
+                        log.exception("falló el workflow del evento %s", evento.id)
+                    finally:
+                        self._workflow_jobs.task_done()
             finally:
                 with self._workflow_lock:
                     self._workflow = None
@@ -341,6 +352,11 @@ class Agente:
                 config=config,
             )
 
+    def _encolar_workflow(self, evento: EventoSistema) -> None:
+        """Deja la ejecución del grafo al worker dedicado, sin retener el worker de diálogo o MQTT."""
+        if evento.tipo == TipoEvento.escalado:
+            self._workflow_jobs.put(evento)
+
     def _reanudar_workflow(
         self,
         orden_id: str,
@@ -399,7 +415,7 @@ class Agente:
 
     def _emitir_evento(self, evento: EventoSistema) -> bool:
         publicado = self.salida.emitir(evento.id, Topicos.EVENTOS, evento)
-        self._iniciar_workflow(evento)
+        self._encolar_workflow(evento)
         return publicado
 
     def _precalentar_rango(self) -> None:
