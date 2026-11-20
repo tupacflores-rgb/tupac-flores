@@ -29,7 +29,12 @@ class ClienteVision:
         if not url.strip():
             raise ValueError("NVIDIA_VISION_URL no puede estar vacía")
         self._url = url.strip()
-        self._http = http or httpx.Client()
+        self._owns_http = http is None
+        self._http = http if http is not None else httpx.Client()
+
+    def close(self) -> None:
+        if self._owns_http:
+            self._http.close()
 
     def analizar_imagen(self, bytes_imagen: bytes) -> HallazgoVisual:
         if not bytes_imagen:

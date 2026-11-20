@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import os
+import re
 import threading
 import uuid
 from datetime import UTC, datetime
@@ -54,6 +55,19 @@ def test_las_tablas_de_la_politica_de_memoria_existen_con_sus_columnas(base):
     assert {"estado", "publicado"} <= cols["salida"]
     assert {"nota_id", "carril", "pasos", "tokens_in", "tokens_out", "ms", "corte", "ts"} <= cols["consumo"]
     assert {"url", "nota_id", "estado", "sha256", "ruta", "bytes", "intentos", "ultimo_error"} <= cols["foto"]
+
+
+def test_numero_habilita_es_secuencial_e_idempotente_por_orden(base):
+    orden_1, orden_2 = _id("OT-HAB"), _id("OT-HAB")
+
+    numero_1 = base.asignar_numero_habilita(orden_1, 2099)
+    assert re.fullmatch(r"HAB-2099-\d{4}", numero_1)
+    assert base.asignar_numero_habilita(orden_1, 2099) == numero_1
+    assert base.asignar_numero_habilita(orden_1, 2100) == numero_1
+
+    numero_2 = base.asignar_numero_habilita(orden_2, 2099)
+
+    assert int(numero_2.rsplit("-", maxsplit=1)[1]) == int(numero_1.rsplit("-", maxsplit=1)[1]) + 1
 
 
 def test_registro_de_consumo(base):

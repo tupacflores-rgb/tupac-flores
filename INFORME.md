@@ -1,4 +1,4 @@
-# INFORME · Entrega 1 · Rolando Flores
+# INFORME · Entregas 1 y 2 · Rolando Flores
 
 Sistema conectado a la planta simulada de Novit: parte por voz, detección de condiciones inseguras, eventos, tools y
 MCP, RAG medido. Todo lo de esta página está medido o verificable en el repo; lo que no está hecho figura en
@@ -44,7 +44,9 @@ Una prueba informativa con 12 procesos sin límite en el host dio 45/50 y p99 19
 | Extracción del parte | Parser determinista (sin modelo), orquestado como cadena LCEL de LangChain | — | — | `src/sistema/voz/`, `src/sistema/flujo.py` | Local |
 | Interpretación de respuestas del operador | Reglas (sin modelo) | — | — | `src/sistema/voz/respuestas.py` | Local |
 | Detección de seguridad y eventos | Reglas (sin modelo) | — | — | `src/sistema/deteccion/` | Local |
-| Análisis, visión, órdenes | No hay en la Entrega 1 | — | — | — | — |
+| Análisis de escalados | Heurísticas deterministas + RAG; LangGraph | — | — | `src/sistema/workflow/grafo.py` | Local; el worker no invoca un LLM por defecto |
+| Análisis de fotos | `ClienteVision` (HTTP, imagen en base64) | API compatible de NVIDIA, configurada por `NVIDIA_VISION_URL` | Modelo determinado por el endpoint, no fijado en el repositorio | `src/sistema/integraciones/vision.py` | Opcional; fallos quedan como hallazgo pendiente |
+| Aprobación y cierre | Reglas Python puras + LangGraph HITL | — | — | `workflow/reglas.py`, `workflow/grafo.py` | Local; checkpoints en PostgreSQL |
 
 **Fuente de la cantidad de parámetros** (leída de la model card o de los metadatos del modelo, no de memoria):
 
@@ -94,7 +96,23 @@ La puerta original (RTF p99 ≤ 0,7) no se cumple con este modelo: el costo fijo
 El presupuesto por llamada es de 2.500 tokens y por nota de 12 pasos y 120 s (`control/presupuesto.py`); el consumo de cada
 nota (pasos, tokens, milisegundos, cortes) queda en la tabla `consumo`.
 
-**Costo de nube: USD 0.** No hay modelos en la nube en la Entrega 1: ninguna llamada sale del entorno de planta.
+**Entrega 1:** costo de nube USD 0. La Entrega 2 puede llamar al endpoint de visión cuando se configure; el costo y el
+modelo servido dependen de esa configuración y no están medidos ni fijados por el repositorio.
+
+## Entrega 2 · Workflow de órdenes
+
+El grafo LangGraph recorre Escalado → análisis con RAG → borrador → revisión determinista → aprobación. Las órdenes
+aprobadas o pendientes se publican por `Salida`; las pendientes esperan al planificador. Tras el cierre, el flujo compara
+lo ejecutado con lo aprobado y deriva a supervisor (personal propio) o inspector (contratista).
+
+La aplicación usa `_analisis_basico` con evidencia RAG por defecto; el modelo local `qwen3.5:2b-q4_K_M` sigue siendo
+respaldo del parser de voz y no decide tareas ni aprobaciones. Cuando existe `NVIDIA_VISION_URL`, `ClienteVision`
+analiza cada foto asociada al evento con timeout de 15 s; los fallos quedan explícitamente como hallazgo pendiente.
+
+`PostgresSaver` conserva los checkpoints por `thread_id = orden_id`, permitiendo reanudar interrupciones HITL tras un
+reinicio (escenario `sin-luz`). La numeración de Habilita también es persistente e idempotente por orden:
+`HAB-AAAA-NNNN`. El monto suma tareas según la lista contractual vigente y repuestos aprobados provistos por la
+contratista a costo de materiales más 10 %; ignora cualquier importe declarado en el cierre.
 
 ## RAG (medido)
 
@@ -189,7 +207,7 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 - **Puerta interna de 15 s no cumplida** (p99 19,3 s en el peor caso con carga al tope); causa: un trabajo del ASR en curso no
   se interrumpe.
 - **Lista cerrada de modelos:** Modelos locales de libre elección según aclaración de Novit, confirmada por el usuario el 09/11/2026.
-- **Fotos:** se descargan a un volumen con sha256 y quedan asociadas a su fila; si la descarga falla queda la URL pendiente y se reintenta. No se analizan (Entrega 2).
+- **Fotos:** se descargan a un volumen con sha256 y quedan asociadas a su fila; si la descarga falla queda la URL pendiente y se reintenta. En la Entrega 2, el workflow envía las fotos del evento a `ClienteVision` cuando `NVIDIA_VISION_URL` está configurada.
 - **Códigos de falla del fabricante → F01–F10:** la tabla `MBP-4 §6.1` se **extrae del corpus indexado** (no está escrita a mano) y la tool `traducir_codigo` (solo lectura, Pydantic estricto, también por MCP) traduce `TX-T07`↔`F09` con sus citas (MBP-4 §6.1/§6.x y el manual vigente). Un código del manual sin correspondencia en la tabla (p. ej. `TX-T09`) se informa sin inventar una.
 - **Context builder:** solo mencionado; falta el documento de diseño.
 - **Notas `VIVO-`:** sin tratamiento ni test específico (una nota sin equipos termina en `sin_filas`).

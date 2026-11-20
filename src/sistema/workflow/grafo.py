@@ -10,9 +10,9 @@ from collections import Counter
 from collections.abc import Callable, Generator, Mapping
 from contextlib import contextmanager
 from datetime import UTC, datetime
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
-from typing import Literal, TypedDict
+from typing import Literal, Protocol, TypedDict
 
 from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.postgres import PostgresSaver
@@ -40,7 +40,7 @@ from ..herramientas.catalogo import (
     cargar_materiales,
 )
 from ..integraciones.asr import ClienteAsr
-from ..persistencia.salida import Salida
+from ..integraciones.vision import ClienteVision, HallazgoVisual
 from ..voz.numeros import numero_antes_de
 from .reglas import EvaluacionAprobacion, OrdenBorrador, RepuestoOrden, evaluar_aprobacion
 
@@ -143,8 +143,17 @@ AnalizadorEscalado = Callable[
     [dict[str, object], list[dict[str, object]]], AnalisisEscalado | dict[str, object]
 ]
 DescargarAudio = Callable[[str], bytes]
+DescargarImagen = Callable[[str], bytes]
+AsignarNumeroHabilita = Callable[[str, int], str]
+
+
+class SalidaWorkflow(Protocol):
+    def emitir(self, id_: str, topico: str, modelo: BaseModel) -> bool: ...
+
+
 MAX_REINTENTOS_REVISION = 2
 TAREA_NO_ESTANDAR = "NO-ESTANDAR"
+MARGEN_REPUESTOS_CONTRATISTA = Decimal("1.10")
 _FILA_PRECIO = re.compile(
     r"SVP-\d+\s*\|[^|]*\((?P<tarea>[A-Z]-[A-Z0-9-]+)\)\s*\|[^|]*\|"
     r"\s*USD\s*(?P<precio>[\d.,]+)",
@@ -192,17 +201,50 @@ def calcular_monto_habilita(
     orden: OrdenSistema,
     cierre: CierreValidado,
     precios_contrato: Mapping[str, Decimal],
+    inventario: Mapping[str, object],
 ) -> Decimal:
-    """Suma los precios contractuales de las tareas aprobadas; no usa importes dictados en el cierre."""
+    """Calcula el monto aprobado usando precios contractuales y repuestos autorizados."""
     if orden.id != cierre.orden_id:
         raise ValueError("El cierre no corresponde a la orden certificada")
+    if orden.ejecutor == "propio":
+        raise ValueError("No corresponde emitir una Habilita para una orden de personal propio")
+
+    filas = inventario.get("repuestos")
+    if not isinstance(filas, list) or any(not isinstance(fila, dict) for fila in filas):
+        raise ValueError("inventario debe contener la lista de repuestos con sus costos")
+    costos: dict[str, Decimal] = {}
+    for fila in filas:
+        codigo, costo = fila.get("codigo"), fila.get("costo_usd")
+        if not isinstance(codigo, str) or not codigo or isinstance(costo, bool):
+            raise ValueError("Cada repuesto del inventario requiere código y costo válidos")
+        try:
+            costo_decimal = Decimal(str(costo))
+        except InvalidOperation as exc:
+            raise ValueError(f"Costo inválido para el repuesto {codigo}") from exc
+        if not costo_decimal.is_finite() or costo_decimal < 0:
+            raise ValueError(f"Costo inválido para el repuesto {codigo}")
+        if codigo in costos:
+            raise ValueError(f"Costo duplicado para el repuesto {codigo}")
+        costos[codigo] = costo_decimal
+
     total = Decimal("0")
     for tarea in orden.tareas:
         precio = precios_contrato.get(tarea)
         if precio is None:
             raise ValueError(f"No hay precio contractual vigente para la tarea aprobada {tarea}")
-        total += precio
-    return total
+        precio_decimal = Decimal(str(precio))
+        if not precio_decimal.is_finite() or precio_decimal < 0:
+            raise ValueError(f"Precio contractual inválido para la tarea {tarea}")
+        total += precio_decimal
+    for repuesto in orden.repuestos:
+        costo = costos.get(repuesto.codigo)
+        if costo is None:
+            raise ValueError(f"No hay costo de lista para el repuesto autorizado {repuesto.codigo}")
+        cantidad = Decimal(str(repuesto.cantidad))
+        if not cantidad.is_finite() or cantidad <= 0:
+            raise ValueError(f"Cantidad inválida para el repuesto autorizado {repuesto.codigo}")
+        total += costo * cantidad * MARGEN_REPUESTOS_CONTRATISTA
+    return total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 def validar_citas(citas: list[str], evidencia_rag: list[dict[str, object]]) -> list[str]:
@@ -319,6 +361,45 @@ def _nodo_analizar_escalado(
         )
         analisis = AnalisisEscalado.model_validate(propuesta)
         return {"analisis": analisis.model_dump(mode="python"), "evidencia_rag": evidencia}
+
+    return analizar
+
+
+def _nodo_analizar_fotos(
+    cliente_vision: ClienteVision | None,
+    descargar_imagen: DescargarImagen | None,
+) -> Callable[[WorkflowState], dict[str, object]]:
+    def analizar(state: WorkflowState) -> dict[str, object]:
+        fotos = state.get("fotos", [])
+        if not isinstance(fotos, list) or any(not isinstance(foto, dict) for foto in fotos):
+            raise ValueError("fotos debe ser una lista de objetos con URL")
+
+        hallazgos: list[dict[str, object]] = []
+        for foto in fotos:
+            url = foto.get("url")
+            if not isinstance(url, str) or not url:
+                raise ValueError("Cada foto del evento requiere una URL")
+            if cliente_vision is None or descargar_imagen is None:
+                error = (
+                    "cliente_vision_no_configurado"
+                    if cliente_vision is None
+                    else "descargador_no_configurado"
+                )
+                log.warning("análisis visual pendiente para %s: %s", url, error)
+                hallazgo = HallazgoVisual(estado="pendiente", severidad="desconocida", error=error)
+            else:
+                try:
+                    imagen = descargar_imagen(url)
+                    hallazgo = cliente_vision.analizar_imagen(imagen)
+                except Exception as exc:
+                    log.exception("falló el análisis visual de %s", url)
+                    hallazgo = HallazgoVisual(
+                        estado="pendiente",
+                        severidad="desconocida",
+                        error=type(exc).__name__,
+                    )
+            hallazgos.append(hallazgo.model_dump(mode="json"))
+        return {"hallazgos_visuales": hallazgos}
 
     return analizar
 
@@ -741,7 +822,7 @@ def _orden_con_estado(
     return OrdenSistema.model_validate(datos)
 
 
-def _emitir_estado_orden(salida: Salida | None, orden: OrdenSistema, clave: str) -> bool:
+def _emitir_estado_orden(salida: SalidaWorkflow | None, orden: OrdenSistema, clave: str) -> bool:
     if salida is None:
         log.warning("No se emite la orden %s (%s): no se inyectó Salida", orden.id, clave)
         return False
@@ -751,7 +832,7 @@ def _emitir_estado_orden(salida: Salida | None, orden: OrdenSistema, clave: str)
     return emitida
 
 
-def _nodo_guardar_pendiente(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_guardar_pendiente(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
     def guardar(state: WorkflowState) -> dict[str, object]:
         motivo = state.get("motivo_pendiente")
         if not isinstance(motivo, str) or not motivo:
@@ -763,34 +844,48 @@ def _nodo_guardar_pendiente(salida: Salida | None) -> Callable[[WorkflowState], 
     return guardar
 
 
-def _nodo_publicar_orden(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
-    def publicar(state: WorkflowState) -> dict[str, object]:
+def _nodo_guardar_aprobada(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
+    def guardar(state: WorkflowState) -> dict[str, object]:
+        if state.get("aprobada_por_reglas") is not True and state.get("decision_planificador") != "aprobada":
+            raise ValueError("guardar_aprobada requiere aprobación de reglas o del planificador")
         orden = _orden_sistema_desde_borrador(state, EstadoOrden.aprobada, motivo=None)
         emitida = _emitir_estado_orden(salida, orden, "aprobada")
         return {"orden_sistema": orden.model_dump(mode="json"), "orden_emitida": emitida}
 
-    return publicar
+    return guardar
 
 
-def _nodo_guardar_rechazo(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_rechazar_orden(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
     def guardar(state: WorkflowState) -> dict[str, object]:
-        if state.get("decision_planificador") != "rechazada":
-            raise ValueError("guardar_rechazo requiere decision_planificador rechazada")
-        orden = OrdenSistema.model_validate(state.get("orden_sistema"))
-        motivo = state.get("motivo_pendiente")
-        motivo_rechazo = (
-            f"Rechazada por el planificador: {motivo}"
-            if isinstance(motivo, str)
-            else ("Rechazada por el planificador.")
-        )
-        rechazada = _orden_con_estado(orden, EstadoOrden.rechazada, motivo_rechazo)
+        if state.get("decision_planificador") == "rechazada":
+            motivo = state.get("motivo_pendiente")
+            motivo_rechazo = (
+                f"Rechazada por el planificador: {motivo}"
+                if isinstance(motivo, str) and motivo
+                else "Rechazada por el planificador."
+            )
+        elif state.get("resultado_revision") == "invalida":
+            revision = state.get("revision")
+            errores = revision.get("errores") if isinstance(revision, dict) else None
+            if not isinstance(errores, list) or any(not isinstance(error, str) for error in errores):
+                raise ValueError("La revisión inválida requiere una lista de errores")
+            motivo_rechazo = "Rechazada por revisión automática: " + "; ".join(errores)
+        else:
+            raise ValueError("rechazar_orden requiere rechazo del planificador o revisión inválida")
+
+        datos_orden = state.get("orden_sistema")
+        if isinstance(datos_orden, dict):
+            orden = OrdenSistema.model_validate(datos_orden)
+            rechazada = _orden_con_estado(orden, EstadoOrden.rechazada, motivo_rechazo)
+        else:
+            rechazada = _orden_sistema_desde_borrador(state, EstadoOrden.rechazada, motivo_rechazo)
         emitida = _emitir_estado_orden(salida, rechazada, "rechazada")
         return {"orden_sistema": rechazada.model_dump(mode="json"), "orden_emitida": emitida}
 
     return guardar
 
 
-def _nodo_marcar_ejecutada(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_marcar_ejecutada(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
     def marcar(state: WorkflowState) -> dict[str, object]:
         orden = OrdenSistema.model_validate(state.get("orden_sistema"))
         cierre = NotaCierre.model_validate(state.get("cierre"))
@@ -803,7 +898,7 @@ def _nodo_marcar_ejecutada(salida: Salida | None) -> Callable[[WorkflowState], d
     return marcar
 
 
-def _nodo_cerrar_orden(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_cerrar_orden(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
     def cerrar(state: WorkflowState) -> dict[str, object]:
         if state.get("decision_supervisor") != "cerrar":
             raise ValueError("cerrar_orden requiere decision_supervisor cerrar")
@@ -816,7 +911,7 @@ def _nodo_cerrar_orden(salida: Salida | None) -> Callable[[WorkflowState], dict[
     return cerrar
 
 
-def _nodo_guardar_observada(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_guardar_observada(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
     def guardar(state: WorkflowState) -> dict[str, object]:
         if state.get("decision_inspector") != "observar":
             raise ValueError("guardar_observada requiere decision_inspector observar")
@@ -839,19 +934,29 @@ def _nodo_calcular_habilita(
     def calcular(state: WorkflowState) -> dict[str, object]:
         orden = OrdenSistema.model_validate(state.get("orden_sistema"))
         cierre = CierreValidado.model_validate(state.get("cierre_validado"))
-        monto = calcular_monto_habilita(orden, cierre, precios_contrato)
+        inventario = state.get("inventario")
+        if not isinstance(inventario, dict):
+            raise ValueError("calcular_habilita requiere inventario con costos de repuestos")
+        monto = calcular_monto_habilita(orden, cierre, precios_contrato, inventario)
         return {"monto_habilita_usd": float(monto)}
 
     return calcular
 
 
-def _nodo_emitir_habilita(salida: Salida | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_emitir_habilita(
+    salida: SalidaWorkflow | None,
+    asignar_numero_habilita: AsignarNumeroHabilita | None,
+) -> Callable[[WorkflowState], dict[str, object]]:
     def emitir(state: WorkflowState) -> dict[str, object]:
         orden = OrdenSistema.model_validate(state.get("orden_sistema"))
         monto = state.get("monto_habilita_usd")
         if isinstance(monto, bool) or not isinstance(monto, (float, int)) or monto < 0:
             raise ValueError("emitir_habilita requiere un monto no negativo")
-        numero = f"HAB-{orden.id}"
+        if asignar_numero_habilita is None:
+            raise RuntimeError("emitir_habilita requiere numeración persistente por orden")
+        numero = asignar_numero_habilita(orden.id, datetime.now(UTC).year)
+        if not isinstance(numero, str) or re.fullmatch(r"HAB-\d{4}-\d{4}", numero) is None:
+            raise ValueError("El asignador devolvió un número de Habilita inválido")
         datos = orden.model_dump(mode="python")
         datos.update(
             {
@@ -882,14 +987,6 @@ def _nodo_emitir_habilita(salida: Salida | None) -> Callable[[WorkflowState], di
     return emitir
 
 
-def _stub(nombre: str) -> Callable[[WorkflowState], dict[str, object]]:
-    def nodo(_: WorkflowState) -> dict[str, object]:
-        print(nombre)
-        return {}
-
-    return nodo
-
-
 def _ruta_revision(state: WorkflowState) -> str:
     resultado = state.get("resultado_revision")
     reintentos = state.get("reintentos_revision")
@@ -914,9 +1011,9 @@ def _ruta_aprobacion_reglas(state: WorkflowState) -> str:
 def _ruta_decision_planificador(state: WorkflowState) -> str:
     decision = state.get("decision_planificador")
     if decision == "aprobada":
-        return "publicar_orden"
+        return "guardar_aprobada"
     if decision == "rechazada":
-        return "guardar_rechazo"
+        return "rechazar_orden"
     raise ValueError("esperar_decision requiere decision_planificador válida")
 
 
@@ -940,10 +1037,13 @@ def _ruta_decision_inspector(state: WorkflowState) -> str:
 
 def construir_grafo(
     checkpointer: BaseCheckpointSaver | None = None,
-    salida: Salida | None = None,
+    salida: SalidaWorkflow | None = None,
     cliente_asr: ClienteAsr | None = None,
     *,
     descargar_audio: DescargarAudio | None = None,
+    cliente_vision: ClienteVision | None = None,
+    descargar_imagen: DescargarImagen | None = None,
+    asignar_numero_habilita: AsignarNumeroHabilita | None = None,
     precios_contrato: Mapping[str, Decimal] | None = None,
     materiales: dict | None = None,
     recuperador: Recuperador | None = None,
@@ -956,26 +1056,19 @@ def construir_grafo(
         recuperador = Recuperador(cargar_corpus(directorio_corpus))
 
     builder = StateGraph(WorkflowState)
-    nodos_stub = (
-        "analizar_fotos",
-        "rechazar_orden",
-        "guardar_aprobada",
-    )
-    for nombre in nodos_stub:
-        builder.add_node(nombre, _stub(nombre))
-
+    builder.add_node("analizar_fotos", _nodo_analizar_fotos(cliente_vision, descargar_imagen))
     builder.add_node("analizar_escalado", _nodo_analizar_escalado(recuperador, analizador))
     builder.add_node("redactar_orden", _nodo_redactar_orden(materiales))
     builder.add_node("revisar_orden", _nodo_revisar_orden(materiales))
     builder.add_node("evaluar_aprobacion", _nodo_evaluar_aprobacion)
     builder.add_node("guardar_pendiente", _nodo_guardar_pendiente(salida))
-    builder.add_node("guardar_rechazo", _nodo_guardar_rechazo(salida))
-    builder.add_node("publicar_orden", _nodo_publicar_orden(salida))
+    builder.add_node("rechazar_orden", _nodo_rechazar_orden(salida))
+    builder.add_node("guardar_aprobada", _nodo_guardar_aprobada(salida))
     builder.add_node("marcar_ejecutada", _nodo_marcar_ejecutada(salida))
     builder.add_node("interpretar_cierre", _nodo_interpretar_cierre(cliente_asr, descargar_audio))
     builder.add_node("comparar_cierre", _nodo_comparar_cierre)
     builder.add_node("calcular_habilita", _nodo_calcular_habilita(precios_contrato))
-    builder.add_node("emitir_habilita", _nodo_emitir_habilita(salida))
+    builder.add_node("emitir_habilita", _nodo_emitir_habilita(salida, asignar_numero_habilita))
     builder.add_node("cerrar_orden", _nodo_cerrar_orden(salida))
     builder.add_node("guardar_observada", _nodo_guardar_observada(salida))
     builder.add_node("esperar_decision", _nodo_esperar_decision)
@@ -1007,19 +1100,17 @@ def construir_grafo(
             "guardar_pendiente": "guardar_pendiente",
         },
     )
-    builder.add_edge("guardar_aprobada", "publicar_orden")
+    builder.add_edge("guardar_aprobada", "esperar_cierre")
     builder.add_edge("guardar_pendiente", "esperar_decision")
     builder.add_conditional_edges(
         "esperar_decision",
         _ruta_decision_planificador,
         {
-            "publicar_orden": "publicar_orden",
-            "guardar_rechazo": "guardar_rechazo",
+            "guardar_aprobada": "guardar_aprobada",
+            "rechazar_orden": "rechazar_orden",
         },
     )
-    builder.add_edge("guardar_rechazo", END)
 
-    builder.add_edge("publicar_orden", "esperar_cierre")
     builder.add_edge("esperar_cierre", "marcar_ejecutada")
     builder.add_edge("esperar_nuevo_cierre", "marcar_ejecutada")
     builder.add_edge("marcar_ejecutada", "interpretar_cierre")
@@ -1053,10 +1144,13 @@ def construir_grafo(
 @contextmanager
 def grafo_con_postgres(
     database_url: str,
-    salida: Salida | None = None,
+    salida: SalidaWorkflow | None = None,
     cliente_asr: ClienteAsr | None = None,
     *,
     descargar_audio: DescargarAudio | None = None,
+    cliente_vision: ClienteVision | None = None,
+    descargar_imagen: DescargarImagen | None = None,
+    asignar_numero_habilita: AsignarNumeroHabilita | None = None,
     precios_contrato: Mapping[str, Decimal] | None = None,
 ) -> Generator[CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState], None, None]:
     """Abre el saver, prepara sus tablas y mantiene vivo el grafo compilado."""
@@ -1067,5 +1161,8 @@ def grafo_con_postgres(
             salida,
             cliente_asr,
             descargar_audio=descargar_audio,
+            cliente_vision=cliente_vision,
+            descargar_imagen=descargar_imagen,
+            asignar_numero_habilita=asignar_numero_habilita,
             precios_contrato=precios_contrato,
         )

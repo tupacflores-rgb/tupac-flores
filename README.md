@@ -1,8 +1,9 @@
 # tupac-flores · Academia Novit 2026 · TP Planta de inyección
 
 Sistema que se conecta a la planta simulada de Novit: recibe las notas de voz del operador, arma el parte por la
-tablet, detecta condiciones inseguras y publica eventos. **Entrega 1:** sistema conectado, parte por voz y detección,
-tools y MCP, RAG medido. Resultados y decisiones: [INFORME.md](INFORME.md).
+tablet, detecta condiciones inseguras y publica eventos. **Entrega 1:** parte por voz, detección, tools y MCP, RAG
+medido. **Entrega 2:** workflow de órdenes con revisión, aprobación humana, cierre y certificación. Resultados y
+decisiones: [INFORME.md](INFORME.md).
 
 ## Cómo levantarlo
 
@@ -40,7 +41,40 @@ detección de seguridad, el parte y la búsqueda en los manuales no dependen de 
 | Detección S1–S4, eventos, parte y diálogo | Local, en código (sin modelo) | Reproducible y sin depender de la red |
 | Búsqueda en manuales (RAG) | Local (`emb` + pgvector) | Los manuales están en la planta; límites y stock no salen del RAG (`docs/rag.md`) |
 | Respaldo con LLM | Local (`llm`, Ollama) | Solo para lo que el parser no entiende; nunca decide ni confirma |
-| Análisis de anomalías, visión, órdenes | **Entrega 2**: nube (modelos de NVIDIA) cuando llegue; hoy no existe | Necesitan modelos grandes que no entran en 4 CPU y 8 GB |
+| Análisis de escalados | Local: heurísticas deterministas + RAG | El worker no invoca un LLM para decidir tareas |
+| Análisis de fotos | API de visión opcional (`NVIDIA_VISION_URL`) | Si falta configuración o hay un fallo, el hallazgo queda pendiente |
+| Workflow de órdenes | LangGraph local + `PostgresSaver` | Reglas puras, interrupciones humanas y checkpoint por `orden_id` |
+
+## Entrega 2: orden y certificación
+
+```mermaid
+flowchart TD
+    E[Escalado] --> F[analizar_fotos]
+    F --> A[analizar_escalado: RAG + análisis determinista]
+    A --> B[redactar_orden]
+    B --> R[revisar_orden: citas y repuestos]
+    R -->|corregir| B
+    R -->|rechazar| X[rechazar_orden]
+    R -->|válida| V[evaluar_aprobacion]
+    V -->|aprobada| G[guardar_aprobada]
+    V -->|pendiente| P[guardar_pendiente]
+    P --> D[esperar_decision]
+    D -->|aprobada| G
+    D -->|rechazada| X
+    G --> C[esperar_cierre]
+    C --> I[interpretar y comparar cierre]
+    I -->|personal propio| S[esperar_supervisor]
+    S --> Z[cerrar_orden]
+    I -->|contratista| Q[esperar_inspector]
+    Q --> H[calcular y emitir Habilita]
+```
+
+La aplicación usa el análisis determinista por defecto; el cliente de visión llama a NVIDIA solo cuando se configura
+`NVIDIA_VISION_URL`. `PostgresSaver` conserva cada workflow con `thread_id = orden_id` para reanudarlo tras un reinicio.
+Si PostgreSQL cierra la conexión, el worker recrea el checkpointer y reintenta el evento; la entrada MQTT no espera al
+grafo durante la recuperación, por lo que puede seguir procesando notas de voz.
+La Habilita usa `HAB-AAAA-NNNN`; su monto sale de precios contractuales y repuestos autorizados, nunca del importe
+dictado en el cierre.
 
 ## Dependencia provisional del contrato
 

@@ -53,8 +53,8 @@ def test_ruta_aprobacion_reglas(state, esperado):
 @pytest.mark.parametrize(
     ("state", "ruta", "esperado"),
     [
-        ({"decision_planificador": "aprobada"}, _ruta_decision_planificador, "publicar_orden"),
-        ({"decision_planificador": "rechazada"}, _ruta_decision_planificador, "guardar_rechazo"),
+        ({"decision_planificador": "aprobada"}, _ruta_decision_planificador, "guardar_aprobada"),
+        ({"decision_planificador": "rechazada"}, _ruta_decision_planificador, "rechazar_orden"),
         ({"ejecutor": "propio"}, _ruta_ejecutor, "esperar_supervisor"),
         ({"ejecutor": "contratista"}, _ruta_ejecutor, "esperar_inspector"),
         ({"decision_inspector": "observar"}, _ruta_decision_inspector, "guardar_observada"),

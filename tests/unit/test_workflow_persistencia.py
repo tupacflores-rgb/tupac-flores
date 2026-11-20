@@ -1,4 +1,5 @@
 import json
+from datetime import UTC, datetime
 
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.types import Command
@@ -13,6 +14,11 @@ from sistema.workflow.topicos import (
     TOPICO_DECISION_PLANIFICADOR,
     TOPICO_DECISION_SUPERVISOR,
 )
+
+
+def _asignar_numero_habilita(orden_id: str, anio: int) -> str:
+    assert orden_id.startswith("OT-")
+    return f"HAB-{anio}-0001"
 
 
 class SalidaCapturadora:
@@ -107,7 +113,10 @@ def test_planificador_reanuda_orden_pendiente_y_supervisor_cierra():
 
 
 def test_inspector_reanuda_y_certifica_orden_de_contratista():
-    grafo = construir_grafo(checkpointer=MemorySaver())
+    grafo = construir_grafo(
+        checkpointer=MemorySaver(),
+        asignar_numero_habilita=_asignar_numero_habilita,
+    )
     config, _ = _iniciar(
         grafo,
         resumen="B-101: vibración elevada en la bomba",
@@ -148,9 +157,31 @@ def test_inspector_observa_guarda_estado_y_motivo():
     assert grafo.get_state(config).next == ("esperar_nuevo_cierre",)
 
 
-def test_mqtt_cierre_y_decision_inspector_reanudan_el_thread_persistido(tmp_path):
+def test_rechazo_del_planificador_emite_estado_y_motivo():
     salida = SalidaCapturadora()
     grafo = construir_grafo(checkpointer=MemorySaver(), salida=salida)
+    orden_id = "OT-EV-N-1-B-101"
+    config, _ = _iniciar(
+        grafo,
+        resumen="B-101: goteo de empaquetadura en la bomba",
+        reserva_disponible=False,
+        thread_id=orden_id,
+    )
+
+    final = grafo.invoke(Command(resume={"decision": "rechazada"}), config=config)
+
+    assert final["orden_sistema"]["estado"] == "Rechazada"
+    assert "Rechazada por el planificador" in final["orden_sistema"]["motivo"]
+    assert salida.mensajes[-1][2].estado.value == "Rechazada"
+
+
+def test_mqtt_cierre_y_decision_inspector_reanudan_el_thread_persistido(tmp_path):
+    salida = SalidaCapturadora()
+    grafo = construir_grafo(
+        checkpointer=MemorySaver(),
+        salida=salida,
+        asignar_numero_habilita=_asignar_numero_habilita,
+    )
     orden_id = "OT-EV-N-1-B-101"
     config, _ = _iniciar(
         grafo,
@@ -194,7 +225,7 @@ def test_mqtt_cierre_y_decision_inspector_reanudan_el_thread_persistido(tmp_path
 
     final = grafo.get_state(config).values
     assert final["orden_sistema"]["estado"] == "Certificada"
-    assert final["orden_sistema"]["habilita"] == f"HAB-{orden_id}"
+    assert final["orden_sistema"]["habilita"] == f"HAB-{datetime.now(UTC).year}-0001"
     assert [modelo.estado.value for _, topico, modelo in salida.mensajes if topico == Topicos.ORDENES] == [
         "PendienteAprobacion",
         "Aprobada",

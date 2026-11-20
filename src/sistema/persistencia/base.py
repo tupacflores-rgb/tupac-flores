@@ -17,7 +17,19 @@ from .esquema import ESQUEMA
 
 log = logging.getLogger("sistema.db")
 
-TABLAS_REQUERIDAS = frozenset({"nota", "respuesta", "dialogo", "mensaje_nota", "consumo", "foto", "salida"})
+TABLAS_REQUERIDAS = frozenset(
+    {
+        "nota",
+        "respuesta",
+        "dialogo",
+        "mensaje_nota",
+        "consumo",
+        "foto",
+        "salida",
+        "habilita_secuencia",
+        "habilita_orden",
+    }
+)
 
 
 class Base:
@@ -51,6 +63,46 @@ class Base:
         faltantes = TABLAS_REQUERIDAS - existentes
         if faltantes:
             raise RuntimeError(f"El esquema de PostgreSQL quedó incompleto: {', '.join(sorted(faltantes))}")
+
+    def asignar_numero_habilita(self, orden_id: str, anio: int) -> str:
+        """Asigna una Habilita anual e idempotente por orden."""
+        if not isinstance(orden_id, str) or not orden_id.strip():
+            raise ValueError("orden_id no puede estar vacío")
+        if type(anio) is not int or not 1000 <= anio <= 9999:
+            raise ValueError("anio debe ser un entero de cuatro dígitos")
+
+        with self.conectar() as con:
+            with con.transaction():
+                con.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    (orden_id,),
+                )
+                existente = con.execute(
+                    "SELECT numero FROM habilita_orden WHERE orden_id = %s",
+                    (orden_id,),
+                ).fetchone()
+                if existente:
+                    return existente[0]
+
+                fila = con.execute(
+                    "INSERT INTO habilita_secuencia (anio, ultimo) VALUES (%s, 1) "
+                    "ON CONFLICT (anio) DO UPDATE SET ultimo = habilita_secuencia.ultimo + 1 "
+                    "WHERE habilita_secuencia.ultimo < 9999 "
+                    "RETURNING ultimo",
+                    (anio,),
+                ).fetchone()
+                if fila is None:
+                    raise OverflowError(f"La secuencia de Habilitas para {anio} excedió cuatro dígitos")
+                secuencia = fila[0]
+                if secuencia > 9999:
+                    raise OverflowError(f"La secuencia de Habilitas para {anio} excedió cuatro dígitos")
+
+                numero = f"HAB-{anio}-{secuencia:04d}"
+                con.execute(
+                    "INSERT INTO habilita_orden (orden_id, anio, secuencia, numero) VALUES (%s, %s, %s, %s)",
+                    (orden_id, anio, secuencia, numero),
+                )
+                return numero
 
     def iniciar(self, parar: threading.Event, reintento_s: float = 1.0) -> None:
         """Aplica el esquema. Reintenta hasta que la base responda (puede arrancar después del agente)."""

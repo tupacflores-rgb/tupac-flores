@@ -1,15 +1,23 @@
+from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
 from langgraph.checkpoint.memory import MemorySaver
+from planta_contrato import EstadoOrden, OrdenSistema, Repuesto
 
 from sistema.conocimiento.corpus import Fragmento, cargar
 from sistema.conocimiento.recuperador import Recuperador
 from sistema.herramientas.catalogo import cargar_materiales
+from sistema.integraciones.vision import HallazgoVisual
 from sistema.workflow.grafo import (
     AnalisisEscalado,
+    CierreValidado,
+    _nodo_analizar_fotos,
     _nodo_redactar_orden,
     _tareas_basicas,
+    calcular_monto_habilita,
+    cargar_precios_contrato,
     construir_grafo,
     validar_citas,
     validar_repuestos,
@@ -132,6 +140,8 @@ def test_el_revisor_rechaza_citas_que_no_salieron_del_recuperador():
     assert estado["resultado_revision"] == "invalida"
     assert estado["reintentos_revision"] == 3
     assert "evaluacion_aprobacion" not in estado
+    assert estado["orden_sistema"]["estado"] == "Rechazada"
+    assert "revisión automática" in estado["orden_sistema"]["motivo"]
 
 
 def test_validar_citas_contrasta_con_evidencia_recuperada():
@@ -155,3 +165,69 @@ def test_validar_repuestos_contrasta_con_lista_de_materiales_del_equipo():
     )
 
     assert errores and "TX-ROD-CIG" in errores[0]
+
+
+def test_analizar_fotos_descarga_y_envia_imagen_al_cliente_de_vision():
+    class VisionFalsa:
+        def __init__(self):
+            self.imagenes = []
+
+        def analizar_imagen(self, imagen):
+            self.imagenes.append(imagen)
+            return HallazgoVisual(estado="completa", severidad="grave", objeto="rodamiento")
+
+    cliente = VisionFalsa()
+    nodo = _nodo_analizar_fotos(cliente, lambda url: b"imagen:" + url.encode())
+
+    resultado = nodo({"fotos": [{"url": "/fotos/1.jpg"}]})
+
+    assert cliente.imagenes == [b"imagen:/fotos/1.jpg"]
+    assert resultado["hallazgos_visuales"][0]["estado"] == "completa"
+    assert resultado["hallazgos_visuales"][0]["objeto"] == "rodamiento"
+
+
+def test_analizar_fotos_sin_cliente_guarda_hallazgo_pendiente():
+    resultado = _nodo_analizar_fotos(None, None)({"fotos": [{"url": "/fotos/1.jpg"}]})
+
+    assert resultado["hallazgos_visuales"][0]["estado"] == "pendiente"
+    assert resultado["hallazgos_visuales"][0]["severidad"] == "desconocida"
+
+
+def test_calcular_habilita_suma_tareas_y_repuesto_autorizado_con_margen():
+    orden = OrdenSistema(
+        id="OT-1",
+        ts=datetime.now(UTC),
+        estado=EstadoOrden.ejecutada,
+        equipo="B-101",
+        evento_ids=["EV-1"],
+        tareas=["T-B-ROD"],
+        detiene_equipo=True,
+        reduce_inyeccion=False,
+        ejecutor="Servipat",
+        repuestos=[Repuesto(codigo="TX-ROD-CIG", cantidad=1)],
+        motivo=None,
+    )
+    cierre = CierreValidado(
+        id="CIERRE-1",
+        orden_id="OT-1",
+        tecnico="Técnico",
+        empresa="Servipat",
+        transcripcion="declaro un monto de USD 999999",
+    )
+
+    monto = calcular_monto_habilita(
+        orden,
+        cierre,
+        {"T-B-ROD": Decimal("1150")},
+        {"repuestos": [{"codigo": "TX-ROD-CIG", "costo_usd": 2650}]},
+    )
+
+    assert monto == Decimal("4065.00")
+
+
+def test_precios_contrato_vigentes_se_cargan_desde_el_fragmento():
+    precios = cargar_precios_contrato()
+
+    assert precios["T-B-ROD"] == Decimal("1150")
+    assert precios["T-B-ALI"] == Decimal("780")
+    assert precios["I-VIB"] == Decimal("320")

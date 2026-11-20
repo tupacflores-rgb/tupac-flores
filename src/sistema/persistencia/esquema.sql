@@ -70,3 +70,18 @@ CREATE TABLE IF NOT EXISTS salida (
     publicado timestamptz
 );
 CREATE INDEX IF NOT EXISTS salida_pendientes ON salida (estado) WHERE estado <> 'publicada';
+
+-- Números de Habilita secuenciales por año e idempotentes por orden.
+CREATE TABLE IF NOT EXISTS habilita_secuencia (
+    anio   smallint PRIMARY KEY CHECK (anio BETWEEN 1000 AND 9999),
+    ultimo integer NOT NULL CHECK (ultimo BETWEEN 0 AND 9999)
+);
+CREATE TABLE IF NOT EXISTS habilita_orden (
+    orden_id  text PRIMARY KEY,
+    anio      smallint NOT NULL REFERENCES habilita_secuencia (anio),
+    secuencia integer NOT NULL CHECK (secuencia BETWEEN 1 AND 9999),
+    numero    text NOT NULL UNIQUE,
+    creado    timestamptz NOT NULL DEFAULT now(),
+    UNIQUE (anio, secuencia),
+    CHECK (numero = 'HAB-' || anio::text || '-' || lpad(secuencia::text, 4, '0'))
+);

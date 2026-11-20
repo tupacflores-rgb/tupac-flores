@@ -20,6 +20,7 @@ import time
 from collections.abc import Callable
 from datetime import datetime, timedelta
 
+import psycopg
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from planta_contrato import EventoSistema, NotaCierre, NotaRecorrida, RespuestaOperador, TipoEvento, Topicos
@@ -38,6 +39,7 @@ from .integraciones.asr import ClienteAsr
 from .integraciones.enlace import enlace_arriba
 from .integraciones.mqtt import ClienteMqtt, Entrante
 from .integraciones.planta_api import PlantaApi
+from .integraciones.vision import ClienteVision
 from .latido import Latido
 from .persistencia.base import Base
 from .persistencia.journal import Journal
@@ -57,6 +59,39 @@ from .workflow.topicos import (
 
 log = logging.getLogger("sistema.app")
 
+# Used to defer an early MQTT message, while treating messages for later stages as stale.
+_ORDEN_WORKFLOW = {
+    nombre: posicion
+    for posicion, nombre in enumerate(
+        (
+            "analizar_fotos",
+            "analizar_escalado",
+            "redactar_orden",
+            "revisar_orden",
+            "evaluar_aprobacion",
+            "rechazar_orden",
+            "guardar_pendiente",
+            "esperar_decision",
+            "guardar_aprobada",
+            "esperar_cierre",
+            "esperar_nuevo_cierre",
+            "marcar_ejecutada",
+            "interpretar_cierre",
+            "comparar_cierre",
+            "esperar_supervisor",
+            "cerrar_orden",
+            "esperar_inspector",
+            "guardar_observada",
+            "calcular_habilita",
+            "emitir_habilita",
+        )
+    )
+}
+
+
+class WorkflowAunNoListo(RuntimeError):
+    """El hilo aún no llegó a la interrupción MQTT correspondiente."""
+
 
 class Agente:
     def __init__(self, config: Config):
@@ -64,8 +99,9 @@ class Agente:
         self.sup = Supervisor()
         self._workflow: CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState] | None = None
         self._workflow_listo = threading.Event()
+        self._workflow_reinicio = threading.Event()
         self._workflow_lock = threading.RLock()
-        self._workflow_jobs: queue.Queue[EventoSistema] = queue.Queue()
+        self._workflow_jobs: queue.Queue[tuple[EventoSistema, tuple[str, ...]]] = queue.Queue()
         self.estado = EstadoCompartido()
         self.reloj = RelojPlanta()
         self.mqtt = ClienteMqtt(config)
@@ -162,7 +198,10 @@ class Agente:
         if eventos:
             self.salida.emitir_lote([(e.id, Topicos.EVENTOS, e) for e in eventos])
             for evento in eventos:
-                self._encolar_workflow(evento)
+                fotos = tuple(
+                    dict.fromkeys(fila.foto for fila in est.filas if fila.tag == evento.equipo and fila.foto)
+                )
+                self._encolar_workflow(evento, fotos)
         self.sync.registrar(est.nota_id)
 
     # -- estado de arranque -------------------------------------------------------------------------
@@ -187,31 +226,50 @@ class Agente:
         if parar.is_set():
             return
 
-        with grafo_con_postgres(
-            self.config.database_url,
-            salida=self.salida,
-            cliente_asr=self.asr,
-            descargar_audio=self.api.descargar,
-        ) as grafo:
-            with self._workflow_lock:
-                self._workflow = grafo
-                self._workflow_listo.set()
-            try:
-                while not parar.is_set() or not self._workflow_jobs.empty():
-                    try:
-                        evento = self._workflow_jobs.get(timeout=0.5)
-                    except queue.Empty:
-                        continue
-                    try:
-                        self._iniciar_workflow(evento)
-                    except Exception:
-                        log.exception("falló el workflow del evento %s", evento.id)
-                    finally:
-                        self._workflow_jobs.task_done()
-            finally:
+        self._workflow_reinicio.clear()
+        cliente_vision = (
+            ClienteVision(self.config.nvidia_vision_url) if self.config.nvidia_vision_url else None
+        )
+        try:
+            with grafo_con_postgres(
+                self.config.database_url,
+                salida=self.salida,
+                cliente_asr=self.asr,
+                descargar_audio=self.api.descargar,
+                cliente_vision=cliente_vision,
+                descargar_imagen=self.api.descargar,
+                asignar_numero_habilita=self.base.asignar_numero_habilita,
+            ) as grafo:
                 with self._workflow_lock:
-                    self._workflow = None
-                    self._workflow_listo.clear()
+                    self._workflow = grafo
+                    self._workflow_listo.set()
+                try:
+                    while not parar.is_set() or not self._workflow_jobs.empty():
+                        if self._workflow_reinicio.is_set():
+                            raise RuntimeError(
+                                "Se recreará el checkpointer tras perder la conexión a PostgreSQL"
+                            )
+                        try:
+                            evento, fotos = self._workflow_jobs.get(timeout=0.5)
+                        except queue.Empty:
+                            continue
+                        try:
+                            self._iniciar_workflow(evento, fotos)
+                        except psycopg.OperationalError:
+                            self._workflow_reinicio.set()
+                            self._workflow_jobs.put((evento, fotos))
+                            raise
+                        except Exception:
+                            log.exception("falló el workflow del evento %s", evento.id)
+                        finally:
+                            self._workflow_jobs.task_done()
+                finally:
+                    with self._workflow_lock:
+                        self._workflow = None
+                        self._workflow_listo.clear()
+        finally:
+            if cliente_vision is not None:
+                cliente_vision.close()
 
     def _worker_reloj(self, parar: threading.Event) -> None:
         while not parar.is_set():
@@ -241,6 +299,11 @@ class Agente:
                 continue
             try:
                 self._procesar_entrante(e)
+            except WorkflowAunNoListo:
+                log.debug("workflow aún no listo para %s; se reintentará sin acuse", e.topico)
+                if not parar.wait(0.25):
+                    self.mqtt.entrantes.put(e)
+                continue
             except Exception:
                 # Sin acuse: el broker vuelve a entregar el mensaje cuando se reconecte la sesión.
                 log.exception("falló el procesamiento de %s; no se acusa", e.topico)
@@ -291,12 +354,15 @@ class Agente:
             self._recibir_decision(datos, DecisionInspector, "esperar_inspector")
 
     def _esperar_workflow(self) -> CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState]:
-        while not self._workflow_listo.wait(0.5):
-            if self.sup.parar.is_set():
-                raise RuntimeError("La aplicación se está deteniendo; el workflow no está disponible")
+        if self.sup.parar.is_set():
+            raise WorkflowAunNoListo("La aplicación se está deteniendo")
+        if self._workflow_reinicio.is_set():
+            raise WorkflowAunNoListo("El checkpointer está reconectando")
+        if not self._workflow_listo.is_set():
+            raise WorkflowAunNoListo("El workflow está reconectando su checkpointer")
         with self._workflow_lock:
             if self._workflow is None:
-                raise RuntimeError("El workflow dejó de estar disponible")
+                raise WorkflowAunNoListo("El workflow dejó de estar disponible")
             return self._workflow
 
     def _reserva_disponible(self, equipo: str | None) -> bool:
@@ -331,7 +397,7 @@ class Agente:
             return False
         return bomba["estado"] == "parada"
 
-    def _iniciar_workflow(self, evento: EventoSistema) -> None:
+    def _iniciar_workflow(self, evento: EventoSistema, fotos: tuple[str, ...] = ()) -> None:
         if evento.tipo != TipoEvento.escalado:
             return
         orden_id = f"OT-{evento.id}"
@@ -348,14 +414,15 @@ class Agente:
                     "evento": evento.model_dump(mode="json"),
                     "correlation_id": orden_id,
                     "reserva_disponible": reserva_disponible,
+                    "fotos": [{"url": url} for url in fotos],
                 },
                 config=config,
             )
 
-    def _encolar_workflow(self, evento: EventoSistema) -> None:
+    def _encolar_workflow(self, evento: EventoSistema, fotos: tuple[str, ...] = ()) -> None:
         """Deja la ejecución del grafo al worker dedicado, sin retener el worker de diálogo o MQTT."""
         if evento.tipo == TipoEvento.escalado:
-            self._workflow_jobs.put(evento)
+            self._workflow_jobs.put((evento, fotos))
 
     def _reanudar_workflow(
         self,
@@ -365,24 +432,36 @@ class Agente:
     ) -> None:
         config = {"configurable": {"thread_id": orden_id}}
         grafo = self._esperar_workflow()
-        with self._workflow_lock:
-            estado = grafo.get_state(config)
-            if estado.metadata is None:
-                log.warning("se descarta decisión para la orden %s: thread_id inexistente", orden_id)
-                return
-            if not estado.next:
-                log.info("se descarta decisión para la orden %s: el workflow ya terminó", orden_id)
-                return
-            nodos_esperados = (nodo_esperado,) if isinstance(nodo_esperado, str) else nodo_esperado
-            if not any(nodo in estado.next for nodo in nodos_esperados):
-                log.warning(
-                    "se descarta mensaje para la orden %s: espera %s, estado actual %s",
-                    orden_id,
-                    nodos_esperados,
-                    estado.next,
-                )
-                return
-            grafo.invoke(Command(resume=respuesta), config=config)
+        try:
+            with self._workflow_lock:
+                estado = grafo.get_state(config)
+                if estado.metadata is None:
+                    raise WorkflowAunNoListo(f"thread_id {orden_id} todavía no tiene checkpoint")
+                if not estado.next:
+                    log.info("se descarta decisión para la orden %s: el workflow ya terminó", orden_id)
+                    return
+                nodos_esperados = (nodo_esperado,) if isinstance(nodo_esperado, str) else nodo_esperado
+                if not any(nodo in estado.next for nodo in nodos_esperados):
+                    try:
+                        posicion_esperada = min(_ORDEN_WORKFLOW[nodo] for nodo in nodos_esperados)
+                        posiciones_actuales = [_ORDEN_WORKFLOW[nodo] for nodo in estado.next]
+                    except KeyError as error:
+                        raise RuntimeError(f"Nodo de workflow no reconocido: {error.args[0]}") from error
+                    if min(posiciones_actuales) < posicion_esperada:
+                        raise WorkflowAunNoListo(f"thread_id {orden_id} aún no llegó a {nodos_esperados}")
+                    log.warning(
+                        "se descarta mensaje obsoleto para la orden %s: espera %s, estado actual %s",
+                        orden_id,
+                        nodos_esperados,
+                        estado.next,
+                    )
+                    return
+                grafo.invoke(Command(resume=respuesta), config=config)
+        except psycopg.OperationalError as error:
+            self._workflow_reinicio.set()
+            raise WorkflowAunNoListo(
+                f"PostgreSQL desconectó el checkpointer de la orden {orden_id}"
+            ) from error
 
     def _recibir_decision(
         self,
