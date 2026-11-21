@@ -40,10 +40,11 @@ BEAM = int(os.environ.get("ASR_BEAM", "5"))
 # consistente. Se mide en evaluacion/asr_wer.py.
 PROMPT = os.environ.get(
     "ASR_PROMPT",
-    "Nota de recorrida de la planta de inyección. La uno, la dos, la tres, el filtro A, el filtro B, "
-    "el pulmón. Presión de descarga en kilos, psi y bar. Diferencial uno ocho. "
-    "Empaquetadura, rodamiento, correas. Mil seiscientos psi, mil seiscientos cuarenta psi, mil quinientos "
-    "psi, ciento doce kilos, ciento quince kilos, noventa y ocho bar.",
+    "Nota de recorrida de la planta de inyección. En la uno, la dos, la tres, la de la punta, "
+    "la del medio, la del fondo, el filtro A, el filtro B, el pulmón. Presión de descarga en kilos, "
+    "psi y bar. Diferencial uno ocho. Empaquetadura, rodamiento, correas, golpeteo metálico. "
+    "Está en mil seiscientos diez psi, mil seiscientos cuarenta psi, mil quinientos cincuenta psi, "
+    "ciento doce kilos, ciento quince kilos, noventa y ocho bar.",
 )
 # Vocabulario de emergencia: sesga a Whisper hacia las palabras que no puede errar en la pasada de seguridad.
 PROMPT_SEGURIDAD = os.environ.get(
