@@ -42,13 +42,13 @@ def distancia_de_edicion(a: str, b: str) -> int:
     return previa[-1]
 
 
-# El ASR se come la «l» de «la» al comienzo de una oración: «A uno estar en 112 kilogramos» por «La uno
-# está en 112». Sin esta reparación el parser pierde todo el tramo del equipo (medido en el corrector).
-_ARTICULO_COMIDO = re.compile(r"(^|[.!?;]\s+)a (uno|dos|tres|1|2|3)\b", re.IGNORECASE)
+# El ASR confunde el artículo inicial («A uno…» o «El uno…» por «La uno…») al comienzo de una oración.
+# Sin esta reparación el parser pierde todo el tramo del equipo (medido en el corrector).
+_ARTICULO_COMIDO = re.compile(r"(^|[.!?;]\s+)(?:a|el)\s+(uno|dos|tres|1|2|3)\b", re.IGNORECASE)
 
 
 def reparar_inicio_de_oracion(t: str) -> str:
-    """Sobre el texto crudo (con signos): «A uno…» al comienzo de una oración es «La uno…»."""
+    """Sobre el texto crudo (con signos): «A uno…» o «El uno…» al comienzo es «La uno…»."""
     return _ARTICULO_COMIDO.sub(lambda m: f"{m.group(1)}la {m.group(2)}", t)
 
 
@@ -96,6 +96,9 @@ def canonizar_frases(t: str) -> str:
         umbral = UMBRAL_FRASE_CORTA if len(plana) <= 8 else UMBRAL_FRASE
         i = 0
         while i < len(palabras):
+            if i + k <= len(palabras) and " ".join(palabras[i : i + k]) == frase:
+                i += k
+                continue
             reemplazo = None
             # Primero lo exacto sin espacios (pegado o partido), después la coincidencia aproximada.
             for aproximada in (False, True):
@@ -126,6 +129,16 @@ def canonizar_frases(t: str) -> str:
     return " ".join(palabras)
 
 
+_REPARACIONES_ASR = (
+    (re.compile(r"\bmilados\b"), "y la dos"),
+    (re.compile(r"\bstein\b"), "esta en"),
+    (
+        re.compile(r"\by lados\b(?=\s+(?:esta|me dio|hace|pierde|tiene|mil|ciento|noventa))"),
+        "y la dos",
+    ),
+)
+
+
 def reparar_asr(t: str) -> str:
     """Corrige confusiones sistemáticas del transcriptor sobre texto ya normalizado (medidas en las voces de
     referencia): "el fito a" por "el filtro a" (hasta 2 letras de diferencia), "el a1" por "en la 1"."""
@@ -140,6 +153,8 @@ def reparar_asr(t: str) -> str:
 
     t = canonizar_frases(t)
     t = _DECENA_CON_P.sub(r"\1", t)
+    for patron, reemplazo in _REPARACIONES_ASR:
+        t = patron.sub(reemplazo, t)
     t = _FILTRO_MAL_DICHO.sub(filtro, t)
     return _LETRA_NUMERO.sub(lambda m: f"en la {m.group(1)}", t)
 

@@ -9,7 +9,7 @@ from planta_falsa import DEFINICION
 from sistema.dominio.catalogo import Catalogo
 from sistema.dominio.parte import Fila
 from sistema.voz.parser import extraer
-from sistema.voz.respuestas import aplicar, interpretar
+from sistema.voz.respuestas import Cambio, aplicar, interpretar
 
 CAT = Catalogo(DEFINICION)
 
@@ -378,3 +378,48 @@ def test_un_valor_ambiguo_de_diferencial_normal_no_queda_como_anomalia():
     """«provisional» es solo lo que se mostró: la observación real de 1,4 es ninguna (no es una anomalía)."""
     ext = extraer("El de la derecha me dio catorce de diferencial.", CAT)
     assert (ext.filas[0].valor, ext.filas[0].observacion) == (pytest.approx(1.4), None)
+
+
+def test_variantes_asr_de_golpeteo_metalico():
+    assert filas("La dos hace un golpe metálico.")[0][4] == "hace un golpeteo metálico"
+    assert filas("La del medio hace un rocketeo metálico.")[0][4] == "hace un golpeteo metálico"
+
+
+def test_aplicar_actualiza_observacion_en_valor_y_agregar():
+    inicial = [
+        Fila("F-201B", "presion_diferencial", None, None, "ver"),
+        Fila("B-102", "goteo_empaquetadura", None, "gotas/min", "goteo por empaquetadura"),
+    ]
+    corregido = aplicar(
+        inicial,
+        [
+            Cambio("valor", "F-201B", "presion_diferencial", 1.0, "kg/cm2"),
+            Cambio("agregar", "B-102", "goteo_empaquetadura", 100.0, "gotas/min"),
+        ],
+        CAT,
+    )
+    assert (corregido[0].valor, corregido[0].observacion) == (1.0, None)
+    assert (corregido[1].valor, corregido[1].observacion) == (100.0, "goteo por empaquetadura")
+
+    alto = aplicar(inicial, [Cambio("valor", "F-201B", "presion_diferencial", 1.6, "kg/cm2")], CAT)
+    assert (alto[0].valor, alto[0].observacion) == (1.6, "diferencial alto")
+
+
+def test_aplicar_cambio_de_equipo_arrastra_observaciones_contiguas_sin_valor():
+    inicial = [
+        Fila("B-101", "presion_descarga_local", 115.0, "kg/cm2", None),
+        Fila("B-101", "temperatura_rodamiento_ir", 65.0, "degC", None),
+        Fila("B-101", "ruido", None, None, "hace un golpeteo metálico"),
+        Fila("B-101", "observacion_extra", None, None, "suena raro"),
+    ]
+    resultado = aplicar(
+        inicial,
+        [Cambio("equipo", "B-102", None, 65.0, None, desde_tag="B-101")],
+        CAT,
+    )
+    assert [(f.tag, f.variable, f.valor) for f in resultado] == [
+        ("B-101", "presion_descarga_local", 115.0),
+        ("B-102", "temperatura_rodamiento_ir", 65.0),
+        ("B-102", "ruido", None),
+        ("B-102", "observacion_extra", None),
+    ]

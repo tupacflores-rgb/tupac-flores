@@ -30,6 +30,7 @@ from ..dominio.parte import (
     Fila,
 )
 from .numeros import numero_antes_de
+from .parser import LIMITE_DIFERENCIAL_ALTO, LIMITE_RODAMIENTO_CALIENTE
 from .texto import normalizar, oraciones
 
 UNIDAD_DICHA = {
@@ -160,18 +161,33 @@ def aplicar(filas: list[Fila], cambios: list[Cambio], catalogo: Catalogo) -> lis
             fila.valor, fila.provisional = c.valor, False
             if c.unidad:
                 fila.unidad = c.unidad
+            if c.valor is not None:
+                if fila.variable == VARIABLE_DIFERENCIAL:
+                    fila.observacion = "diferencial alto" if c.valor >= LIMITE_DIFERENCIAL_ALTO else None
+                elif fila.variable == VARIABLE_TEMPERATURA:
+                    fila.observacion = "rodamiento caliente" if c.valor > LIMITE_RODAMIENTO_CALIENTE else None
         elif c.tipo == "equipo":
-            fila = next(
+            pos = next(
                 (
-                    f
-                    for f in filas
+                    (i, f)
+                    for i, f in enumerate(filas)
                     if f.valor is not None and _cerca(f.valor, c.valor) and f.tag == c.desde_tag
                 ),
                 None,
             )
-            fila = fila or next((f for f in filas if f.valor is not None and _cerca(f.valor, c.valor)), None)
-            if fila is not None:
+            pos = pos or next(
+                ((i, f) for i, f in enumerate(filas) if f.valor is not None and _cerca(f.valor, c.valor)),
+                None,
+            )
+            if pos is not None:
+                idx, fila = pos
+                origen = fila.tag
                 fila.tag = c.tag
+                if origen is not None and origen != c.tag:
+                    j = idx + 1
+                    while j < len(filas) and filas[j].tag == origen and filas[j].valor is None:
+                        filas[j].tag = c.tag
+                        j += 1
         elif c.tipo == "unidad":
             for f in filas:
                 if f.tag == c.tag and f.valor is not None:

@@ -159,3 +159,27 @@ def test_el_nombre_pegado_launo_se_reconoce_como_la_uno():
     assert ("B-101", "presion_descarga_local", 112.0, None) in filas(
         "launo estaen ciento doce kilos dedescarga"
     )
+
+
+def test_repara_el_uno_y_confusiones_asr_sin_tocar_todos_lados():
+    f_uno = filas("El uno, el rodamiento, me dio cincuenta y cuatro grados con la pistola.")
+    assert ("B-101", "temperatura_rodamiento_ir", 54.0, None) in f_uno
+
+    f_dos = filas(
+        "La de la punta está en ciento quince kilos de descarga. Milados Stein, mil seiscientos cincuenta de descarga."
+    )
+    assert ("B-101", "presion_descarga_local", 115.0, None) in f_dos
+    assert ("B-102", "presion_descarga_local", 1650.0, None) in f_dos
+
+    assert reparar_asr("sale agua a presion para todos lados") == "sale agua a presion para todos lados"
+    f_y_lados = filas("La uno está en 112 de descarga y lados está en 1610 psi de descarga.")
+    assert ("B-102", "presion_descarga_local", 1610.0, None) in f_y_lados
+
+
+def test_canonizar_frases_exactas_no_se_solapa_con_palabra_siguiente():
+    ext = extraer("El secundario medio uno de diferencial. A ver, el pulmón está en cinco metros.", CAT)
+    assert [(f.tag, f.variable, f.valor, f.observacion) for f in ext.filas] == [
+        ("F-201B", "presion_diferencial", 1.0, None),
+        ("TK-301", "nivel", 5.0, None),
+    ]
+    assert ext.tramos_sin_filas == []

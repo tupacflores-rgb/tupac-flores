@@ -40,7 +40,10 @@ ESTADOS_BOMBA = [
     (re.compile(r"\bdisparada\b"), "disparada, no arranca"),
 ]
 RUIDOS = [
-    (re.compile(r"\bgolpe ?teo metalico\b"), "hace un golpeteo metálico"),
+    (
+        re.compile(r"\b(?:golpe(?: ?teo)?|hace un [a-z]{2,12}te?o) metalic[oa]\b"),
+        "hace un golpeteo metálico",
+    ),
     (re.compile(r"\bpiedras adentro\b"), "suena como si tuviera piedras adentro"),
     (re.compile(r"\bruido raro de rodamiento\b"), "tiene un ruido raro de rodamiento"),
 ]
