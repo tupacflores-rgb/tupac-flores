@@ -241,6 +241,7 @@ class Agente:
                 asignar_numero_habilita=self.base.asignar_numero_habilita,
                 buscar_orden_abierta=self.base.orden_abierta_igual,
                 registrar_estado_orden=self.base.registrar_estado_orden,
+                obtener_historial_ordenes=self.api.historial_ordenes,
             ) as grafo:
                 with self._workflow_lock:
                     self._workflow = grafo

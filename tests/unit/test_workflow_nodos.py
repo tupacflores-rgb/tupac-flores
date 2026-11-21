@@ -375,3 +375,147 @@ def test_dano_estructural_grave_fuerza_pendiente_con_hallazgo_o_fallback_sin_vis
     assert estado.next == ("esperar_decision",)
     assert estado.values["orden_sistema"]["estado"] == "PendienteAprobacion"
     assert "Daño estructural grave" in estado.values["orden_sistema"]["motivo"]
+
+
+def test_historial_b101_vibracion_tras_valvulas_sugiere_acople_y_pasa_revision():
+    def historial_fake(equipo: str):
+        assert equipo == "B-101"
+        return [
+            {
+                "id": "OT-24-0001",
+                "equipo": "B-101",
+                "tareas": ["T-B-VAL"],
+                "aviso": "pulsacion alta en descarga de bomba 1",
+                "trabajo_realizado": "se cambio kit completo de valvulas",
+            }
+        ]
+
+    grafo = construir_grafo(
+        checkpointer=MemorySaver(),
+        materiales=cargar_materiales(),
+        recuperador=Recuperador(cargar(DOCUMENTOS)),
+        obtener_historial_ordenes=historial_fake,
+    )
+    cfg = {"configurable": {"thread_id": "OT-EV-HIST-B101"}}
+    resultado = grafo.invoke(
+        {
+            "evento": {
+                "id": "EV-HIST-B101",
+                "equipo": "B-101",
+                "resumen": "B-101: vibración elevada persistente",
+            },
+            "reserva_disponible": True,
+        },
+        config=cfg,
+    )
+
+    assert "acople" in resultado["analisis"]["causas"][0]["descripcion"].lower()
+    assert resultado["analisis"]["causas"][0]["cita"] == "historial OT-24-0001"
+    assert resultado["orden"]["tareas"] == ["I-VIB"]
+    assert resultado["revision"]["valida"] is True
+    assert resultado["historial_ordenes"][0]["id"] == "OT-24-0001"
+
+
+def test_historial_b103_empaquetadura_repetida_detecta_embolo_rayado():
+    def historial_fake(equipo: str):
+        assert equipo == "B-103"
+        return [
+            {
+                "id": "OT-25-0018",
+                "equipo": "B-103",
+                "tareas": ["T-B-EMP"],
+                "aviso": "goteo en empaquetadura",
+                "trabajo_realizado": "cambio de empaquetadura",
+            }
+        ]
+
+    grafo = construir_grafo(
+        checkpointer=MemorySaver(),
+        materiales=cargar_materiales(),
+        recuperador=Recuperador([]),
+        obtener_historial_ordenes=historial_fake,
+    )
+    cfg = {"configurable": {"thread_id": "OT-EV-HIST-B103"}}
+    resultado = grafo.invoke(
+        {
+            "evento": {
+                "id": "EV-HIST-B103",
+                "equipo": "B-103",
+                "resumen": "B-103: goteo en empaquetadura",
+            },
+            "reserva_disponible": True,
+        },
+        config=cfg,
+    )
+
+    assert "émbolo rayado" in resultado["analisis"]["causas"][0]["descripcion"].lower()
+    assert resultado["analisis"]["causas"][0]["cita"] == "historial OT-25-0018"
+    assert resultado["orden"]["tareas"] == ["T-B-EMP"]
+    assert resultado["revision"]["valida"] is True
+
+
+def test_historial_b101_tendencia_no_dispara_acople_sobre_rodamiento():
+    def historial_fake(equipo: str):
+        assert equipo == "B-101"
+        return [
+            {
+                "id": "OT-26-0080",
+                "equipo": "B-101",
+                "tareas": ["T-B-VAL"],
+                "aviso": "pulsacion en descarga",
+                "trabajo_realizado": "cambio de valvulas",
+            }
+        ]
+
+    grafo = construir_grafo(
+        checkpointer=MemorySaver(),
+        materiales=cargar_materiales(),
+        recuperador=Recuperador(cargar(DOCUMENTOS)),
+        obtener_historial_ordenes=historial_fake,
+    )
+    cfg = {"configurable": {"thread_id": "OT-EV-NOTA-00010-B-101"}}
+    resultado = grafo.invoke(
+        {
+            "evento": {
+                "id": "EV-NOTA-00010-B-101",
+                "equipo": "B-101",
+                "resumen": (
+                    "la uno: anomalía en el parte de la recorrida (tiene un ruido raro de rodamiento). "
+                    "Tendencia (últimas 3 h: presión 108,2 a 107,9 kg/cm2; vibración sube de 3,08 a 4,62 mm/s)"
+                ),
+            },
+            "reserva_disponible": True,
+        },
+        config=cfg,
+    )
+
+    assert resultado["orden"]["tareas"] == ["T-B-ROD"]
+    assert resultado["analisis"]["tareas_sugeridas"] == ["T-B-ROD"]
+    assert all("acople" not in c["descripcion"].lower() for c in resultado["analisis"]["causas"])
+    assert resultado["revision"]["valida"] is True
+
+
+def test_historial_error_red_degrada_seguro_sin_bloquear_grafo():
+    def historial_roto(equipo: str):
+        raise RuntimeError(f"timeout consultando {equipo}")
+
+    grafo = construir_grafo(
+        materiales=cargar_materiales(),
+        recuperador=Recuperador(cargar(DOCUMENTOS)),
+        obtener_historial_ordenes=historial_roto,
+    )
+    resultado = grafo.invoke(
+        {
+            "evento": {
+                "id": "EV-HIST-ERR",
+                "equipo": "B-101",
+                "resumen": "B-101: goteo de empaquetadura en la bomba",
+            },
+            "reserva_disponible": True,
+        }
+    )
+
+    assert resultado["historial_ordenes"] == []
+    assert resultado["orden"]["tareas"] == ["T-B-EMP"]
+    assert resultado["revision"]["valida"] is True
+    assert resultado["evaluacion_aprobacion"]["aprobada"] is True

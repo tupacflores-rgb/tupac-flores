@@ -53,6 +53,7 @@ class WorkflowState(TypedDict, total=False):
     fotos: list[dict[str, object]]
     hallazgos_visuales: list[dict[str, object]]
     evidencia_rag: list[dict[str, object]]
+    historial_ordenes: list[dict[str, object]]
     analisis: dict[str, object]
     orden: dict[str, object]
     revision: dict[str, object]
@@ -148,6 +149,7 @@ DescargarImagen = Callable[[str], bytes]
 AsignarNumeroHabilita = Callable[[str, int], str]
 BuscarOrdenAbierta = Callable[[str, list[str], str | None], str | None]
 RegistrarEstadoOrden = Callable[[str, str, list[str], str], None]
+ObtenerHistorialOrdenes = Callable[[str], list[dict[str, object]]]
 
 
 class SalidaWorkflow(Protocol):
@@ -354,6 +356,161 @@ def _tareas_basicas(texto: str, equipo: str) -> list[str]:
     return [TAREA_NO_ESTANDAR]
 
 
+def _obtener_historial_seguro(
+    obtener_historial_ordenes: ObtenerHistorialOrdenes | None,
+    equipo: str,
+) -> list[dict[str, object]]:
+    if obtener_historial_ordenes is None:
+        return []
+    try:
+        bruto = obtener_historial_ordenes(equipo)
+    except Exception as exc:
+        log.warning("no se pudo consultar historial de órdenes para %s: %s", equipo, exc)
+        return []
+    if not isinstance(bruto, list) or any(not isinstance(item, dict) for item in bruto):
+        log.warning("historial de órdenes inválido para %s: se esperaba lista de objetos", equipo)
+        return []
+    return bruto
+
+
+def _texto_orden_historial(orden: Mapping[str, object]) -> str:
+    return _normalizar(
+        " ".join(str(orden.get(campo) or "") for campo in ("aviso", "trabajo_realizado", "codigo_falla"))
+    )
+
+
+def _tareas_orden_historial(orden: Mapping[str, object]) -> set[str]:
+    tareas = orden.get("tareas")
+    if isinstance(tareas, list):
+        return {str(t).upper() for t in tareas if isinstance(t, str)}
+    return set()
+
+
+def _evidencia_orden_historial(orden: Mapping[str, object]) -> tuple[str, dict[str, object]]:
+    orden_id = str(orden.get("id") or orden.get("orden_id") or "sin-id")
+    cita = f"historial {orden_id}"
+    texto = " | ".join(
+        parte
+        for parte in (
+            str(orden.get("equipo") or ""),
+            str(orden.get("aviso") or ""),
+            str(orden.get("trabajo_realizado") or ""),
+        )
+        if parte
+    )
+    return cita, {
+        "cita": cita,
+        "titulo": f"Historial {orden_id}",
+        "texto": texto[:1200],
+        "puntaje": 1.0,
+    }
+
+
+def _enriquecer_con_historial(
+    analisis: AnalisisEscalado,
+    evidencia: list[dict[str, object]],
+    texto_contexto: str,
+    equipo: str,
+    historial: list[dict[str, object]],
+) -> tuple[AnalisisEscalado, list[dict[str, object]]]:
+    if not historial:
+        return analisis, evidencia
+
+    sintoma_norm = _normalizar(texto_contexto).split("tendencia (", 1)[0]
+    causas = list(analisis.causas)
+    tareas_sugeridas = list(analisis.tareas_sugeridas)
+    citas = list(analisis.citas)
+    repuestos_sugeridos = list(analisis.repuestos_sugeridos)
+    evidencia_actualizada = list(evidencia)
+    citas_presentes = {item.get("cita") for item in evidencia_actualizada}
+
+    def agregar_causa_historial(descripcion: str, orden_ref: Mapping[str, object]) -> None:
+        cita, item_evidencia = _evidencia_orden_historial(orden_ref)
+        if cita not in citas_presentes:
+            evidencia_actualizada.append(item_evidencia)
+            citas_presentes.add(cita)
+        if cita not in citas:
+            citas.append(cita)
+        causas.insert(
+            0,
+            CausaEscalado(
+                descripcion=descripcion,
+                cita=cita,
+                evidencia=str(item_evidencia["texto"]),
+            ),
+        )
+
+    ordenes_valv = [
+        o for o in historial if "T-B-VAL" in _tareas_orden_historial(o) or "valv" in _texto_orden_historial(o)
+    ]
+    if equipo == "B-101" and "vibrac" in sintoma_norm and ordenes_valv:
+        agregar_causa_historial(
+            "Posible desalineación o daño en acople (vibración repetida tras cambio de válvulas)",
+            ordenes_valv[0],
+        )
+
+    ordenes_emp = [
+        o
+        for o in historial
+        if "T-B-EMP" in _tareas_orden_historial(o) or "empaquetadura" in _texto_orden_historial(o)
+    ]
+    if (
+        equipo == "B-103"
+        and any(p in sintoma_norm for p in ("empaquetadura", "goteo", "fuga", "reten"))
+        and ordenes_emp
+    ):
+        agregar_causa_historial(
+            "Posible émbolo rayado por cambio repetido de empaquetadura",
+            ordenes_emp[0],
+        )
+
+    if (
+        equipo.startswith("B-")
+        and (tareas_sugeridas == ["T-B-VAL"] or "valv" in sintoma_norm)
+        and ordenes_valv
+    ):
+        agregar_causa_historial(
+            "Posible cartucho roto en F-201B (desgaste repetido de válvulas)",
+            ordenes_valv[0],
+        )
+
+    ordenes_cavit = [
+        o
+        for o in historial
+        if any(p in _texto_orden_historial(o) for p in ("f09", "piedras adentro", "cavit"))
+    ]
+    if equipo == "B-102" and any(p in sintoma_norm for p in ("f09", "piedras adentro", "cavit")):
+        agregar_causa_historial(
+            "Posible filtro primario F-201A colmatado (cavitación en B-102)",
+            ordenes_cavit[0] if ordenes_cavit else historial[0],
+        )
+
+    ordenes_ace = [
+        o
+        for o in historial
+        if "T-B-ACE" in _tareas_orden_historial(o) or "aceite" in _texto_orden_historial(o)
+    ]
+    if (
+        equipo == "B-102"
+        and ("aceite" in sintoma_norm or "f04" in sintoma_norm or tareas_sugeridas == ["T-B-ACE"])
+        and ordenes_ace
+    ):
+        agregar_causa_historial(
+            "Posible fuga por retén del piñón (reposiciones repetidas de aceite en B-102)",
+            ordenes_ace[0],
+        )
+
+    return (
+        AnalisisEscalado(
+            causas=causas,
+            tareas_sugeridas=tareas_sugeridas,
+            citas=citas,
+            repuestos_sugeridos=repuestos_sugeridos,
+        ),
+        evidencia_actualizada,
+    )
+
+
 def _analisis_basico(
     evidencia_rag: list[dict[str, object]], texto_contexto: str, equipo: str
 ) -> AnalisisEscalado:
@@ -373,7 +530,9 @@ def _analisis_basico(
 
 
 def _nodo_analizar_escalado(
-    recuperador: Recuperador, analizador: AnalizadorEscalado | None
+    recuperador: Recuperador,
+    analizador: AnalizadorEscalado | None,
+    obtener_historial_ordenes: ObtenerHistorialOrdenes | None = None,
 ) -> Callable[[WorkflowState], dict[str, object]]:
     def analizar(state: WorkflowState) -> dict[str, object]:
         evento = _evento_dict(state.get("evento"))
@@ -403,13 +562,22 @@ def _nodo_analizar_escalado(
             }
             for resultado in resultados
         ]
+        historial = _obtener_historial_seguro(obtener_historial_ordenes, equipo)
         propuesta = (
             analizador(evento, evidencia)
             if analizador is not None
             else _analisis_basico(evidencia, texto_contexto, equipo)
         )
         analisis = AnalisisEscalado.model_validate(propuesta)
-        return {"analisis": analisis.model_dump(mode="python"), "evidencia_rag": evidencia}
+        if analizador is None and historial:
+            analisis, evidencia = _enriquecer_con_historial(
+                analisis, evidencia, texto_contexto, equipo, historial
+            )
+        return {
+            "analisis": analisis.model_dump(mode="python"),
+            "evidencia_rag": evidencia,
+            "historial_ordenes": historial,
+        }
 
     return analizar
 
@@ -1197,6 +1365,7 @@ def construir_grafo(
     materiales: dict | None = None,
     recuperador: Recuperador | None = None,
     analizador: AnalizadorEscalado | None = None,
+    obtener_historial_ordenes: ObtenerHistorialOrdenes | None = None,
 ) -> CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState]:
     materiales = cargar_materiales() if materiales is None else materiales
     precios_contrato = cargar_precios_contrato() if precios_contrato is None else precios_contrato
@@ -1206,7 +1375,10 @@ def construir_grafo(
 
     builder = StateGraph(WorkflowState)
     builder.add_node("analizar_fotos", _nodo_analizar_fotos(cliente_vision, descargar_imagen))
-    builder.add_node("analizar_escalado", _nodo_analizar_escalado(recuperador, analizador))
+    builder.add_node(
+        "analizar_escalado",
+        _nodo_analizar_escalado(recuperador, analizador, obtener_historial_ordenes),
+    )
     builder.add_node("redactar_orden", _nodo_redactar_orden(materiales))
     builder.add_node("revisar_orden", _nodo_revisar_orden(materiales))
     builder.add_node("evaluar_aprobacion", _nodo_evaluar_aprobacion(buscar_orden_abierta))
@@ -1307,6 +1479,7 @@ def grafo_con_postgres(
     buscar_orden_abierta: BuscarOrdenAbierta | None = None,
     registrar_estado_orden: RegistrarEstadoOrden | None = None,
     precios_contrato: Mapping[str, Decimal] | None = None,
+    obtener_historial_ordenes: ObtenerHistorialOrdenes | None = None,
 ) -> Generator[CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState], None, None]:
     """Abre el saver, prepara sus tablas y mantiene vivo el grafo compilado."""
     with PostgresSaver.from_conn_string(database_url) as checkpointer:
@@ -1322,4 +1495,5 @@ def grafo_con_postgres(
             buscar_orden_abierta=buscar_orden_abierta,
             registrar_estado_orden=registrar_estado_orden,
             precios_contrato=precios_contrato,
+            obtener_historial_ordenes=obtener_historial_ordenes,
         )
