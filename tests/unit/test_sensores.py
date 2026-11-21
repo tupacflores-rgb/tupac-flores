@@ -130,3 +130,110 @@ def test_los_sensores_nunca_producen_alerta_de_seguridad():
     assert e.emitidos
     assert {ev.tipo for ev in e.emitidos} == {TipoEvento.escalado}
     assert all(ev.origen == "sensor" for ev in e.emitidos)
+
+
+def _historian_filtro(tasa_h: float, muestras: int = 360, dp_inicial: float = 1.0, caudal: float = 2400.0):
+    def consultar(tag, variable, desde=None, hasta=None):
+        salida = []
+        for i in range(muestras):
+            ts = (T0 + timedelta(minutes=i)).isoformat()
+            if desde and ts < desde:
+                continue
+            if hasta and ts > hasta:
+                continue
+            if tag == "FT-401" and variable == "caudal":
+                salida.append({"ts": ts, "valor": caudal})
+            elif variable == "presion_diferencial":
+                dp = (dp_inicial + tasa_h * (i / 60.0)) * (caudal / 2400.0) ** 2
+                salida.append({"ts": ts, "valor": round(dp, 4)})
+        return salida
+
+    return consultar
+
+
+def test_filtro_con_colmatacion_normal_no_escala():
+    emitidos = []
+    det = DetectorSostenido(
+        {("F-201B", "presion_diferencial"): (0.15, 1.5)},
+        lambda _tag: None,
+        lambda ev: emitidos.append(ev) or True,
+        historian=_historian_filtro(tasa_h=0.00111),
+    )
+
+    det.procesar(
+        {
+            "tag": "F-201B",
+            "variable": "presion_diferencial",
+            "valor": 1.01,
+            "unidad": "kg/cm2",
+            "ts": (T0 + timedelta(minutes=359)).isoformat(),
+            "calidad": "buena",
+        }
+    )
+
+    assert emitidos == []
+
+
+def test_filtro_con_colmatacion_acelerada_escala_una_vez_con_id_determinista():
+    emitidos = []
+    det = DetectorSostenido(
+        {("F-201B", "presion_diferencial"): (0.15, 1.5)},
+        lambda _tag: None,
+        lambda ev: emitidos.append(ev) or True,
+        historian=_historian_filtro(tasa_h=0.0085, caudal=2200.0),
+    )
+
+    for minuto in (359, 390, 420):
+        det.procesar(
+            {
+                "tag": "F-201B",
+                "variable": "presion_diferencial",
+                "valor": 0.90,
+                "unidad": "kg/cm2",
+                "ts": (T0 + timedelta(minutes=minuto)).isoformat(),
+                "calidad": "buena",
+            }
+        )
+
+    assert len(emitidos) == 1
+    ev = emitidos[0]
+    assert ev.tipo is TipoEvento.escalado
+    assert ev.origen == "sensor"
+    assert ev.equipo == "F-201B"
+    assert ev.id == "EV-SEN-F-201B-colmatacion-20260304"
+    assert "F07 colmatación acelerada en filtro F-201B" in ev.resumen
+
+
+def test_filtro_en_bypass_o_con_pocas_horas_no_dispara_colmatacion():
+    emitidos = []
+    det = DetectorSostenido(
+        {("F-201B", "presion_diferencial"): (0.15, 1.5)},
+        lambda _tag: None,
+        lambda ev: emitidos.append(ev) or True,
+        historian=_historian_filtro(tasa_h=0.015, muestras=180),
+    )
+
+    # Pocas horas (< 5 h)
+    det.procesar(
+        {
+            "tag": "F-201B",
+            "variable": "presion_diferencial",
+            "valor": 0.95,
+            "unidad": "kg/cm2",
+            "ts": (T0 + timedelta(minutes=179)).isoformat(),
+            "calidad": "buena",
+        }
+    )
+    # dp bajo (< 0.35, filtro en bypass / cartucho roto)
+    det.procesar(
+        {
+            "tag": "F-201B",
+            "variable": "presion_diferencial",
+            "valor": 0.25,
+            "unidad": "kg/cm2",
+            "ts": (T0 + timedelta(minutes=210)).isoformat(),
+            "calidad": "buena",
+        }
+    )
+
+    assert emitidos == []
