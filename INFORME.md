@@ -13,15 +13,11 @@ MCP, RAG medido. Todo lo de esta página está medido o verificable en el repo; 
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | 100 % | 69,4 % | 69,4 % | 100 % | 100 % | 84,7 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % |
 
-Alerta de seguridad S1 a los 4,0–5,0 s reales (límite de la rúbrica: 30 s). Cuatro corridas finales con los cinco servicios: **88,8 / 88,8 / 88,8 / 88,8**, sin eliminatorias (`docs/resultados/linea_base.md`, sección V7). A2, A3 y B1 tienen techo por D8 estricta: una
-nota de solo observaciones («la bomba está parada, en reserva») no se puede confirmar con valores y queda en Borrador.
-Con D16 (`CONFIRMACION_ESTRICTA=false`, ya implementada) subirían a 100 %; la decisión es de Novit. Detalle y
-repetición: `docs/resultados/linea_base.md`.
+Alerta de seguridad S1 a los 4,0–5,0 s reales (límite de la rúbrica: 30 s). Cuatro corridas finales con los cinco servicios: **88,8 / 88,8 / 88,8 / 88,8**, sin eliminatorias (`docs/resultados/linea_base.md`, sección V7). En `849eb73`, A2, A3 y B1 tenían techo por D8 estricta (una nota de solo observaciones como «la bomba está parada, en reserva» no se confirmaba con valores y quedaba en Borrador). Posteriormente, en `f819584`, se activó D16 (`CONFIRMACION_ESTRICTA=false`) en `docker-compose.yml`. Detalle y repetición: `docs/resultados/linea_base.md`.
 
-### Entrega 2 · Corrección local (5 escenarios TP2)
+### Entrega 2 · Corrección local (5 escenarios TP2 y mejoras posteriores)
 
-Corrida sobre `tormenta-perfecta`, `sin-luz`, `contratista`, `fuga-sin-enlace` y `ataque` (`martes-tranquilo` y `libre`
-excluidos de este subconjunto): **93,9 / 100 · APRUEBA**, **0 faltas eliminatorias**.
+Corrida completa de los 5 escenarios TP2 (`tormenta-perfecta`, `sin-luz`, `contratista`, `fuga-sin-enlace` y `ataque`; `martes-tranquilo` y `libre` excluidos de este subconjunto) sobre `dcf3e2d` (antes de `ruff format` e `INFORME.md`, documentado en `Context/Clon del REPO/correccion/corridas/Tupac-Flores-tp2-verificacion/`): **93,9 / 100 · APRUEBA**, **0 faltas eliminatorias**.
 
 | A1 | A2 | A3 | A4a | A4b | B1 | B2 | D1 | D2 | E1 | E2 | E3 | F1 | F2 | F3 | G1 |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
@@ -29,12 +25,14 @@ excluidos de este subconjunto): **93,9 / 100 · APRUEBA**, **0 faltas eliminator
 
 (`G2` y `G3` figuran como `inactivo` en la rúbrica vigente.)
 
-Cambios incorporados sobre `bf9ee7e`:
+Mejoras posteriores en `bd5b4cc`, `a815681` y `f819584` (prompt ASR ampliado, reparaciones ASR/golpeteo/aplicar y D16 en `docker-compose.yml` + protección en `dialogo.py::_respaldar_respuesta`): en una corrida parcial de 4 escenarios completados antes de cancelación (`martes-tranquilo`, `tormenta-perfecta`, `fuga-sin-enlace`, `sin-luz`, sin `contratista`, `ataque` ni `libre`) evaluada con `puntuar.py`, el resultado fue **94,9 / 100 · APRUEBA** y **0 eliminatorias** (`B1=98%`, `A2=79%`, `A3=81%`). Queda pendiente correr la suite completa de 7 escenarios si se quiere re-medir `f819584` entero.
+
+Cambios incorporados sobre `bf9ee7e` y cierres agregados para revisión manual:
 - **Colmatación acelerada en filtros (`src/sistema/deteccion/sensores.py`, `src/sistema/app.py`):** seguimiento de ΔP
   corregida por caudal usando `/api/historian` en ventana de 6 h (`TASAS_NORMALES_FILTRO`, `_evaluar_colmatacion`).
 - **Deduplicación persistente de órdenes (`src/sistema/persistencia/esquema.sql`, `base.py`, `workflow/grafo.py`):**
   tabla `orden_workflow` en PostgreSQL (`orden_abierta_igual`, `registrar_estado_orden`) para evitar duplicados abiertos
-  entre reintentos y tras cortes de energía.
+  entre reintentos y tras cortes de energía, cerrando la rama `duplicada -> END` en `evaluar_aprobacion`.
 - **Clasificación determinista de fallas (`src/sistema/workflow/grafo.py`):** evaluación prioritaria del tramo de
   anomalía en `_tareas_basicas` para evitar que lecturas IR normales contaminen F01/F02 y mapeo de sensores/colmatación
   de filtros a `T-F-CAR`.
@@ -42,6 +40,9 @@ Cambios incorporados sobre `bf9ee7e`:
   chequeo de bombas reales en `_reserva_disponible`, validación de `equipos` por tarea estándar en
   `_codigos_tareas_estandar` y rechazo determinista por daño estructural grave en `_hay_dano_estructural_grave` aun sin
   endpoint visual externo.
+- **Cierres agregados para revisión manual (Anexo E2 / HITL):** CLI propia para decisiones humanas (`src/sistema/workflow/cli.py`),
+  consulta de `/api/historial-ordenes` en `_nodo_analizar_escalado` (`src/sistema/workflow/grafo.py` + `src/sistema/app.py`)
+  y validación contractual de cierres contra `cierres_ejemplo.json` (`src/sistema/workflow/certificacion.py`, `tests/unit/test_certificacion_cierres.py`).
 
 ## Seguridad (S1–S4)
 
@@ -215,8 +216,9 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 
 ## Decisiones vigentes
 
-- **D8** (estricta): sin confirmación del operador el parte queda en Borrador. **D16** (flexibilizarla) **pendiente de Novit**:
-  es el techo de A2, A3 y B1 (88,8).
+- **D8 / D16:** `Config.confirmacion_estricta` se mantiene en `True` por defecto para preservar los tests de contrato y D8.
+  **D16** (`CONFIRMACION_ESTRICTA=false`) se activó en `docker-compose.yml` desde `f819584`, protegiendo
+  `_respaldar_respuesta` en `src/sistema/voz/dialogo.py` para no invocar Ollama en notas solo de observaciones.
 - **D14**: S2 y S4 no llevan equipo ni filas (provisional).
 - **D17**: cola de salida con protocolo intención → publicación → marca.
 - **D18** enmendada: puerta interna de latencia de alerta p99 ≤ 15 s en el peor caso; **no cumplida** (p99 19,3 s), aceptado el 09/11.
@@ -232,14 +234,17 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 - **Puerta interna de 15 s no cumplida** (p99 19,3 s en el peor caso con carga al tope); causa: un trabajo del ASR en curso no
   se interrumpe.
 - **Lista cerrada de modelos:** Modelos locales de libre elección según aclaración de Novit, confirmada por el usuario el 09/11/2026.
-- **Fotos:** se descargan a un volumen con sha256 y quedan asociadas a su fila; si la descarga falla queda la URL pendiente y se reintenta. En la Entrega 2, el workflow envía las fotos del evento a `ClienteVision` cuando `NVIDIA_VISION_URL` está configurada; si no hay endpoint configurado o la llamada falla, `_hay_dano_estructural_grave` conserva un respaldo determinista sobre hallazgos, URLs de fotos y resumen para forzar `PendienteAprobacion` ante daño estructural.
+- **Fotos y visión (`NVIDIA_VISION_URL`):** las fotos se descargan a un volumen con sha256 y quedan asociadas a su fila; si la
+  descarga falla queda la URL pendiente y se reintenta. En la Entrega 2, `ClienteVision` llama a `NVIDIA_VISION_URL` solo si
+  está configurada; sin `NVIDIA_VISION_URL` ni API key (o ante fallo del endpoint), `_hay_dano_estructural_grave` aplica un
+  respaldo determinista local sobre hallazgos, URLs de fotos y resumen para forzar `PendienteAprobacion` ante daño estructural.
 - **Códigos de falla del fabricante → F01–F10:** la tabla `MBP-4 §6.1` se **extrae del corpus indexado** (no está escrita a mano) y la tool `traducir_codigo` (solo lectura, Pydantic estricto, también por MCP) traduce `TX-T07`↔`F09` con sus citas (MBP-4 §6.1/§6.x y el manual vigente). Un código del manual sin correspondencia en la tabla (p. ej. `TX-T09`) se informa sin inventar una.
-- **Context builder:** solo mencionado; falta el documento de diseño.
-- **Notas `VIVO-`:** sin tratamiento ni test específico (una nota sin equipos termina en `sin_filas`).
+- **Suite completa sobre `f819584`:** sobre `f819584` solo se midió la corrida parcial de 4 escenarios (94,9 / 100); queda
+  pendiente ejecutar la suite completa de 7 escenarios si se quiere re-medir el estado entero.
 - **Evaluación contra `/api/verdad`:** `evaluacion/verdad.py` lo lee y reporta aciertos por campo, preguntas y falsos positivos/negativos (`docs/resultados/verdad.md`, sobre la corrida de control: 13 notas, muestra chica); además del corrector oficial y `evaluacion/extraccion.py`.
 - **Respaldo con LLM:** medido solo sobre 30 casos generados (53 % de valor exacto) y sin ejercitarse en el corrector.
 - **WER de `small` contra `turbo`:** solo se midió `small` (102 audios).
-- **Repositorio:** el nombre es `tupac-flores` (D11, `tupacflores-rgb/tupac-flores`); falta subir la rama `entrega-1` (sin push, a pedido).
+- **Repositorio:** `tupacflores-rgb/tupac-flores` (D11); `origin/main` pendiente de push manual.
 
 ## Conclusión: por qué estos modelos
 

@@ -31,50 +31,76 @@ arrancar. El `client_id` MQTT es `<proyecto de compose>-agente`: dos stacks nunc
 
 ## Qué corre dónde
 
-**Todo corre en la PC de la planta; no hay nada en la nube en la Entrega 1** (costo de nube: USD 0). El enlace a internet
-puede caerse durante horas (`fuga-sin-enlace` lo corta a los 10 minutos) y el sistema sigue andando: la transcripción, la
-detección de seguridad, el parte y la búsqueda en los manuales no dependen de él.
+**Entrega 1 corre 100 % en la PC de la planta, sin nube** (costo de nube: USD 0). En **Entrega 2**, todo el workflow
+también corre local por defecto; solo el análisis de fotos usa opcionalmente `NVIDIA_VISION_URL` si se configura, con
+fallback determinista local cuando no está disponible. El enlace a internet puede caerse durante horas
+(`fuga-sin-enlace` lo corta a los 10 minutos) y el sistema sigue andando: la transcripción, la detección de seguridad,
+el parte, la búsqueda en los manuales y el workflow de órdenes no dependen de él.
 
 | Tarea | Dónde | Por qué |
 |---|---|---|
 | Transcripción de las notas | Local (`asr`, faster-whisper `small`) | La alerta de seguridad tiene que salir en < 30 s con o sin enlace |
-| Detección S1–S4, eventos, parte y diálogo | Local, en código (sin modelo) | Reproducible y sin depender de la red |
+| Detección S1–S4, eventos, parte y diálogo | Local, en código (sin modelo) | Reproducible y sin depender de la red (`CONFIRMACION_ESTRICTA:-false` en `docker-compose.yml`, D16) |
 | Búsqueda en manuales (RAG) | Local (`emb` + pgvector) | Los manuales están en la planta; límites y stock no salen del RAG (`docs/rag.md`) |
 | Respaldo con LLM | Local (`llm`, Ollama) | Solo para lo que el parser no entiende; nunca decide ni confirma |
-| Análisis de escalados | Local: heurísticas deterministas + RAG | El worker no invoca un LLM para decidir tareas |
-| Análisis de fotos | API de visión opcional (`NVIDIA_VISION_URL`) | Si falta configuración o hay un fallo, el hallazgo queda pendiente |
-| Workflow de órdenes | LangGraph local + `PostgresSaver` | Reglas puras, interrupciones humanas y checkpoint por `orden_id` |
+| Análisis de escalados | Local: heurísticas deterministas + RAG + `/api/historial-ordenes` | El worker no invoca un LLM para decidir tareas; consulta historial para detectar fallas repetidas |
+| Análisis de fotos | API de visión opcional (`NVIDIA_VISION_URL`) + fallback determinista | Si falta configuración o hay un fallo, el hallazgo queda pendiente y el respaldo local evalúa daño estructural |
+| Workflow de órdenes | LangGraph local + `PostgresSaver` + tabla `orden_workflow` | Reglas puras, interrupciones HITL, deduplicación persistente y checkpoint por `orden_id` |
 
 ## Entrega 2: orden y certificación
 
 ```mermaid
 flowchart TD
-    E[Escalado] --> F[analizar_fotos]
-    F --> A[analizar_escalado: RAG + análisis determinista]
-    A --> B[redactar_orden]
-    B --> R[revisar_orden: citas y repuestos]
+    E["Escalado (código)"] --> F["analizar_fotos (Visión opcional / fallback código)"]
+    F --> A["analizar_escalado (RAG + código + /api/historial-ordenes)"]
+    A --> B["redactar_orden (código)"]
+    B --> R["revisar_orden (código: citas y repuestos)"]
     R -->|corregir| B
-    R -->|rechazar| X[rechazar_orden]
-    R -->|válida| V[evaluar_aprobacion]
-    V -->|aprobada| G[guardar_aprobada]
-    V -->|pendiente| P[guardar_pendiente]
-    P --> D[esperar_decision]
+    R -->|rechazar| X["rechazar_orden (código)"]
+    R -->|válida| V["evaluar_aprobacion (código + orden_workflow)"]
+    V -->|duplicada| END
+    V -->|aprobada| G["guardar_aprobada (código)"]
+    V -->|pendiente| P["guardar_pendiente (código)"]
+    P --> D["esperar_decision (HITL: planificador)"]
     D -->|aprobada| G
     D -->|rechazada| X
-    G --> C[esperar_cierre]
-    C --> I[interpretar y comparar cierre]
-    I -->|personal propio| S[esperar_supervisor]
-    S --> Z[cerrar_orden]
-    I -->|contratista| Q[esperar_inspector]
-    Q --> H[calcular y emitir Habilita]
+    G --> C["esperar_cierre (MQTT)"]
+    C --> I["interpretar y comparar cierre (código)"]
+    I -->|personal propio| S["esperar_supervisor (HITL: supervisor)"]
+    S --> Z["cerrar_orden (código)"]
+    I -->|contratista| Q["esperar_inspector (HITL: inspector)"]
+    Q --> H["calcular y emitir Habilita (código)"]
 ```
 
-La aplicación usa el análisis determinista por defecto; el cliente de visión llama a NVIDIA solo cuando se configura
-`NVIDIA_VISION_URL`. `PostgresSaver` conserva cada workflow con `thread_id = orden_id` para reanudarlo tras un reinicio.
-Si PostgreSQL cierra la conexión, el worker recrea el checkpointer y reintenta el evento; la entrada MQTT no espera al
-grafo durante la recuperación, por lo que puede seguir procesando notas de voz.
+- **Workflow determinista / código:** redacción, revisión de citas y repuestos, deduplicación persistente
+  (`orden_workflow`), evaluación de aprobación, comparación de cierre, cálculo y emisión de Habilita (`HAB-AAAA-NNNN`).
+- **RAG / Visión / LLM de respaldo:** `analizar_escalado` consulta el recuperador RAG local y `/api/historial-ordenes`;
+  `analizar_fotos` llama a `NVIDIA_VISION_URL` solo si está configurada (si no, usa fallback determinista local);
+  el LLM de respaldo (`qwen3.5:2b-q4_K_M`) solo actúa en el pipeline de voz, nunca dentro del workflow de órdenes.
+
+`PostgresSaver` conserva cada workflow con `thread_id = orden_id` para reanudarlo tras un reinicio. Si PostgreSQL
+cierra la conexión, el worker recrea el checkpointer y reintenta el evento; la entrada MQTT no espera al grafo durante
+la recuperación, por lo que puede seguir procesando notas de voz.
 La Habilita usa `HAB-AAAA-NNNN`; su monto sale de precios contractuales y repuestos autorizados, nunca del importe
-dictado en el cierre.
+dictado en el cierre. La validación contractual de cierres (contratos `CT-SVP-2022` / `CT-SVP-2025`, horas extra,
+movilización, recargos y repuestos contra `cierres_ejemplo.json`) vive en `src/sistema/workflow/certificacion.py` y se
+verifica en `tests/unit/test_certificacion_cierres.py`.
+
+### Decisiones humanas HITL (CLI)
+
+Para enviar decisiones humanas de aprobación, cierre o certificación sin broker externo adicional, el paquete incluye
+la CLI `python -m sistema.workflow.cli`:
+
+```bash
+python -m sistema.workflow.cli planificador <orden_id> --decision aprobada|rechazada
+python -m sistema.workflow.cli supervisor <orden_id> --decision cerrar
+python -m sistema.workflow.cli inspector <orden_id> --decision certificar|observar
+```
+
+- **`--dry-run`:** imprime el tópico y el payload JSON validado por Pydantic sin conectarse al broker MQTT.
+- **`--mqtt-host` / `--mqtt-port`:** host y puerto del broker (por defecto `MQTT_HOST` o `localhost`, y `MQTT_PORT` o `1883`).
+- **Tópicos publicados:** `planta/decisiones/planificador`, `planta/decisiones/supervisor` y
+  `planta/decisiones/inspector`.
 
 ## Dependencia provisional del contrato
 
@@ -117,12 +143,13 @@ src/sistema/
   conocimiento/                      corpus, recuperador léxico y híbrido (RAG)
   herramientas/                      siete tools (StructuredTool de LangChain), servidor MCP y su consumo con langchain-mcp-adapters
   control/                           presupuesto de pasos y tokens, timeout y cortes por nota
-  persistencia/, integraciones/      Postgres, cola de salida, MQTT, API de la planta, ASR
+  persistencia/, integraciones/      Postgres, cola de salida, MQTT, API de la planta, ASR, visión
+  workflow/                          grafo LangGraph, reglas, certificación contractual, decisiones y CLI HITL
 asr/, emb/, llm/                     servicios de transcripción, embeddings y LLM de respaldo (Ollama)
   respaldo.py                        LLM de respaldo: esquema, prompt y validación determinista
 tests/                               unit/, infra/ (compose), integracion/ (Postgres real)
 evaluacion/                          corrector, latencia de alerta, ASR, RAG, extracción offline
-docs/                                spec-parte.md, rag.md, memoria.md, resultados/
+docs/                                spec-parte.md, rag.md, memoria.md, context-builder.md, resultados/
 ```
 
 ## Documentos
@@ -130,4 +157,5 @@ docs/                                spec-parte.md, rag.md, memoria.md, resultad
 - [docs/spec-parte.md](docs/spec-parte.md): flujo del parte (spec).
 - [docs/rag.md](docs/rag.md): qué se consulta por RAG y qué por API o SQL, medición del recuperador.
 - [docs/memoria.md](docs/memoria.md): qué se recuerda y por cuánto tiempo.
+- [docs/context-builder.md](docs/context-builder.md): armado de contexto por consumidor y fuentes.
 - [docs/resultados/linea_base.md](docs/resultados/linea_base.md): corridas del corrector y latencia de la alerta.
