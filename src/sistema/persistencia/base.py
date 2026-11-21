@@ -28,6 +28,7 @@ TABLAS_REQUERIDAS = frozenset(
         "salida",
         "habilita_secuencia",
         "habilita_orden",
+        "orden_workflow",
     }
 )
 
@@ -220,6 +221,35 @@ class Base:
     def foto_por_url(self, url: str) -> tuple | None:
         filas = self.ejecutar("SELECT estado, sha256, ruta, bytes FROM foto WHERE url = %s", (url,))
         return filas[0] if filas else None
+
+    # -- órdenes de trabajo -------------------------------------------------------------------------
+
+    def orden_abierta_igual(
+        self, equipo: str, tareas: list[str], excluir_orden_id: str | None = None
+    ) -> str | None:
+        """Devuelve el id de una orden abierta equivalente, si ya existe otra en curso."""
+        tareas_canonicas = json.dumps(sorted(tareas), ensure_ascii=False)
+        filas = self.ejecutar(
+            "SELECT orden_id FROM orden_workflow "
+            "WHERE equipo = %s AND tareas = %s::jsonb "
+            "AND estado NOT IN ('Rechazada', 'Cerrada', 'Certificada') "
+            "AND (%s::text IS NULL OR orden_id <> %s::text) "
+            "ORDER BY actualizado ASC LIMIT 1",
+            (equipo, tareas_canonicas, excluir_orden_id, excluir_orden_id),
+        )
+        return filas[0][0] if filas else None
+
+    def registrar_estado_orden(self, orden_id: str, equipo: str, tareas: list[str], estado: str) -> None:
+        """Persiste el estado actual de una orden para evitar duplicados abiertos."""
+        tareas_canonicas = json.dumps(sorted(tareas), ensure_ascii=False)
+        self.ejecutar(
+            "INSERT INTO orden_workflow (orden_id, equipo, tareas, estado) "
+            "VALUES (%s, %s, %s::jsonb, %s) "
+            "ON CONFLICT (orden_id) DO UPDATE SET "
+            "equipo = EXCLUDED.equipo, tareas = EXCLUDED.tareas, "
+            "estado = EXCLUDED.estado, actualizado = now()",
+            (orden_id, equipo, tareas_canonicas, estado),
+        )
 
     # -- consumo y retención (V6) --------------------------------------------------------------------
 

@@ -107,3 +107,63 @@ def test_asignar_numero_habilita_es_idempotente_y_secuencial(monkeypatch):
     assert base.asignar_numero_habilita("OT-1", 2099) == primero
     assert base.asignar_numero_habilita("OT-1", 2100) == primero
     assert base.asignar_numero_habilita("OT-2", 2099) == "HAB-2099-0002"
+
+
+def test_tablas_requeridas_incluye_orden_workflow():
+    from sistema.persistencia.base import TABLAS_REQUERIDAS
+
+    assert "orden_workflow" in TABLAS_REQUERIDAS
+
+
+def test_orden_abierta_igual_y_registrar_estado_orden(monkeypatch):
+    import json
+
+    base = Base("postgresql://test")
+    ordenes: dict[str, tuple[str, list[str], str]] = {}
+    consultas: list[tuple[str, tuple]] = []
+
+    def fake_ejecutar(sql: str, params: tuple = ()):
+        consultas.append((sql, params))
+        if sql.startswith("INSERT INTO orden_workflow"):
+            orden_id, equipo, tareas_json, estado = params
+            ordenes[orden_id] = (equipo, json.loads(tareas_json), estado)
+            return []
+        if sql.startswith("SELECT orden_id FROM orden_workflow"):
+            equipo, tareas_json, excluir_check, excluir_id = params
+            tareas = json.loads(tareas_json)
+            for oid, (eq, tar, est) in ordenes.items():
+                if (
+                    eq == equipo
+                    and tar == tareas
+                    and est not in ("Rechazada", "Cerrada", "Certificada")
+                    and (excluir_check is None or oid != excluir_id)
+                ):
+                    return [(oid,)]
+            return []
+        raise AssertionError(f"SQL inesperado: {sql}")
+
+    monkeypatch.setattr(base, "ejecutar", fake_ejecutar)
+
+    # Registra tareas desordenadas y verifica canonización con sorted(tareas).
+    base.registrar_estado_orden("OT-1", "B-101", ["T-B-VAL", "T-B-EMP"], "PendienteAprobacion")
+    assert ordenes["OT-1"] == ("B-101", ["T-B-EMP", "T-B-VAL"], "PendienteAprobacion")
+
+    # Coincide aunque las tareas se consulten en distinto orden; excluye su propio orden_id.
+    assert base.orden_abierta_igual("B-101", ["T-B-EMP", "T-B-VAL"]) == "OT-1"
+    assert base.orden_abierta_igual("B-101", ["T-B-EMP", "T-B-VAL"], excluir_orden_id="OT-1") is None
+    assert base.orden_abierta_igual("B-101", ["T-B-EMP", "T-B-VAL"], excluir_orden_id="OT-2") == "OT-1"
+
+    assert any(
+        "NOT IN ('Rechazada', 'Cerrada', 'Certificada')" in sql
+        for sql, _ in consultas
+        if sql.startswith("SELECT")
+    )
+
+    # Estados cerrados dejan de considerarse abiertos.
+    for estado_final in ("Cerrada", "Rechazada", "Certificada"):
+        base.registrar_estado_orden("OT-1", "B-101", ["T-B-VAL", "T-B-EMP"], estado_final)
+        assert base.orden_abierta_igual("B-101", ["T-B-EMP", "T-B-VAL"]) is None
+
+    # Una orden en Ejecucion sigue abierta y bloquea duplicados.
+    base.registrar_estado_orden("OT-2", "F-201B", ["T-F-CAR"], "Ejecucion")
+    assert base.orden_abierta_igual("F-201B", ["T-F-CAR"]) == "OT-2"

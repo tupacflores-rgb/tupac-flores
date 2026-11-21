@@ -85,3 +85,15 @@ CREATE TABLE IF NOT EXISTS habilita_orden (
     UNIQUE (anio, secuencia),
     CHECK (numero = 'HAB-' || anio::text || '-' || lpad(secuencia::text, 4, '0'))
 );
+
+-- Órdenes de mantenimiento persistidas para deduplicar órdenes abiertas tras reinicios.
+CREATE TABLE IF NOT EXISTS orden_workflow (
+    orden_id    text PRIMARY KEY,
+    equipo      text NOT NULL,
+    tareas      jsonb NOT NULL,
+    estado      text NOT NULL,
+    actualizado timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS orden_workflow_abiertas
+    ON orden_workflow (equipo)
+    WHERE estado NOT IN ('Rechazada', 'Cerrada', 'Certificada');
