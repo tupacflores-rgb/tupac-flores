@@ -44,7 +44,7 @@ services:
       EMB_URL: http://emb:8000
       LLM_URL: http://llm:11434
       LLM_MODELO: ${LLM_MODELO:-qwen3.5:2b-q4_K_M}
-      CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-true}
+      CONFIRMACION_ESTRICTA: ${CONFIRMACION_ESTRICTA:-false}
     volumes:
       - agente-journal:/var/lib/sistema/journal
       - agente-fotos:/var/lib/sistema/fotos

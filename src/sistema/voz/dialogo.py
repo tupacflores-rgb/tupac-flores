@@ -240,6 +240,8 @@ class Dialogo:
         """Respuesta que el intérprete no entiende: el LLM propone el parte corregido. Nunca confirma."""
         if self._respaldo is None or est.estado != EstadoParte.borrador:
             return it
+        if not est.confirmable and not self._config.confirmacion_estricta and it.tipo != "corrige":
+            return it
         if not (
             it.tipo == "desconocido" or (it.tipo == "corrige" and not it.cambios and not it.revisar_todo)
         ):

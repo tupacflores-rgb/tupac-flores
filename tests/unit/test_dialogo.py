@@ -355,3 +355,16 @@ def test_reinicio_despues_de_confirmar_ignora_una_confirmacion_repetida():
     e2 = _reiniciar(e1)
     e2.responde("Sí, confirmo.", a=ultimo)
     assert len(e1.confirmados) == 1 and e2.confirmados == []  # los eventos no se duplican
+
+
+def test_d16_no_invoca_respaldo_llm_ante_respuesta_sin_borrador_en_observaciones():
+    class RespaldoProhibido:
+        def corregir(self, *_args, **_kwargs):
+            raise AssertionError("no debe llamarse al LLM")
+
+    e = Entorno(estricta=False)
+    e.dialogo._respaldo = RespaldoProhibido()
+    m = e.nota("La tres está parada, en reserva.")
+    assert m.espera_respuesta
+    e.responde("¿Confirmar qué? Mostrame lo que anotaste.")
+    assert len(e.confirmados) == 1
