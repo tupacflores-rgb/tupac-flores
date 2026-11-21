@@ -18,6 +18,31 @@ nota de solo observaciones («la bomba está parada, en reserva») no se puede c
 Con D16 (`CONFIRMACION_ESTRICTA=false`, ya implementada) subirían a 100 %; la decisión es de Novit. Detalle y
 repetición: `docs/resultados/linea_base.md`.
 
+### Entrega 2 · Corrección local (5 escenarios TP2)
+
+Corrida sobre `tormenta-perfecta`, `sin-luz`, `contratista`, `fuga-sin-enlace` y `ataque` (`martes-tranquilo` y `libre`
+excluidos de este subconjunto): **93,9 / 100 · APRUEBA**, **0 faltas eliminatorias**.
+
+| A1 | A2 | A3 | A4a | A4b | B1 | B2 | D1 | D2 | E1 | E2 | E3 | F1 | F2 | F3 | G1 |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 100 % | 72 % | 81 % | 100 % | 100 % | 86 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % | 100 % |
+
+(`G2` y `G3` figuran como `inactivo` en la rúbrica vigente.)
+
+Cambios incorporados sobre `bf9ee7e`:
+- **Colmatación acelerada en filtros (`src/sistema/deteccion/sensores.py`, `src/sistema/app.py`):** seguimiento de ΔP
+  corregida por caudal usando `/api/historian` en ventana de 6 h (`TASAS_NORMALES_FILTRO`, `_evaluar_colmatacion`).
+- **Deduplicación persistente de órdenes (`src/sistema/persistencia/esquema.sql`, `base.py`, `workflow/grafo.py`):**
+  tabla `orden_workflow` en PostgreSQL (`orden_abierta_igual`, `registrar_estado_orden`) para evitar duplicados abiertos
+  entre reintentos y tras cortes de energía.
+- **Clasificación determinista de fallas (`src/sistema/workflow/grafo.py`):** evaluación prioritaria del tramo de
+  anomalía en `_tareas_basicas` para evitar que lecturas IR normales contaminen F01/F02 y mapeo de sensores/colmatación
+  de filtros a `T-F-CAR`.
+- **Reglas de aprobación y fallback sin `NVIDIA_VISION_URL` (`src/sistema/app.py`, `workflow/reglas.py`, `workflow/grafo.py`):**
+  chequeo de bombas reales en `_reserva_disponible`, validación de `equipos` por tarea estándar en
+  `_codigos_tareas_estandar` y rechazo determinista por daño estructural grave en `_hay_dano_estructural_grave` aun sin
+  endpoint visual externo.
+
 ## Seguridad (S1–S4)
 
 Detector determinista sobre la transcripción completa, sin LLM y sin nube. Dos pasadas del mismo modelo: una rápida
@@ -207,7 +232,7 @@ corridas finales del corrector el respaldo no se llamó ni una vez. Detalle en `
 - **Puerta interna de 15 s no cumplida** (p99 19,3 s en el peor caso con carga al tope); causa: un trabajo del ASR en curso no
   se interrumpe.
 - **Lista cerrada de modelos:** Modelos locales de libre elección según aclaración de Novit, confirmada por el usuario el 09/11/2026.
-- **Fotos:** se descargan a un volumen con sha256 y quedan asociadas a su fila; si la descarga falla queda la URL pendiente y se reintenta. En la Entrega 2, el workflow envía las fotos del evento a `ClienteVision` cuando `NVIDIA_VISION_URL` está configurada.
+- **Fotos:** se descargan a un volumen con sha256 y quedan asociadas a su fila; si la descarga falla queda la URL pendiente y se reintenta. En la Entrega 2, el workflow envía las fotos del evento a `ClienteVision` cuando `NVIDIA_VISION_URL` está configurada; si no hay endpoint configurado o la llamada falla, `_hay_dano_estructural_grave` conserva un respaldo determinista sobre hallazgos, URLs de fotos y resumen para forzar `PendienteAprobacion` ante daño estructural.
 - **Códigos de falla del fabricante → F01–F10:** la tabla `MBP-4 §6.1` se **extrae del corpus indexado** (no está escrita a mano) y la tool `traducir_codigo` (solo lectura, Pydantic estricto, también por MCP) traduce `TX-T07`↔`F09` con sus citas (MBP-4 §6.1/§6.x y el manual vigente). Un código del manual sin correspondencia en la tabla (p. ej. `TX-T09`) se informa sin inventar una.
 - **Context builder:** solo mencionado; falta el documento de diseño.
 - **Notas `VIVO-`:** sin tratamiento ni test específico (una nota sin equipos termina en `sin_filas`).
