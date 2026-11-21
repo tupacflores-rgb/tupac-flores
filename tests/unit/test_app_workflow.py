@@ -171,3 +171,50 @@ def test_worker_workflow_reabre_postgres_y_no_pierde_evento_en_error_del_checkpo
 
     assert not agente._workflow_listo.is_set()
     assert agente._workflow_jobs.get_nowait() == (evento, ())
+
+
+def test_reserva_disponible_verifica_estado_real_de_bombas(tmp_path, monkeypatch):
+    from sistema.app import Agente
+    from sistema.config import Config
+
+    agente = Agente(Config(journal_dir=str(tmp_path / "journal")))
+
+    # Equipo no bomba -> True incluso con todas las bombas en marcha.
+    monkeypatch.setattr(
+        agente.api,
+        "estado",
+        lambda: {
+            "bombas": [
+                {"tag": "B-101", "estado": "marcha"},
+                {"tag": "B-102", "estado": "marcha"},
+                {"tag": "B-103", "estado": "marcha"},
+            ]
+        },
+    )
+    assert agente._reserva_disponible("F-201B") is True
+    assert agente._reserva_disponible("B-101") is False
+
+    # Bomba ya parada -> True sin exigir otra parada adicional.
+    monkeypatch.setattr(
+        agente.api,
+        "estado",
+        lambda: {
+            "bombas": [
+                {"tag": "B-101", "estado": "marcha"},
+                {"tag": "B-102", "estado": "marcha"},
+                {"tag": "B-103", "estado": "parada"},
+            ]
+        },
+    )
+    assert agente._reserva_disponible("B-103") is True
+    assert agente._reserva_disponible("B-101") is True
+
+    # Error de API o payload inválido -> False (fail-safe).
+    monkeypatch.setattr(agente.api, "estado", lambda: {"bombas": "invalido"})
+    assert agente._reserva_disponible("B-101") is False
+
+    def _fallar():
+        raise RuntimeError("api caída")
+
+    monkeypatch.setattr(agente.api, "estado", _fallar)
+    assert agente._reserva_disponible("B-101") is False

@@ -239,6 +239,8 @@ class Agente:
                 cliente_vision=cliente_vision,
                 descargar_imagen=self.api.descargar,
                 asignar_numero_habilita=self.base.asignar_numero_habilita,
+                buscar_orden_abierta=self.base.orden_abierta_igual,
+                registrar_estado_orden=self.base.registrar_estado_orden,
             ) as grafo:
                 with self._workflow_lock:
                     self._workflow = grafo
@@ -366,36 +368,28 @@ class Agente:
             return self._workflow
 
     def _reserva_disponible(self, equipo: str | None) -> bool:
-        if self.definicion is None:
-            log.warning("no se pudo verificar la reserva: falta la definición de planta")
-            return False
-        reservas = [
-            item
-            for item in self.definicion.get("equipos", [])
-            if item.get("tipo") == "bomba"
-            and any("reserva" in nombre.casefold() for nombre in item.get("nombres", []))
-        ]
-        if len(reservas) != 1 or reservas[0].get("tag") == equipo:
-            log.warning("no se pudo confirmar una bomba de reserva disponible para %s", equipo)
-            return False
         try:
-            bombas = self.api.estado().get("bombas")
+            estado = self.api.estado()
         except Exception:
             log.exception("no se pudo consultar la disponibilidad de la bomba de reserva")
             return False
-        tag_reserva = reservas[0].get("tag")
-        bomba = (
-            next(
-                (item for item in bombas if isinstance(item, dict) and item.get("tag") == tag_reserva),
-                None,
-            )
-            if isinstance(bombas, list)
-            else None
-        )
-        if not isinstance(bomba, dict) or not isinstance(bomba.get("estado"), str):
-            log.warning("la API no informó el estado de la bomba de reserva %s", tag_reserva)
+        bombas = estado.get("bombas") if isinstance(estado, dict) else None
+        if not isinstance(bombas, list):
+            log.warning("la API no informó la lista de bombas")
             return False
-        return bomba["estado"] == "parada"
+        estados = {
+            item["tag"]: item["estado"]
+            for item in bombas
+            if isinstance(item, dict)
+            and isinstance(item.get("tag"), str)
+            and isinstance(item.get("estado"), str)
+        }
+        if not estados:
+            log.warning("la API informó bombas sin estado válido")
+            return False
+        if equipo not in estados or estados[equipo] != "marcha":
+            return True
+        return any(estado_bomba == "parada" for tag, estado_bomba in estados.items() if tag != equipo)
 
     def _iniciar_workflow(self, evento: EventoSistema, fotos: tuple[str, ...] = ()) -> None:
         if evento.tipo != TipoEvento.escalado:
@@ -530,6 +524,7 @@ class Agente:
                     self._estado_de_equipo,
                     self._emitir_evento,
                     tendencia=self.tendencia.describir,
+                    historian=self.api.historian,
                 )
             self._detector_sensores.procesar(json.loads(e.payload))
         except Exception:

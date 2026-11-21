@@ -73,6 +73,7 @@ class WorkflowState(TypedDict, total=False):
     decision_inspector: Literal["observar", "certificar"]
     orden_sistema: dict[str, object]
     orden_emitida: bool
+    orden_duplicada_de: str
     monto_habilita_usd: float
     numero_habilita: str
     habilita: dict[str, object]
@@ -145,6 +146,8 @@ AnalizadorEscalado = Callable[
 DescargarAudio = Callable[[str], bytes]
 DescargarImagen = Callable[[str], bytes]
 AsignarNumeroHabilita = Callable[[str, int], str]
+BuscarOrdenAbierta = Callable[[str, list[str], str | None], str | None]
+RegistrarEstadoOrden = Callable[[str, str, list[str], str], None]
 
 
 class SalidaWorkflow(Protocol):
@@ -284,24 +287,70 @@ def _normalizar(texto: str) -> str:
     return "".join(c for c in descompuesto if unicodedata.category(c) != "Mn")
 
 
-def _tareas_basicas(texto: str, equipo: str) -> list[str]:
-    texto = _normalizar(texto)
+def _clasificar_por_texto(fragmento: str, equipo: str) -> list[str] | None:
     if equipo.startswith("B-"):
-        if "f03" in texto or any(palabra in texto for palabra in ("rodamiento", "cigueñal", "cojinete")):
-            return ["T-B-ROD"]
-        if any(palabra in texto for palabra in ("empaquetadura", "goteo", "fuga", "reten")):
+        if any(palabra in fragmento for palabra in ("empaquetadura", "goteo", "fuga", "reten")):
             return ["T-B-EMP"]
-        if "f02" in texto or any(palabra in texto for palabra in ("valv", "golpete", "pulsac", "martilleo")):
+        if "f02" in fragmento or any(
+            palabra in fragmento for palabra in ("valv", "golpete", "pulsac", "martilleo")
+        ):
             return ["T-B-VAL"]
-        if "correa" in texto:
+        if "f03" in fragmento or any(
+            palabra in fragmento
+            for palabra in (
+                "ruido raro de rodamiento",
+                "ruido de rodamiento",
+                "rodamiento caliente",
+                "temperatura alta del rodamiento",
+                "ciguenal",
+                "cojinete",
+            )
+        ):
+            return ["T-B-ROD"]
+        if "f05" in fragmento or any(palabra in fragmento for palabra in ("correa", "chirrido")):
             return ["T-B-COR"]
-        if any(palabra in texto for palabra in ("vibracion", "vibra", "vibrometr")):
-            return ["I-VIB"]
-        if "aceite" in texto:
+        if "f06" in fragmento or any(
+            palabra in fragmento for palabra in ("acople", "elastomero", "desaline")
+        ):
+            return ["T-B-ALI"]
+        if "f04" in fragmento or any(
+            palabra in fragmento
+            for palabra in (
+                "nivel de aceite",
+                "aceite bajo",
+                "visor de aceite",
+                "sin aceite",
+                "temperatura_aceite",
+            )
+        ):
             return ["T-B-ACE"]
-        return ["I-VIB"]
-    if equipo.startswith("F-") and any(palabra in texto for palabra in ("filtro", "cartucho")):
+        return None
+    if equipo.startswith("F-") and (
+        any(
+            palabra in fragmento
+            for palabra in ("filtro", "cartucho", "colmatac", "f07", "f08", "diferencial alto")
+        )
+        or (
+            "presion_diferencial" in fragmento
+            and any(palabra in fragmento for palabra in ("fuera de limites", "alto", "baja"))
+        )
+    ):
         return ["T-F-CAR"]
+    return None
+
+
+def _tareas_basicas(texto: str, equipo: str) -> list[str]:
+    texto_norm = _normalizar(texto)
+    porcion_anomalia = texto_norm.split("parte del equipo:", 1)[0].strip()
+    if porcion_anomalia and porcion_anomalia != texto_norm:
+        coincidencia = _clasificar_por_texto(porcion_anomalia, equipo)
+        if coincidencia is not None:
+            return coincidencia
+    coincidencia = _clasificar_por_texto(texto_norm, equipo)
+    if coincidencia is not None:
+        return coincidencia
+    if equipo.startswith("B-"):
+        return ["I-VIB"]
     return [TAREA_NO_ESTANDAR]
 
 
@@ -524,22 +573,98 @@ def _nodo_revisar_orden(materiales: dict) -> Callable[[WorkflowState], dict[str,
     return revisar
 
 
-def _nodo_evaluar_aprobacion(state: WorkflowState) -> dict[str, object]:
-    orden = OrdenBorrador.model_validate(state.get("orden"))
-    inventario = state.get("inventario")
-    catalogo_tareas = state.get("catalogo_tareas")
-    reserva = state.get("reserva_disponible")
-    if not isinstance(inventario, dict) or not isinstance(catalogo_tareas, dict):
-        raise ValueError("El estado requiere inventario y catalogo_tareas")
-    if not isinstance(reserva, bool):
-        raise ValueError("El estado requiere reserva_disponible")
+_MARCADORES_DANO_ESTRUCTURAL = (
+    "rotura_descarga",
+    "dano_estructural",
+    "dano estructural",
+    "rotura con salida",
+)
 
-    evaluacion: EvaluacionAprobacion = evaluar_aprobacion(orden, inventario, catalogo_tareas, reserva)
-    return {
-        "evaluacion_aprobacion": evaluacion.model_dump(mode="python"),
-        "aprobada_por_reglas": evaluacion.aprobada,
-        "motivo_pendiente": "; ".join(evaluacion.motivos),
-    }
+
+def _hay_dano_estructural_grave(state: WorkflowState) -> bool:
+    """Detecta daño estructural grave desde hallazgos visuales o metadatos deterministas."""
+    hallazgos = state.get("hallazgos_visuales", [])
+    if isinstance(hallazgos, list):
+        for hallazgo in hallazgos:
+            if isinstance(hallazgo, BaseModel):
+                hallazgo = hallazgo.model_dump(mode="python")
+            if not isinstance(hallazgo, dict):
+                continue
+            severidad = _normalizar(str(hallazgo.get("severidad") or "")).strip()
+            if severidad in {"grave", "critica", "critico", "estructural"}:
+                return True
+            detalle = _normalizar(f"{hallazgo.get('objeto') or ''} {hallazgo.get('descripcion') or ''}")
+            if "dano estructural" in detalle or "rotura" in detalle:
+                return True
+
+    textos: list[str] = []
+    fotos = state.get("fotos", [])
+    if isinstance(fotos, list):
+        for foto in fotos:
+            url = foto.get("url") if isinstance(foto, dict) else (foto if isinstance(foto, str) else None)
+            if isinstance(url, str) and url:
+                textos.append(_normalizar(url))
+
+    evento = state.get("evento")
+    if isinstance(evento, BaseModel):
+        evento = evento.model_dump(mode="python")
+    if isinstance(evento, dict):
+        resumen = evento.get("resumen")
+        if isinstance(resumen, str) and resumen:
+            textos.append(_normalizar(resumen))
+
+    return any(marcador in texto for texto in textos for marcador in _MARCADORES_DANO_ESTRUCTURAL)
+
+
+def _nodo_evaluar_aprobacion(
+    buscar_orden_abierta: BuscarOrdenAbierta | None = None,
+) -> Callable[[WorkflowState], dict[str, object]]:
+    def evaluar(state: WorkflowState) -> dict[str, object]:
+        orden = OrdenBorrador.model_validate(state.get("orden"))
+        inventario = state.get("inventario")
+        catalogo_tareas = state.get("catalogo_tareas")
+        reserva = state.get("reserva_disponible")
+        if not isinstance(inventario, dict) or not isinstance(catalogo_tareas, dict):
+            raise ValueError("El estado requiere inventario y catalogo_tareas")
+        if not isinstance(reserva, bool):
+            raise ValueError("El estado requiere reserva_disponible")
+
+        raw_evento = state.get("evento")
+        evento = _evento_dict(raw_evento) if raw_evento is not None else {}
+        equipo_raw = evento.get("equipo")
+        equipo = equipo_raw if isinstance(equipo_raw, str) and equipo_raw else None
+
+        evaluacion: EvaluacionAprobacion = evaluar_aprobacion(
+            orden,
+            inventario,
+            catalogo_tareas,
+            reserva,
+            dano_estructural_grave=_hay_dano_estructural_grave(state),
+            equipo=equipo,
+        )
+        salida_estado: dict[str, object] = {
+            "evaluacion_aprobacion": evaluacion.model_dump(mode="python"),
+            "aprobada_por_reglas": evaluacion.aprobada,
+            "motivo_pendiente": "; ".join(evaluacion.motivos),
+        }
+        if buscar_orden_abierta is not None and equipo:
+            try:
+                existente = buscar_orden_abierta(equipo, orden.tareas, orden.orden_id)
+            except Exception as exc:
+                log.warning("no se pudo verificar órdenes abiertas para %s: %s", orden.orden_id, exc)
+                existente = None
+            if existente:
+                log.info(
+                    "se omite orden duplicada %s; ya existe orden abierta %s para %s %s",
+                    orden.orden_id,
+                    existente,
+                    equipo,
+                    orden.tareas,
+                )
+                salida_estado["orden_duplicada_de"] = existente
+        return salida_estado
+
+    return evaluar
 
 
 def _nodo_esperar_decision(state: WorkflowState) -> dict[str, object]:
@@ -822,7 +947,17 @@ def _orden_con_estado(
     return OrdenSistema.model_validate(datos)
 
 
-def _emitir_estado_orden(salida: SalidaWorkflow | None, orden: OrdenSistema, clave: str) -> bool:
+def _emitir_estado_orden(
+    salida: SalidaWorkflow | None,
+    orden: OrdenSistema,
+    clave: str,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
+) -> bool:
+    if registrar_estado_orden is not None:
+        try:
+            registrar_estado_orden(orden.id, orden.equipo, orden.tareas, orden.estado.value)
+        except Exception as exc:
+            log.warning("no se pudo registrar el estado de %s (%s): %s", orden.id, orden.estado.value, exc)
     if salida is None:
         log.warning("No se emite la orden %s (%s): no se inyectó Salida", orden.id, clave)
         return False
@@ -832,30 +967,39 @@ def _emitir_estado_orden(salida: SalidaWorkflow | None, orden: OrdenSistema, cla
     return emitida
 
 
-def _nodo_guardar_pendiente(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_guardar_pendiente(
+    salida: SalidaWorkflow | None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
+) -> Callable[[WorkflowState], dict[str, object]]:
     def guardar(state: WorkflowState) -> dict[str, object]:
         motivo = state.get("motivo_pendiente")
         if not isinstance(motivo, str) or not motivo:
             raise ValueError("guardar_pendiente requiere motivo_pendiente")
         orden = _orden_sistema_desde_borrador(state, EstadoOrden.pendiente, motivo)
-        emitida = _emitir_estado_orden(salida, orden, "pendiente")
+        emitida = _emitir_estado_orden(salida, orden, "pendiente", registrar_estado_orden)
         return {"orden_sistema": orden.model_dump(mode="json"), "orden_emitida": emitida}
 
     return guardar
 
 
-def _nodo_guardar_aprobada(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_guardar_aprobada(
+    salida: SalidaWorkflow | None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
+) -> Callable[[WorkflowState], dict[str, object]]:
     def guardar(state: WorkflowState) -> dict[str, object]:
         if state.get("aprobada_por_reglas") is not True and state.get("decision_planificador") != "aprobada":
             raise ValueError("guardar_aprobada requiere aprobación de reglas o del planificador")
         orden = _orden_sistema_desde_borrador(state, EstadoOrden.aprobada, motivo=None)
-        emitida = _emitir_estado_orden(salida, orden, "aprobada")
+        emitida = _emitir_estado_orden(salida, orden, "aprobada", registrar_estado_orden)
         return {"orden_sistema": orden.model_dump(mode="json"), "orden_emitida": emitida}
 
     return guardar
 
 
-def _nodo_rechazar_orden(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_rechazar_orden(
+    salida: SalidaWorkflow | None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
+) -> Callable[[WorkflowState], dict[str, object]]:
     def guardar(state: WorkflowState) -> dict[str, object]:
         if state.get("decision_planificador") == "rechazada":
             motivo = state.get("motivo_pendiente")
@@ -879,39 +1023,48 @@ def _nodo_rechazar_orden(salida: SalidaWorkflow | None) -> Callable[[WorkflowSta
             rechazada = _orden_con_estado(orden, EstadoOrden.rechazada, motivo_rechazo)
         else:
             rechazada = _orden_sistema_desde_borrador(state, EstadoOrden.rechazada, motivo_rechazo)
-        emitida = _emitir_estado_orden(salida, rechazada, "rechazada")
+        emitida = _emitir_estado_orden(salida, rechazada, "rechazada", registrar_estado_orden)
         return {"orden_sistema": rechazada.model_dump(mode="json"), "orden_emitida": emitida}
 
     return guardar
 
 
-def _nodo_marcar_ejecutada(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_marcar_ejecutada(
+    salida: SalidaWorkflow | None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
+) -> Callable[[WorkflowState], dict[str, object]]:
     def marcar(state: WorkflowState) -> dict[str, object]:
         orden = OrdenSistema.model_validate(state.get("orden_sistema"))
         cierre = NotaCierre.model_validate(state.get("cierre"))
         if cierre.orden_id != orden.id:
             raise ValueError("El cierre no corresponde a la OrdenSistema aprobada")
         ejecutada = _orden_con_estado(orden, EstadoOrden.ejecutada)
-        emitida = _emitir_estado_orden(salida, ejecutada, f"ejecutada:{cierre.id}")
+        emitida = _emitir_estado_orden(salida, ejecutada, f"ejecutada:{cierre.id}", registrar_estado_orden)
         return {"orden_sistema": ejecutada.model_dump(mode="json"), "orden_emitida": emitida}
 
     return marcar
 
 
-def _nodo_cerrar_orden(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_cerrar_orden(
+    salida: SalidaWorkflow | None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
+) -> Callable[[WorkflowState], dict[str, object]]:
     def cerrar(state: WorkflowState) -> dict[str, object]:
         if state.get("decision_supervisor") != "cerrar":
             raise ValueError("cerrar_orden requiere decision_supervisor cerrar")
         orden = OrdenSistema.model_validate(state.get("orden_sistema"))
         cierre = NotaCierre.model_validate(state.get("cierre"))
         cerrada = _orden_con_estado(orden, EstadoOrden.cerrada)
-        emitida = _emitir_estado_orden(salida, cerrada, f"cerrada:{cierre.id}")
+        emitida = _emitir_estado_orden(salida, cerrada, f"cerrada:{cierre.id}", registrar_estado_orden)
         return {"orden_sistema": cerrada.model_dump(mode="json"), "orden_emitida": emitida}
 
     return cerrar
 
 
-def _nodo_guardar_observada(salida: SalidaWorkflow | None) -> Callable[[WorkflowState], dict[str, object]]:
+def _nodo_guardar_observada(
+    salida: SalidaWorkflow | None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
+) -> Callable[[WorkflowState], dict[str, object]]:
     def guardar(state: WorkflowState) -> dict[str, object]:
         if state.get("decision_inspector") != "observar":
             raise ValueError("guardar_observada requiere decision_inspector observar")
@@ -922,7 +1075,7 @@ def _nodo_guardar_observada(salida: SalidaWorkflow | None) -> Callable[[Workflow
         if not motivo:
             motivo = "Observación solicitada por el inspector."
         observada = _orden_con_estado(orden, EstadoOrden.observada, motivo)
-        emitida = _emitir_estado_orden(salida, observada, f"observada:{cierre.id}")
+        emitida = _emitir_estado_orden(salida, observada, f"observada:{cierre.id}", registrar_estado_orden)
         return {"orden_sistema": observada.model_dump(mode="json"), "orden_emitida": emitida}
 
     return guardar
@@ -946,6 +1099,7 @@ def _nodo_calcular_habilita(
 def _nodo_emitir_habilita(
     salida: SalidaWorkflow | None,
     asignar_numero_habilita: AsignarNumeroHabilita | None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
 ) -> Callable[[WorkflowState], dict[str, object]]:
     def emitir(state: WorkflowState) -> dict[str, object]:
         orden = OrdenSistema.model_validate(state.get("orden_sistema"))
@@ -967,16 +1121,7 @@ def _nodo_emitir_habilita(
             }
         )
         certificada = OrdenSistema.model_validate(datos)
-        if salida is None:
-            log.warning("emitir_habilita no emite %s: no se inyectó Salida", certificada.id)
-        else:
-            emitida = salida.emitir(
-                f"{certificada.id}:certificada",
-                Topicos.ORDENES,
-                certificada,
-            )
-            if not emitida:
-                log.warning("Habilita %s quedó pendiente en la cola de salida", numero)
+        _emitir_estado_orden(salida, certificada, "certificada", registrar_estado_orden)
         payload = certificada.model_dump(mode="json")
         return {
             "orden_sistema": payload,
@@ -1000,6 +1145,8 @@ def _ruta_revision(state: WorkflowState) -> str:
 
 
 def _ruta_aprobacion_reglas(state: WorkflowState) -> str:
+    if state.get("orden_duplicada_de"):
+        return "duplicada"
     aprobada = state.get("aprobada_por_reglas")
     if aprobada is True:
         return "guardar_aprobada"
@@ -1044,6 +1191,8 @@ def construir_grafo(
     cliente_vision: ClienteVision | None = None,
     descargar_imagen: DescargarImagen | None = None,
     asignar_numero_habilita: AsignarNumeroHabilita | None = None,
+    buscar_orden_abierta: BuscarOrdenAbierta | None = None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
     precios_contrato: Mapping[str, Decimal] | None = None,
     materiales: dict | None = None,
     recuperador: Recuperador | None = None,
@@ -1060,17 +1209,20 @@ def construir_grafo(
     builder.add_node("analizar_escalado", _nodo_analizar_escalado(recuperador, analizador))
     builder.add_node("redactar_orden", _nodo_redactar_orden(materiales))
     builder.add_node("revisar_orden", _nodo_revisar_orden(materiales))
-    builder.add_node("evaluar_aprobacion", _nodo_evaluar_aprobacion)
-    builder.add_node("guardar_pendiente", _nodo_guardar_pendiente(salida))
-    builder.add_node("rechazar_orden", _nodo_rechazar_orden(salida))
-    builder.add_node("guardar_aprobada", _nodo_guardar_aprobada(salida))
-    builder.add_node("marcar_ejecutada", _nodo_marcar_ejecutada(salida))
+    builder.add_node("evaluar_aprobacion", _nodo_evaluar_aprobacion(buscar_orden_abierta))
+    builder.add_node("guardar_pendiente", _nodo_guardar_pendiente(salida, registrar_estado_orden))
+    builder.add_node("rechazar_orden", _nodo_rechazar_orden(salida, registrar_estado_orden))
+    builder.add_node("guardar_aprobada", _nodo_guardar_aprobada(salida, registrar_estado_orden))
+    builder.add_node("marcar_ejecutada", _nodo_marcar_ejecutada(salida, registrar_estado_orden))
     builder.add_node("interpretar_cierre", _nodo_interpretar_cierre(cliente_asr, descargar_audio))
     builder.add_node("comparar_cierre", _nodo_comparar_cierre)
     builder.add_node("calcular_habilita", _nodo_calcular_habilita(precios_contrato))
-    builder.add_node("emitir_habilita", _nodo_emitir_habilita(salida, asignar_numero_habilita))
-    builder.add_node("cerrar_orden", _nodo_cerrar_orden(salida))
-    builder.add_node("guardar_observada", _nodo_guardar_observada(salida))
+    builder.add_node(
+        "emitir_habilita",
+        _nodo_emitir_habilita(salida, asignar_numero_habilita, registrar_estado_orden),
+    )
+    builder.add_node("cerrar_orden", _nodo_cerrar_orden(salida, registrar_estado_orden))
+    builder.add_node("guardar_observada", _nodo_guardar_observada(salida, registrar_estado_orden))
     builder.add_node("esperar_decision", _nodo_esperar_decision)
     builder.add_node("esperar_cierre", _nodo_esperar_cierre)
     builder.add_node("esperar_nuevo_cierre", _nodo_esperar_cierre)
@@ -1098,6 +1250,7 @@ def construir_grafo(
         {
             "guardar_aprobada": "guardar_aprobada",
             "guardar_pendiente": "guardar_pendiente",
+            "duplicada": END,
         },
     )
     builder.add_edge("guardar_aprobada", "esperar_cierre")
@@ -1151,6 +1304,8 @@ def grafo_con_postgres(
     cliente_vision: ClienteVision | None = None,
     descargar_imagen: DescargarImagen | None = None,
     asignar_numero_habilita: AsignarNumeroHabilita | None = None,
+    buscar_orden_abierta: BuscarOrdenAbierta | None = None,
+    registrar_estado_orden: RegistrarEstadoOrden | None = None,
     precios_contrato: Mapping[str, Decimal] | None = None,
 ) -> Generator[CompiledStateGraph[WorkflowState, None, WorkflowState, WorkflowState], None, None]:
     """Abre el saver, prepara sus tablas y mantiene vivo el grafo compilado."""
@@ -1164,5 +1319,7 @@ def grafo_con_postgres(
             cliente_vision=cliente_vision,
             descargar_imagen=descargar_imagen,
             asignar_numero_habilita=asignar_numero_habilita,
+            buscar_orden_abierta=buscar_orden_abierta,
+            registrar_estado_orden=registrar_estado_orden,
             precios_contrato=precios_contrato,
         )

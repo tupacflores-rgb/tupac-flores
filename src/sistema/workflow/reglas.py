@@ -62,12 +62,15 @@ def _indice_inventario(inventario: dict) -> dict[str, dict]:
     return indice
 
 
-def _codigos_tareas_estandar(catalogo_tareas: dict) -> set[str]:
+def _codigos_tareas_estandar(catalogo_tareas: dict, equipo: str | None = None) -> set[str]:
     codigos: set[str] = set()
     for fila in _lista_de_registros(catalogo_tareas, "estandar", "catálogo de tareas"):
         codigo = fila.get("codigo")
         if not isinstance(codigo, str) or not codigo:
             raise ValueError("Cada tarea estándar debe tener un código")
+        equipos = fila.get("equipos")
+        if equipo is not None and isinstance(equipos, list) and equipo not in equipos:
+            continue
         codigos.add(codigo)
     return codigos
 
@@ -87,6 +90,9 @@ def evaluar_aprobacion(
     inventario: dict,
     catalogo_tareas: dict,
     reserva_disponible: bool,
+    *,
+    dano_estructural_grave: bool = False,
+    equipo: str | None = None,
 ) -> EvaluacionAprobacion:
     """Evalúa las cinco reglas usando catálogo e inventario estructurados.
 
@@ -96,9 +102,11 @@ def evaluar_aprobacion(
     """
     if not isinstance(reserva_disponible, bool):
         raise TypeError("reserva_disponible debe ser bool")
+    if not isinstance(dano_estructural_grave, bool):
+        raise TypeError("dano_estructural_grave debe ser bool")
 
     motivos: list[str] = []
-    tareas_estandar = _codigos_tareas_estandar(catalogo_tareas)
+    tareas_estandar = _codigos_tareas_estandar(catalogo_tareas, equipo)
     inventario_por_codigo = _indice_inventario(inventario)
 
     tareas_no_estandar = list(dict.fromkeys(t for t in orden.tareas if t not in tareas_estandar))
@@ -138,5 +146,8 @@ def evaluar_aprobacion(
 
     if orden.ejecutor != "propio":
         motivos.append("La orden debe ser ejecutada por personal propio.")
+
+    if dano_estructural_grave:
+        motivos.append("Daño estructural grave detectado en las fotos; requiere revisión humana.")
 
     return EvaluacionAprobacion(aprobada=not motivos, motivos=motivos)

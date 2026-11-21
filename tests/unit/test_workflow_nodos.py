@@ -34,8 +34,27 @@ DOCUMENTOS = RAIZ / "src" / "sistema" / "datos" / "documentos"
         ("B-102: vibración elevada", "B-102", "I-VIB"),
         ("B-102: vibración y pulsación en descarga", "B-102", "T-B-VAL"),
         ("B-102: golpeteo metálico rítmico", "B-102", "T-B-VAL"),
+        (
+            "B-102: la dos está con pulsación y golpeteo en descarga. "
+            "Parte del equipo: temperatura_rodamiento_ir 62 °C",
+            "B-102",
+            "T-B-VAL",
+        ),
+        (
+            "B-101: goteo en empaquetadura de bomba uno. Parte del equipo: temperatura_rodamiento_ir 64 °C",
+            "B-101",
+            "T-B-EMP",
+        ),
+        ("B-102: F03 ruido raro de rodamiento en bomba dos", "B-102", "T-B-ROD"),
         ("B-101: vibración y temperatura alta del rodamiento", "B-101", "T-B-ROD"),
         ("F-201B: lectura anómala", "F-201B", "NO-ESTANDAR"),
+        ("F-201B: presión diferencial inestable", "F-201B", "NO-ESTANDAR"),
+        (
+            "presion_diferencial de F-201A fuera de límites (valor=1.62, rango=[0.1, 1.5])",
+            "F-201A",
+            "T-F-CAR",
+        ),
+        ("F07 colmatación acelerada en filtro F-201B: ΔP corregida en aumento", "F-201B", "T-F-CAR"),
     ],
 )
 def test_analisis_basico_asocia_sintomas_con_tareas(resumen, equipo, tarea):
@@ -231,3 +250,128 @@ def test_precios_contrato_vigentes_se_cargan_desde_el_fragmento():
     assert precios["T-B-ROD"] == Decimal("1150")
     assert precios["T-B-ALI"] == Decimal("780")
     assert precios["I-VIB"] == Decimal("320")
+
+
+def test_workflow_omite_duplicado_si_hay_orden_abierta_y_permite_tras_cierre():
+    from langgraph.checkpoint.memory import MemorySaver
+    from planta_contrato import Topicos
+
+    from sistema.workflow.grafo import _ruta_aprobacion_reglas, construir_grafo
+
+    assert _ruta_aprobacion_reglas({"orden_duplicada_de": "OT-1", "aprobada_por_reglas": True}) == "duplicada"
+
+    class SalidaFake:
+        def __init__(self):
+            self.ordenes = []
+
+        def emitir(self, id_, topico, modelo):
+            if topico == Topicos.ORDENES:
+                self.ordenes.append((id_, modelo))
+            return True
+
+    abiertas: dict[tuple[str, tuple[str, ...]], str] = {}
+    registros: list[tuple[str, str, list[str], str]] = []
+
+    def buscar_orden_abierta(
+        equipo: str, tareas: list[str], excluir_orden_id: str | None = None
+    ) -> str | None:
+        existente = abiertas.get((equipo, tuple(sorted(tareas))))
+        if existente and existente != excluir_orden_id:
+            return existente
+        return None
+
+    def registrar_estado_orden(orden_id: str, equipo: str, tareas: list[str], estado: str) -> None:
+        registros.append((orden_id, equipo, list(tareas), estado))
+        clave = (equipo, tuple(sorted(tareas)))
+        if estado in {"Rechazada", "Cerrada", "Certificada"}:
+            if abiertas.get(clave) == orden_id:
+                abiertas.pop(clave, None)
+        else:
+            abiertas[clave] = orden_id
+
+    salida = SalidaFake()
+    grafo = construir_grafo(
+        checkpointer=MemorySaver(),
+        salida=salida,
+        buscar_orden_abierta=buscar_orden_abierta,
+        registrar_estado_orden=registrar_estado_orden,
+    )
+
+    evento_1 = {"id": "EV-DUP-1", "equipo": "B-101", "resumen": "B-101: goteo de empaquetadura"}
+    cfg_1 = {"configurable": {"thread_id": "OT-EV-DUP-1"}}
+    res_1 = grafo.invoke({"evento": evento_1, "reserva_disponible": True}, config=cfg_1)
+    assert "orden_duplicada_de" not in res_1
+    assert len(salida.ordenes) == 1
+    assert any(r[0] == "OT-EV-DUP-1" and r[3] == "Aprobada" for r in registros)
+
+    # Segundo evento equivalente mientras OT-EV-DUP-1 sigue abierta -> se omite antes de emitir orden.
+    evento_2 = {"id": "EV-DUP-2", "equipo": "B-101", "resumen": "B-101: goteo de empaquetadura"}
+    cfg_2 = {"configurable": {"thread_id": "OT-EV-DUP-2"}}
+    res_2 = grafo.invoke({"evento": evento_2, "reserva_disponible": True}, config=cfg_2)
+    assert res_2.get("orden_duplicada_de") == "OT-EV-DUP-1"
+    assert len(salida.ordenes) == 1
+    assert grafo.get_state(cfg_2).next == ()
+
+    # Tras cerrar la primera orden, un nuevo evento equivalente sí emite una nueva orden.
+    registrar_estado_orden("OT-EV-DUP-1", "B-101", ["T-B-EMP"], "Cerrada")
+    evento_3 = {"id": "EV-DUP-3", "equipo": "B-101", "resumen": "B-101: goteo de empaquetadura"}
+    cfg_3 = {"configurable": {"thread_id": "OT-EV-DUP-3"}}
+    res_3 = grafo.invoke({"evento": evento_3, "reserva_disponible": False}, config=cfg_3)
+    assert "orden_duplicada_de" not in res_3
+    assert len(salida.ordenes) == 2
+    assert any(r[0] == "OT-EV-DUP-3" and r[3] == "PendienteAprobacion" for r in registros)
+
+
+def test_dano_estructural_grave_fuerza_pendiente_con_hallazgo_o_fallback_sin_vision():
+    from langgraph.checkpoint.memory import MemorySaver
+    from planta_contrato import Topicos
+
+    from sistema.workflow.grafo import _hay_dano_estructural_grave, construir_grafo
+
+    assert _hay_dano_estructural_grave(
+        {"hallazgos_visuales": [{"estado": "ok", "severidad": "grave", "descripcion": "fisura"}]}
+    )
+    assert _hay_dano_estructural_grave(
+        {"hallazgos_visuales": [{"estado": "ok", "severidad": "moderada", "descripcion": "rotura en brida"}]}
+    )
+    assert _hay_dano_estructural_grave({"fotos": [{"url": "/media/fotos/rotura_descarga/04.jpg"}]})
+    assert _hay_dano_estructural_grave(
+        {"evento": {"resumen": "Condición insegura S1: rotura con salida de agua a presión en B-101"}}
+    )
+    assert not _hay_dano_estructural_grave(
+        {
+            "hallazgos_visuales": [{"estado": "pendiente", "severidad": "desconocida"}],
+            "fotos": [{"url": "/media/fotos/empaquetadura/01.jpg"}],
+            "evento": {"resumen": "B-101: goteo de empaquetadura"},
+        }
+    )
+
+    class SalidaFake:
+        def __init__(self):
+            self.ordenes = []
+
+        def emitir(self, id_, topico, modelo):
+            if topico == Topicos.ORDENES:
+                self.ordenes.append((id_, modelo))
+            return True
+
+    salida = SalidaFake()
+    grafo = construir_grafo(checkpointer=MemorySaver(), salida=salida)
+    cfg = {"configurable": {"thread_id": "OT-EV-DANO-1"}}
+    grafo.invoke(
+        {
+            "evento": {
+                "id": "EV-DANO-1",
+                "equipo": "B-101",
+                "resumen": "B-101: goteo en descarga tras golpe",
+            },
+            "fotos": [{"url": "/media/fotos/rotura_descarga/04.jpg"}],
+            "reserva_disponible": True,
+        },
+        config=cfg,
+    )
+
+    estado = grafo.get_state(cfg)
+    assert estado.next == ("esperar_decision",)
+    assert estado.values["orden_sistema"]["estado"] == "PendienteAprobacion"
+    assert "Daño estructural grave" in estado.values["orden_sistema"]["motivo"]

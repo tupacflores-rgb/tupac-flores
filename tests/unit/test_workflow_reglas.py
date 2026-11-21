@@ -95,3 +95,81 @@ def test_rechaza_repuesto_ausente_y_no_omite_la_falla_de_costo():
     assert not resultado.aprobada
     assert any("no figura en el inventario" in motivo for motivo in resultado.motivos)
     assert any("costo total" in motivo for motivo in resultado.motivos)
+
+
+def test_materiales_reales_rechaza_tx_rod_cig_y_aprueba_t_f_car_f201a():
+    from sistema.herramientas.catalogo import cargar_materiales
+    from sistema.workflow.reglas import OrdenBorrador, RepuestoOrden
+
+    materiales = cargar_materiales()
+    inventario = {"repuestos": materiales["repuestos"]}
+    catalogo = {"estandar": materiales["tareas_estandar"]}
+
+    orden_rod = OrdenBorrador(
+        orden_id="OT-ROD",
+        tareas=["T-B-ROD"],
+        detiene_equipo=True,
+        ejecutor="propio",
+        repuestos=[RepuestoOrden(codigo="TX-ROD-CIG", cantidad=1)],
+    )
+    res_rod = evaluar_aprobacion(orden_rod, inventario, catalogo, True, equipo="B-102")
+    assert not res_rod.aprobada
+    assert any("Stock insuficiente de TX-ROD-CIG" in m for m in res_rod.motivos)
+    assert any("costo total" in m for m in res_rod.motivos)
+
+    orden_f201b = OrdenBorrador(
+        orden_id="OT-F201B",
+        tareas=["T-F-CAR"],
+        detiene_equipo=False,
+        ejecutor="propio",
+        repuestos=[RepuestoOrden(codigo="FC-CART-10", cantidad=48)],
+    )
+    res_f201b = evaluar_aprobacion(orden_f201b, inventario, catalogo, True, equipo="F-201B")
+    assert not res_f201b.aprobada
+    assert any("Stock insuficiente de FC-CART-10" in m for m in res_f201b.motivos)
+    assert not any("costo total" in m for m in res_f201b.motivos)
+
+    orden_f201a = OrdenBorrador(
+        orden_id="OT-F201A",
+        tareas=["T-F-CAR"],
+        detiene_equipo=False,
+        ejecutor="propio",
+        repuestos=[RepuestoOrden(codigo="FC-CART-25", cantidad=48)],
+    )
+    res_f201a = evaluar_aprobacion(orden_f201a, inventario, catalogo, True, equipo="F-201A")
+    assert res_f201a.aprobada
+
+
+def test_rechaza_dano_estructural_grave():
+    resultado = evaluar_aprobacion(
+        crear_orden(),
+        crear_inventario(),
+        CATALOGO,
+        True,
+        dano_estructural_grave=True,
+        equipo="B-101",
+    )
+
+    assert not resultado.aprobada
+    assert any("Daño estructural grave" in motivo for motivo in resultado.motivos)
+
+
+def test_rechaza_tarea_estandar_en_equipo_equivocado():
+    from sistema.herramientas.catalogo import cargar_materiales
+    from sistema.workflow.reglas import OrdenBorrador, RepuestoOrden
+
+    materiales = cargar_materiales()
+    inventario = {"repuestos": materiales["repuestos"]}
+    catalogo = {"estandar": materiales["tareas_estandar"]}
+
+    orden = OrdenBorrador(
+        orden_id="OT-EQ-ERR",
+        tareas=["T-F-CAR"],
+        detiene_equipo=False,
+        ejecutor="propio",
+        repuestos=[RepuestoOrden(codigo="TX-EMP-KIT", cantidad=1)],
+    )
+    resultado = evaluar_aprobacion(orden, inventario, catalogo, True, equipo="B-101")
+
+    assert not resultado.aprobada
+    assert any("T-F-CAR" in motivo for motivo in resultado.motivos)
